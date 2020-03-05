@@ -1,0 +1,6 @@
+config BR2_PACKAGE_PAMLDAP
+        prompt "pam-ldap.......................... PAM LDAP authentication module"
+        tristate
+        default m if CONFIG_DEVEL
+        help
+          A PAM plugin to authenticate through LDAP

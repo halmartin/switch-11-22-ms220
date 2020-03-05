@@ -1,0 +1,5 @@
+Package: xextproto
+Priority: optional
+Section: x11
+Depends:
+Description: X extension protocol headers

@@ -1,0 +1,30 @@
+From 20b866a7ce1651c4ca3f28cf380df66d9ed35719 Mon Sep 17 00:00:00 2001
+From: Kim Phillips <kim.phillips@freescale.com>
+Date: Tue, 13 Nov 2012 18:34:09 -0600
+Subject: [PATCH 69/98] dtc/fdtdump: include libfdt_env.h prior to fdt.h
+
+in order to get the upcoming fdt type definitions.
+
+Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ fdtdump.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fdtdump.c b/fdtdump.c
+index d4fa6d7..b2c5b37 100644
+--- a/fdtdump.c
++++ b/fdtdump.c
+@@ -8,8 +8,8 @@
+ #include <string.h>
+ #include <ctype.h>
+ 
+-#include <fdt.h>
+ #include <libfdt_env.h>
++#include <fdt.h>
+ 
+ #include "util.h"
+ 
+-- 
+1.8.1.2
+

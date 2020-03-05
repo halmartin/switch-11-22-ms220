@@ -1,0 +1,4 @@
+Package: haveged
+Priority: optional
+Section: net
+Description: A simple entropy daemon

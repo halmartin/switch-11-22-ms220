@@ -1,0 +1,6 @@
+config BR2_PACKAGE_LIBECAP
+	prompt "libecap.......................... ECAP Adapter Library"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	Library for embedded ICAP

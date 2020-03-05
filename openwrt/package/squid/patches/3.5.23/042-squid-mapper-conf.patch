@@ -1,0 +1,36 @@
+--- a/src/SquidConfig.h
++++ b/src/SquidConfig.h
+@@ -537,6 +537,8 @@ public:
+     } dns;
+ 
+     char *click_unmapper;
++    char *click_mapper_insert;
++    char *click_mapper_remove;
+ };
+ 
+ extern SquidConfig Config;
+--- a/src/cf.data.pre
++++ b/src/cf.data.pre
+@@ -4556,6 +4556,22 @@ DOC_START
+ 	click endpoint for unmapping mapped connections
+ DOC_END
+ 
++NAME: click_mapper_insert
++TYPE: string
++DEFAULT: none
++LOC: Config.click_mapper_insert
++DOC_START
++	click endpoint for inserting mappings from SquidFlowMapper
++DOC_END
++
++NAME: click_mapper_remove
++TYPE: string
++DEFAULT: none
++LOC: Config.click_mapper_remove
++DOC_START
++	click endpoint for removing mappings from SquidFlowMapper
++DOC_END
++
+ NAME: cache_store_log
+ TYPE: string
+ DEFAULT: none

@@ -1,0 +1,22 @@
+config BR2_COMPILE_SPEEXDSP
+	tristate
+	default n
+	depends BR2_PACKAGE_LIBSPEEXDSP
+
+config BR2_PACKAGE_LIBSPEEXDSP
+	prompt "libspeexdsp.......................... Open source patent-free speech compression codec"
+	tristate
+	default n if CONFIG_DEVEL
+	select BR2_COMPILE_SPEEXDSP
+	help
+	  
+	  Speex is an Open Source/Free Software patent-free audio compression 
+	  format designed for speech. The Speex Project aims to lower the 
+	  barrier of entry for voice applications by providing a free 
+	  alternative to expensive proprietary speech codecs. Moreover, Speex 
+	  is well-adapted to Internet applications and provides useful features 
+	  that are not present in most other codecs.
+	  
+	  http://www.speex.org/
+	  
+	  This package contains the shared codec library, needed by other programs.

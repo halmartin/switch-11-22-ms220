@@ -1,0 +1,135 @@
+--- a/src/dnsmasq.h
++++ b/src/dnsmasq.h
+@@ -1057,6 +1057,7 @@ extern struct daemon {
+   char *addrbuff;
+   char *addrbuff2; /* only allocated when OPT_EXTRALOG */
+ 
++  int opendns_block_content;
+ } *daemon;
+ 
+ /* cache.c */
+@@ -1110,6 +1111,7 @@ unsigned char *skip_questions(struct dns_header *header, size_t plen);
+ unsigned char *skip_section(unsigned char *ansp, int count, struct dns_header *header, size_t plen);
+ unsigned int extract_request(struct dns_header *header, size_t qlen, 
+ 			       char *name, unsigned short *typep);
++void add_opendns_block_rr(struct daemon *daemon, struct dns_header *header, size_t *qlen);
+ size_t setup_reply(struct dns_header *header, size_t  qlen,
+ 		   struct all_addr *addrp, unsigned int flags,
+ 		   unsigned long local_ttl);
+--- a/src/forward.c
++++ b/src/forward.c
+@@ -389,6 +389,9 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
+ 	}
+     }
+ 
++  if (daemon->opendns_block_content)
++    add_opendns_block_rr(daemon, header, &plen);
++
+   /* check for send errors here (no route to host) 
+      if we fail to send to all nameservers, send back an error
+      packet straight away (helps modem users when offline)  */
+--- a/src/option.c
++++ b/src/option.c
+@@ -160,6 +160,9 @@ struct myoption {
+ #define LOPT_DHCPTTL       348
+ #define LOPT_TFTP_MTU      349
+  
++#define LOPT_MERAKI_START  350
++#define LOPT_ODNS_BC       (LOPT_MERAKI_START+0)
++
+ #ifdef HAVE_GETOPT_LONG
+ static const struct option opts[] =  
+ #else
+@@ -263,6 +266,7 @@ static const struct myoption opts[] =
+     { "dhcp-hostsdir", 1, 0, LOPT_DHCP_INOTIFY },
+     { "dhcp-optsdir", 1, 0, LOPT_DHOPT_INOTIFY },
+     { "dhcp-no-override", 0, 0, LOPT_OVERRIDE },
++    {"opendns-block-content", 1, 0, LOPT_ODNS_BC},
+     { "tftp-port-range", 1, 0, LOPT_TFTPPORTS },
+     { "stop-dns-rebind", 0, 0, LOPT_REBIND },
+     { "rebind-domain-ok", 1, 0, LOPT_NO_REBIND },
+@@ -406,6 +410,7 @@ static struct {
+   { 'x', ARG_ONE, "<path>", gettext_noop("Specify path of PID file (defaults to %s)."), RUNFILE },
+   { 'X', ARG_ONE, "<integer>", gettext_noop("Specify maximum number of DHCP leases (defaults to %s)."), "&" },
+   { 'y', OPT_LOCALISE, NULL, gettext_noop("Answer DNS queries based on the interface a query was sent to."), NULL },
++  { LOPT_ODNS_BC, ARG_ONE, "<mask>", gettext_noop("Use OpenDNS CLIENTID option to block adult content. (Defaults to 0 (filter nothing).)"), NULL },
+   { 'Y', ARG_DUP, "<name>,<txt>[,<txt]", gettext_noop("Specify TXT DNS record."), NULL },
+   { LOPT_PTR, ARG_DUP, "<name>,<target>", gettext_noop("Specify PTR DNS record."), NULL },
+   { LOPT_INTNAME, ARG_DUP, "<name>,<interface>", gettext_noop("Give DNS name to IPv4 address of interface."), NULL },
+@@ -3877,6 +3882,13 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
+ 	break;
+       }
+       
++    case LOPT_ODNS_BC:  /* --opendns-block-content */
++      {
++	int v = strtol(arg, NULL, 0);
++	daemon->opendns_block_content = v & 0x7f;
++      }
++      break;
++
+     case 'W':  /* --srv-host */
+       {
+ 	int port = 1, priority = 0, weight = 0;
+@@ -4434,6 +4446,7 @@ void reread_dhcp(void)
+ 	  else
+ 	    up = &configs->next;
+ 	}
++  daemon->opendns_block_content = 0;
+       
+       daemon->dhcp_hosts_file = expand_filelist(daemon->dhcp_hosts_file);
+       for (hf = daemon->dhcp_hosts_file; hf; hf = hf->next)
+--- a/src/rfc1035.c
++++ b/src/rfc1035.c
+@@ -408,6 +408,49 @@ size_t resize_packet(struct dns_header *header, size_t plen, unsigned char *phea
+   return ansp - (unsigned char *)header;
+ }
+ 
++void
++add_opendns_block_rr(struct daemon *daemon, struct dns_header *header, size_t *qlen)
++{
++  char client_id[] = {
++    0x00,                       /* empty name ('\0') */
++    0x00, 0x29,                 /* type */
++    0x04, 0x00,                 /* class */
++    0x00, 0x00, 0x00, 0x00,     /* ttl */
++    0x00, 0x0C,                 /* data length (below) */
++    0x00, 0x04, 0x00, 0x08,     /* magic */
++    0x4f, 0x70, 0x65, 0x6e,     /* 'Open' */
++    0x44, 0x4e, 0x53            /* 'DNS' */
++  };
++
++  if (find_pseudoheader(header, *qlen, NULL, NULL, NULL, NULL)
++      || *qlen + sizeof(client_id) + 1 > (unsigned)daemon->packet_buff_sz)
++    {
++      const char *msg = "existing EDNS0 header or no space in buffer; cannot append OpenDNS CLIENTID";
++      fprintf(stderr, "%s", msg);
++      syslog(LOG_WARNING, "%s", msg);
++      return;
++    }
++
++  char *rr = (char *)header + *qlen;
++  memcpy(rr, client_id, sizeof(client_id));
++
++  char *mask = rr + sizeof(client_id);
++  *mask = daemon->opendns_block_content;
++  /*
++    Currently defined bit values for *mask, from OpenDNS:
++    #define CATEGORY_lingerie  (1 << 0)
++    #define CATEGORY_mature    (1 << 1)
++    #define CATEGORY_nudity    (1 << 2)
++    #define CATEGORY_porn      (1 << 3)
++    #define CATEGORY_proxy     (1 << 4)
++    #define CATEGORY_sexuality (1 << 5)
++    #define CATEGORY_tasteless (1 << 6)
++  */
++
++  header->arcount = htons(ntohs(header->arcount) + 1);
++  *qlen += sizeof(client_id) + 1;
++}
++
+ /* is addr in the non-globally-routed IP space? */ 
+ int private_net(struct in_addr addr, int ban_localhost) 
+ {
+-- 
+2.10.2
+

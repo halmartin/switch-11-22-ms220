@@ -1,0 +1,54 @@
+--- a/build/ltmain.sh	2017-06-13 17:58:43.312423647 -0700
++++ b/build/ltmain.sh	2017-06-13 18:10:13.167457466 -0700
+@@ -1732,15 +1732,15 @@
+ 	    # Hardcode the library path.
+ 	    # Skip directories that are in the system default run-time
+ 	    # search path.
+-	    case " $sys_lib_dlsearch_path " in
+-	    *" $absdir "*) ;;
+-	    *)
+-	      case "$compile_rpath " in
+-	      *" $absdir "*) ;;
+-	      *) compile_rpath="$compile_rpath $absdir"
+-	      esac
+-	      ;;
+-	    esac
++	    #case " $sys_lib_dlsearch_path " in
++	    #*" $absdir "*) ;;
++	    #*)
++	    #  case "$compile_rpath " in
++	    #  *" $absdir "*) ;;
++	    #  *) compile_rpath="$compile_rpath $absdir"
++	    #  esac
++	    #  ;;
++	    #esac
+ 	    case " $sys_lib_dlsearch_path " in
+ 	    *" $libdir "*) ;;
+ 	    *)
+@@ -3570,7 +3570,7 @@
+       if test "$hardcode_action" = relink; then
+ 	# Fast installation is not supported
+ 	link_command="$compile_var$compile_command$compile_rpath"
+-	relink_command="$finalize_var$finalize_command$finalize_rpath"
++	relink_command="$finalize_var$finalize_command$finalize_c"
+ 
+ 	$echo "$modename: warning: this platform does not like uninstalled shared libraries" 1>&2
+ 	$echo "$modename: \`$output' will be relinked during installation" 1>&2
+@@ -4244,7 +4244,7 @@
+ 	test "X$dir" = "X$file/" && dir=
+ 	dir="$dir$objdir"
+ 
+-	if test -n "$relink_command"; then
++	if test "$fast_install" = no && test -n "$relink_command"; then
+ 	  $echo "$modename: warning: relinking \`$file'" 1>&2
+ 	  $show "$relink_command"
+ 	  if $run eval "$relink_command"; then :
+@@ -4262,7 +4262,7 @@
+ 	  shift
+ 
+ 	  srcname="$realname"
+-	  test -n "$relink_command" && srcname="$realname"T
++	  test "$fast_install" = no && test -n "$relink_command" && srcname="$realname"T
+ 
+ 	  # Install the shared library and build the symlinks.
+ 	  $show "$install_prog $dir/$srcname $destdir/$realname"

@@ -1,0 +1,5 @@
+Package: intltool
+Priority: optional
+Section: libs
+Description: internationalization tool for extracting translatable strings
+Depends: glib2

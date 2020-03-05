@@ -1,0 +1,4 @@
+Package: daq
+Priority: optional
+Section: libs
+Description: a data acquisition library for packet i/o

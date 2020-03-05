@@ -1,0 +1,4 @@
+Package: motiondetector
+Priority: optional
+Section: net
+Description: Meraki SAD-based motion detection algorithm

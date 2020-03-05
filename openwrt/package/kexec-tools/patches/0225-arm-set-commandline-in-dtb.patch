@@ -1,0 +1,31 @@
+From 2835cf04a2acac9d61e20dd7bb18129b8be30c75 Mon Sep 17 00:00:00 2001
+From: aacharya <aacharya@meraki.net>
+Date: Fri, 8 Dec 2017 08:18:07 -0800
+Subject: [PATCH] set commandline in dtb
+
+---
+ kexec/arch/arm/kexec-zImage-arm.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/kexec/arch/arm/kexec-zImage-arm.c b/kexec/arch/arm/kexec-zImage-arm.c
+index 85962f8..5e52517 100644
+--- a/kexec/arch/arm/kexec-zImage-arm.c
++++ b/kexec/arch/arm/kexec-zImage-arm.c
+@@ -413,6 +413,14 @@ int do_zImage_arm_load(struct kexec_info *info,
+ 		free(dtb_buf_cpy);
+ 		return -1;
+ 	}
++	if (command_line_len > 1) {
++		if (setup_dtb_prop(&dtb_buf_cpy, &dtb_len_cpy, 0, "chosen",
++							"bootargs", command_line,
++							strlen(command_line) + 1)) {
++			free(dtb_buf_cpy);
++			return -1;
++		}
++	}
+ 
+ 	if (dtb_load) {
+ 		dtb_offset = dtb_load;
+-- 
+2.14.2
+

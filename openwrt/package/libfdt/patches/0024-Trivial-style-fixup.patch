@@ -1,0 +1,32 @@
+From 53d6ca639d1e95d0d62e84b25f3d22d721d1f4a3 Mon Sep 17 00:00:00 2001
+From: David Gibson <david@gibson.dropbear.id.au>
+Date: Fri, 3 Feb 2012 16:12:02 +1100
+Subject: [PATCH 24/98] Trivial style fixup
+
+Having braces on an if branch but not the else branch, or vice
+versa is ugly and can trick you when reading the code.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ fdtget.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fdtget.c b/fdtget.c
+index 48ab615..2c384b6 100644
+--- a/fdtget.c
++++ b/fdtget.c
+@@ -77,9 +77,9 @@ static int show_data(struct display_info *disp, const char *data, int len)
+ 		return 0;
+ 	}
+ 	size = disp->size;
+-	if (size == -1)
++	if (size == -1) {
+ 		size = (len % 4) == 0 ? 4 : 1;
+-	else if (len % size) {
++	} else if (len % size) {
+ 		fprintf(stderr, "Property length must be a multiple of "
+ 				"selected data size\n");
+ 		return -1;
+-- 
+1.8.1.2
+

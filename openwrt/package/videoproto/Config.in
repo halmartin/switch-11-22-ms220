@@ -1,0 +1,7 @@
+config BR2_PACKAGE_VIDEOPROTO
+        prompt "videoproto..........................Videoproto extension headers"
+	tristate
+	default n
+	help
+	  Videoproto extension headers. You probably only want this if you
+	  install an X server.

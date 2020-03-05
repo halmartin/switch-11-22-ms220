@@ -1,0 +1,93 @@
+commit 4615057533a38e6536e28bb7d6f1e6acf1ee233e
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Thu Jun 2 01:28:26 2016 -0700
+
+    fixup for musl
+
+diff --git a/cli/cli_readline.c b/cli/cli_readline.c
+index 097ed6a..91e1224 100644
+--- a/cli/cli_readline.c
++++ b/cli/cli_readline.c
+@@ -18,13 +18,15 @@
+  *
+  *****************************************************************************/
+ 
++#define _GNU_SOURCE
+ #include <stdio.h>
+ #include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/file.h>
+ #include <sys/stat.h>
+-#include <sys/errno.h>
++#include <errno.h>
+ #include <signal.h>
++#include <fcntl.h>
+ 
+ #include <readline/readline.h>
+ #include <readline/history.h>
+@@ -633,7 +635,7 @@ static void cli_rl_uninstall_signal_handlers(void)
+ 
+ static int cli_rl_install_signal_handlers(void)
+ {
+-	__sighandler_t handler;
++	sighandler_t handler;
+ 
+ 	rl_catch_signals = 0;
+ 	rl_clear_signals();
+diff --git a/l2tp_main.c b/l2tp_main.c
+index 93ba563..eee598d 100644
+--- a/l2tp_main.c
++++ b/l2tp_main.c
+@@ -42,7 +42,7 @@
+ #include <setjmp.h>
+ #include <sys/utsname.h>
+ 
+-#include <wait.h>
++#include <sys/wait.h>
+ 
+ #include "usl.h"
+ #include "l2tp_private.h"
+diff --git a/l2tp_private.h b/l2tp_private.h
+index 1d91afa..1a4307a 100644
+--- a/l2tp_private.h
++++ b/l2tp_private.h
+@@ -23,6 +23,7 @@
+ #define _GNU_SOURCE
+ #include <string.h>		/* for strndup() */
+ 
++#include <stdio.h>
+ #include <stdarg.h>
+ #include <sys/uio.h>
+ #include <sys/ioctl.h>
+diff --git a/plugins/ppp_unix.c b/plugins/ppp_unix.c
+index 648361d..c9d7ce8 100644
+--- a/plugins/ppp_unix.c
++++ b/plugins/ppp_unix.c
+@@ -40,12 +40,14 @@
+ #ifndef __user
+ #define __user
+ #endif
++#define ethhdr __ethhdr
+ #include <sys/ioctl.h>
+ #include <linux/if_ether.h>
+ #include <linux/if_pppox.h>
+ #include <linux/ppp_defs.h>
+ #include <linux/if_ppp.h>
+ #include <linux/if_pppol2tp.h>
++#undef __ethhdr
+ 
+ #include "usl.h"
+ #include "l2tp_private.h"
+diff --git a/usl/usl_pid.c b/usl/usl_pid.c
+index 103458b..9819473 100644
+--- a/usl/usl_pid.c
++++ b/usl/usl_pid.c
+@@ -78,7 +78,7 @@ int usl_pid_reap_children(int waitfor)
+ 
+ 	/* Wait for processes in our process group. */
+ 
+-	while (((pid = waitpid(WAIT_ANY, &status, (waitfor ? 0: WNOHANG))) != -1) && (pid != 0)) {
++	while (((pid = waitpid(-1, &status, (waitfor ? 0: WNOHANG))) != -1) && (pid != 0)) {
+ 		have_callback = 0;
+ 		usl_list_for_each(walk, tmp, &usl_child_list) {
+ 			child = usl_list_entry(walk, struct usl_pid_child, list);

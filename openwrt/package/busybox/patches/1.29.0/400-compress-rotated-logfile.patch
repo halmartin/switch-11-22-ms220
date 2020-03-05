@@ -1,0 +1,56 @@
+--- a/sysklogd/syslogd.c
++++ b/sysklogd/syslogd.c
+@@ -35,6 +35,13 @@
+ //config:	This enables syslogd to rotate the message files
+ //config:	on his own. No need to use an external rotate script.
+ //config:
++//config:config FEATURE_COMPRESS_ROTATE
++//config:	bool "Compress rotated message files"
++//config:	default n
++//config:	depends on FEATURE_ROTATE_LOGFILE && GZIP
++//config:	help
++//config:	This enables syslogd to compress the rotated message files.
++//config:
+ //config:config FEATURE_REMOTE_LOG
+ //config:	bool "Remote Log support"
+ //config:	default y
+@@ -748,20 +755,33 @@
+ #if ENABLE_FEATURE_ROTATE_LOGFILE
+ 	if (G.logFileSize && log_file->isRegular && log_file->size > G.logFileSize) {
+ 		if (G.logFileRotate) { /* always 0..99 */
+-			int i = strlen(log_file->path) + 3 + 1;
+-			char oldFile[i];
+-			char newFile[i];
+-			i = G.logFileRotate - 1;
++			int buflen = strlen(log_file->path) + 3 + 3 + 1;
++			char oldFile[buflen];
++			char newFile[buflen];
++#if ENABLE_FEATURE_COMPRESS_ROTATE
++			const char *args[] = { "gzip", newFile, NULL };
++			const char fmt[] = "%s.%d.gz";
++#else
++			const char fmt[] = "%s.%d";
++#endif
++			int i = G.logFileRotate - 1;
+ 			/* rename: f.8 -> f.9; f.7 -> f.8; ... */
+ 			while (1) {
+-				sprintf(newFile, "%s.%d", log_file->path, i);
++				snprintf(newFile, buflen, fmt, log_file->path, i);
+ 				if (i == 0) break;
+-				sprintf(oldFile, "%s.%d", log_file->path, --i);
++				snprintf(oldFile, buflen, fmt, log_file->path, --i);
+ 				/* ignore errors - file might be missing */
+ 				rename(oldFile, newFile);
+ 			}
++#if ENABLE_FEATURE_COMPRESS_ROTATE
++			newFile[strlen(newFile) - 3] = '\0';
+ 			/* newFile == "f.0" now */
+ 			rename(log_file->path, newFile);
++			spawn_and_wait(args);
++#else
++			/* newFile == "f.0" now */
++			rename(log_file->path, newFile);
++#endif
+ 		}
+ 
+ 		/* We may or may not have just renamed the file away;

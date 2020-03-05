@@ -1,0 +1,5 @@
+Package: xf86-input-mouse
+Priority: optional
+Section: x11
+Depends: xorg-server
+Description: xf86 mouse driver

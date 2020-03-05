@@ -1,0 +1,58 @@
+diff -r -c a/pppd/plugins/Makefile.linux b/pppd/plugins/Makefile.linux
+*** a/pppd/plugins/Makefile.linux	2015-05-05 16:47:40.687275015 -0700
+--- b/pppd/plugins/Makefile.linux	2015-05-05 16:48:53.960155725 -0700
+***************
+*** 20,26 ****
+  endif
+
+  all:	$(PLUGINS)
+! 	for d in $(SUBDIRS); do $(MAKE) $(MFLAGS) -C $$d all; done
+
+  %.so: %.c
+  	$(CC) -o $@ $(LDFLAGS) $(CFLAGS) $^
+--- 20,26 ----
+  endif
+
+  all:	$(PLUGINS)
+! 	for d in $(SUBDIRS); do $(MAKE) $(MFLAGS) -C $$d all || exit 1; done
+
+  %.so: %.c
+  	$(CC) -o $@ $(LDFLAGS) $(CFLAGS) $^
+diff -r -c a/pppd/plugins/pppol2tp/Makefile.linux b/pppd/plugins/pppol2tp/Makefile.linux
+*** a/pppd/plugins/pppol2tp/Makefile.linux	2015-05-05 16:47:40.683275186 -0700
+--- b/pppd/plugins/pppol2tp/Makefile.linux	2015-05-05 16:49:04.191721130 -0700
+***************
+*** 1,6 ****
+  #CC	= gcc
+  COPTS	= -O2 -g
+! CFLAGS	= $(COPTS) -I. -I../.. -I../../../include -fPIC
+  LDFLAGS	= -shared
+  INSTALL	= install
+
+--- 1,6 ----
+  #CC	= gcc
+  COPTS	= -O2 -g
+! CFLAGS	= $(COPTS) -I. -I../.. -fPIC
+  LDFLAGS	= -shared
+  INSTALL	= install
+
+diff -r -c a/pppd/plugins/rp-pppoe/Makefile.linux b/pppd/plugins/rp-pppoe/Makefile.linux
+*** a/pppd/plugins/rp-pppoe/Makefile.linux	2015-05-05 16:47:40.683275186 -0700
+--- b/pppd/plugins/rp-pppoe/Makefile.linux	2015-05-05 16:49:25.178825325 -0700
+***************
+*** 26,32 ****
+  RP_VERSION=3.8p
+
+  COPTS=-O2 -g
+! CFLAGS=$(COPTS) -I../../../include '-DRP_VERSION="$(RP_VERSION)"'
+  all: rp-pppoe.so pppoe-discovery
+
+  pppoe-discovery: pppoe-discovery.o debug.o
+--- 26,32 ----
+  RP_VERSION=3.8p
+
+  COPTS=-O2 -g
+! CFLAGS=$(COPTS) '-DRP_VERSION="$(RP_VERSION)"'
+  all: rp-pppoe.so pppoe-discovery
+
+  pppoe-discovery: pppoe-discovery.o debug.o

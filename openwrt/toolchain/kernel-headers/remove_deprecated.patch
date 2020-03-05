@@ -1,0 +1,17 @@
+--- memory.h	2008-07-29 10:18:42.000000000 -0700
++++ memory.h	2008-07-28 17:17:06.000000000 -0700
+@@ -188,12 +188,12 @@
+  * memory.  Use of these is *deprecated* (and that doesn't mean
+  * use the __ prefixed forms instead.)  See dma-mapping.h.
+  */
+-static inline __deprecated unsigned long virt_to_bus(void *x)
++static inline unsigned long virt_to_bus(void *x)
+ {
+ 	return __virt_to_bus((unsigned long)x);
+ }
+ 
+-static inline __deprecated void *bus_to_virt(unsigned long x)
++static inline void *bus_to_virt(unsigned long x)
+ {
+ 	return (void *)__bus_to_virt(x);
+ }

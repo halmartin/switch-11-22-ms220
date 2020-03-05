@@ -1,0 +1,5 @@
+Package: libxext
+Priority: optional
+Section: x11
+Depends: xextproto
+Description: X Common extensions

@@ -1,0 +1,21 @@
+commit 68883778c4909fd49f9c3471740e2af53c02da3a
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Mon Apr 16 13:46:32 2018 -0700
+
+    Fix for GCC 7
+
+diff --git a/linux.c b/linux.c
+index 3a1ce0c..8cda114 100644
+--- a/linux.c
++++ b/linux.c
+@@ -18,6 +18,10 @@
+ #include "linux.h"
+ #include "usbi.h"
+ 
++#if __GNUC__ >= 7
++#pragma GCC diagnostic warning "-Wformat-truncation"
++#endif
++
+ static char usb_path[PATH_MAX + 1] = "";
+ 
+ static int device_open(struct usb_device *dev)

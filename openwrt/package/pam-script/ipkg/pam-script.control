@@ -1,0 +1,4 @@
+Package: pam-script
+Section: net
+Priority: optional
+Description: pam_script

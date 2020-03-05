@@ -1,0 +1,4 @@
+Package: jansson
+Priority: optional
+Section: libs
+Description: Jansson is a C library for encoding, decoding and manipulating JSON data

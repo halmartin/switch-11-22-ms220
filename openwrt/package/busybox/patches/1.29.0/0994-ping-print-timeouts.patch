@@ -1,0 +1,81 @@
+From c0760b089085c1978fcb6f1268a442750ffbc7ed Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Mon, 2 Jul 2018 16:52:27 -0700
+Subject: [PATCH 06/26] 0994
+
+---
+ networking/ping.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/networking/ping.c b/networking/ping.c
+index 0cd1dee..9ae623d 100644
+--- a/networking/ping.c
++++ b/networking/ping.c
+@@ -83,6 +83,7 @@
+ //usage:     "\n			(can exit earlier with -c CNT)"
+ //usage:     "\n	-q		Quiet, only display output at start"
+ //usage:     "\n			and when finished"
++//usage:     "\n	-T		Print timeouts"
+ //usage:     "\n	-p HEXBYTE	Pattern to use for payload"
+ //usage:
+ //usage:# define ping6_trivial_usage
+@@ -350,7 +351,7 @@ static int common_ping_main(sa_family_t af, char **argv)
+ /* Full(er) version */
+ 
+ /* -c NUM, -t NUM, -w NUM, -W NUM */
+-#define OPT_STRING "qvAc:+s:t:+w:+W:+I:np:4"IF_PING6("6")
++#define OPT_STRING "qvAc:+s:t:+w:+W:+I:np:T4"IF_PING6("6")
+ enum {
+ 	OPT_QUIET = 1 << 0,
+ 	OPT_VERBOSE = 1 << 1,
+@@ -361,7 +362,7 @@ enum {
+ 	OPT_w = 1 << 6,
+ 	OPT_W = 1 << 7,
+ 	OPT_I = 1 << 8,
+-	/*OPT_n = 1 << 9, - ignored */
++	OPT_T = 1 << 9,
+ 	OPT_p = 1 << 10,
+ 	OPT_IPV4 = 1 << 11,
+ 	OPT_IPV6 = (1 << 12) * ENABLE_PING6,
+@@ -384,6 +385,8 @@ struct globals {
+ 	unsigned deadline_us;
+ 	unsigned timeout;
+ 	unsigned sizeof_rcv_packet;
++	unsigned print_timeouts;
++	unsigned last_recv_seq;
+ 	char *rcv_packet; /* [datalen + MAXIPLEN + MAXICMPLEN] */
+ 	void *snd_packet; /* [datalen + ipv4/ipv6_const] */
+ 	const char *hostname;
+@@ -463,6 +466,11 @@ static void sendping_tail(void (*sp)(int), int size_pkt)
+ {
+ 	int sz;
+ 
++	if (G.print_timeouts && G.ntransmitted != 0 && G.last_recv_seq != G.ntransmitted - 1){
++	  printf("Request timeout for icmp seq %u\n", (unsigned)(G.ntransmitted - 1));
++	  fflush(stdout);
++	}
++	
+ 	CLR((uint16_t)G.ntransmitted % MAX_DUP_CHK);
+ 	G.ntransmitted++;
+ 
+@@ -622,6 +630,7 @@ static void unpack_tail(int sz, uint32_t *tp,
+ 		*b |= m;
+ 		++G.nreceived;
+ 		dupmsg += 7;
++		G.last_recv_seq = recv_seq;
+ 	}
+ 
+ 	if (option_mask32 & OPT_QUIET)
+@@ -912,6 +921,9 @@ static int common_ping_main(int opt, char **argv)
+ 		G.deadline_us = 1 | ((d * 1000000) + monotonic_us());
+ 	}
+ 
++	if (opt & OPT_T)
++		G.print_timeouts = 1;
++
+ 	myid = (uint16_t) getpid();
+ 	hostname = argv[optind];
+ #if ENABLE_PING6
+-- 
+2.17.0
+

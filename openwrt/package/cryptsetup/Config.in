@@ -1,0 +1,15 @@
+config BR2_PACKAGE_CRYPTSETUP
+       prompt "cryptsetup......................... disk encryption utils"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+           bleh
+
+config BR2_PACKAGE_CRYPTSETUP_KERNEL
+	prompt "   Use Linux kernel userspace crypto interface"
+	bool
+	default y
+	depends BR2_PACKAGE_CRYPTSETUP
+	help
+	   Turn this off if your kernel doesn't support the crypto
+	   interface.

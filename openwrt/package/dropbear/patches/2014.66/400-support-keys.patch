@@ -1,0 +1,51 @@
+diff --git a/svr-authpubkey.c b/svr-authpubkey.c
+index e36e319..1bda541 100644
+--- a/svr-authpubkey.c
++++ b/svr-authpubkey.c
+@@ -209,7 +209,16 @@ static int checkpubkey(unsigned char* algo, unsigned int algolen,
+ 	}
+ 
+ 	/* open the file */
+-	authfile = fopen("/etc/dropbear/authorized_keys", "r");
++	if (!strcmp(ses.authstate.pw_name, "root\0"))
++		authfile = fopen("/etc/dropbear/authorized_keys", "r");
++	else if (!strcmp(ses.authstate.pw_name, "support\0"))
++		authfile = fopen("/support/.ssh/authorized_keys", "r");
++	else if (!strcmp(ses.authstate.pw_name, "ec2-user\0"))
++		authfile = fopen("/ec2-user/.ssh/authorized_keys", "r");
++	else {
++		dropbear_log(LOG_WARNING, "Only 'root', 'support', or 'ec2-user' may ssh into this node");
++		goto out;
++	}
+ 	if (authfile == NULL) {
+ 		goto out;
+ 	}
+@@ -314,7 +321,12 @@ static int checkpubkey(unsigned char* algo, unsigned int algolen,
+ 		ret = cmp_base64_key(keyblob, keybloblen, algo, algolen, line, NULL);
+ 
+ 		if (ret == DROPBEAR_SUCCESS && options_buf) {
+-			ret = svr_add_pubkey_options(options_buf, line_num, "/etc/dropbear/authorized_keys");
++			if (!strcmp(ses.authstate.pw_name, "root\0"))
++				ret = svr_add_pubkey_options(options_buf, line_num, "/etc/dropbear/authorized_keys");
++			else if (!strcmp(ses.authstate.pw_name, "support\0"))
++				ret = svr_add_pubkey_options(options_buf, line_num, "/support/.ssh/authorized_keys");
++			else if (!strcmp(ses.authstate.pw_name, "ec2-user\0"))
++				ret = svr_add_pubkey_options(options_buf, line_num, "/ec2-user/.ssh/authorized_keys");
+ 		}
+ 
+ 		if (ret == DROPBEAR_SUCCESS) {
+@@ -359,7 +369,14 @@ static int checkpubkeyperms() {
+ 		goto out;
+ 	}
+ 
+-	if (checkfileperm("/etc/dropbear/authorized_keys") != DROPBEAR_SUCCESS) {
++	if (!strcmp(ses.authstate.pw_name, "root\0") &&
++		checkfileperm("/etc/dropbear/authorized_keys") != DROPBEAR_SUCCESS) {
++		goto out;
++	} else if (!strcmp(ses.authstate.pw_name, "ec2-user\0") &&
++		checkfileperm("/ec2-user/.ssh/authorized_keys") != DROPBEAR_SUCCESS) {
++		goto out;
++	} else if (!strcmp(ses.authstate.pw_name, "support\0") &&
++		checkfileperm("/support/.ssh/authorized_keys") != DROPBEAR_SUCCESS) {
+ 		goto out;
+ 	}

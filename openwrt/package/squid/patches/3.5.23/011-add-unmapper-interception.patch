@@ -1,0 +1,106 @@
+--- a/src/SquidConfig.h
++++ b/src/SquidConfig.h
+@@ -536,6 +536,7 @@ public:
+         ssize_t packet_max; ///< maximum size EDNS advertised for DNS replies.
+     } dns;
+ 
++    char *click_unmapper;
+ };
+ 
+ extern SquidConfig Config;
+diff --git a/src/cf.data.pre b/src/cf.data.pre
+index 44a3290..c09a7b2 100644
+--- a/src/cf.data.pre
++++ b/src/cf.data.pre
+@@ -4548,6 +4548,14 @@ DOC_START
+ 	See http://wiki.squid-cache.org/SquidFaq/SquidAcl for details.
+ DOC_END
+ 
++NAME: click_unmapper
++TYPE: string
++DEFAULT: none
++LOC: Config.click_unmapper
++DOC_START
++	click endpoint for unmapping mapped connections
++DOC_END
++
+ NAME: cache_store_log
+ TYPE: string
+ DEFAULT: none
+--- a/src/comm/TcpAcceptor.cc
++++ b/src/comm/TcpAcceptor.cc
+@@ -29,6 +29,7 @@
+ #include "SquidConfig.h"
+ #include "SquidTime.h"
+ #include "StatCounters.h"
++#include "tools.h"
+ 
+ #include <cerrno>
+ #ifdef HAVE_NETINET_TCP_H
+@@ -36,6 +37,8 @@
+ #include <netinet/tcp.h>
+ #endif
+ 
++#include <fstream>
++
+ CBDATA_NAMESPACED_CLASS_INIT(Comm, TcpAcceptor);
+ 
+ Comm::TcpAcceptor::TcpAcceptor(const Comm::ConnectionPointer &newConn, const char *note, const Subscription::Pointer &aSub) :
+@@ -318,6 +321,46 @@ Comm::TcpAcceptor::notify(const Comm::Flag flag, const Comm::ConnectionPointer &
+     }
+ }
+ 
++bool
++ClickUnmapLookup(Comm::ConnectionPointer &details, const char *click_unmapper) {
++    debugs(50, 5, "Config.click_unmapper=" << click_unmapper
++                                           << ", local=" << details->local
++                                           << ", remote=" << details->remote);
++    enter_suid();
++    std::fstream fs(click_unmapper, std::ios::in | std::ios::out | std::ios::trunc);
++    leave_suid();
++
++    if (!fs) {
++        debugs(50, DBG_IMPORTANT, "Failed to open " << click_unmapper);
++        return false;
++    }
++
++    char buf[MAX_IPSTRLEN];
++
++    details->remote.toHostStr(buf, sizeof(buf));
++    fs << buf << ' ' << details->remote.port() << ' ';
++
++    details->local.toHostStr(buf, sizeof(buf));
++    fs << buf << ' ' << details->local.port() << std::flush;
++
++    if ('$' == fs.peek())
++        return false;
++
++    std::string daddr, saddr;
++    unsigned short dport, sport;
++    fs >> daddr >> dport >> saddr >> sport;
++
++    debugs(50, 5, "Got " << daddr << ":" << dport << " " << saddr << ":" << sport);
++
++    details->local = Ip::Address(daddr.c_str());
++    details->local.port(dport);
++
++    details->remote = Ip::Address(saddr.c_str());
++    details->remote.port(sport);
++
++    return true;
++}
++
+ /**
+  * accept() and process
+  * Wait for an incoming connection on our listener socket.
+@@ -403,7 +446,9 @@ Comm::TcpAcceptor::oldAccept(Comm::ConnectionPointer &details)
+     F->flags.transparent = fd_table[conn->fd].flags.transparent; // XXX: can we remove this line yet?
+ 
+     // Perform NAT or TPROXY operations to retrieve the real client/dest IP addresses
+-    if (conn->flags&(COMM_TRANSPARENT|COMM_INTERCEPTION) && !Ip::Interceptor.Lookup(details, conn)) {
++    if (0 != strcmp(Config.click_unmapper, "none") && ClickUnmapLookup(details, Config.click_unmapper)) {
++        details->flags = COMM_INTERCEPTION;
++    } else if (conn->flags&(COMM_TRANSPARENT|COMM_INTERCEPTION) && !Ip::Interceptor.Lookup(details, conn)) {
+         debugs(50, DBG_IMPORTANT, "ERROR: NAT/TPROXY lookup failed to locate original IPs on " << details);
+         // Failed.
+         PROF_stop(comm_accept);

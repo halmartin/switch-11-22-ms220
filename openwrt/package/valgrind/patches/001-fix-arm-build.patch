@@ -1,0 +1,11 @@
+--- a/configure.ac	2017-06-15 06:37:01.000000000 -0700
++++ b/configure.ac	2017-12-14 08:29:52.356934454 -0800
+@@ -234,7 +234,7 @@
+         ARCH_MAX="s390x"
+         ;;
+ 
+-     armv7*)
++     arm*)
+ 	AC_MSG_RESULT([ok (${host_cpu})])
+ 	ARCH_MAX="arm"
+ 	;;

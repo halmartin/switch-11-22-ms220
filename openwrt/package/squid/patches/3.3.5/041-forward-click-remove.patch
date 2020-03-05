@@ -1,0 +1,51 @@
+--- a/src/comm/Connection.cc	2015-02-12 21:51:25.178992254 -0800
++++ b/src/comm/Connection.cc	2015-02-12 22:15:08.438999132 -0800
+@@ -5,6 +5,15 @@
+ #include "comm/Connection.h"
+ #include "fde.h"
+ #include "SquidTime.h"
++#include "SquidConfig.h"
++#include "tools.h"
++
++#include <sys/socket.h>
++#include <string>
++
++#if HAVE_FSTREAM
++#include <sstream>
++#endif
+
+ class CachePeer;
+ bool
+@@ -61,6 +70,32 @@
+ Comm::Connection::close()
+ {
+     if (isOpen()) {
++        if (strcmp(Config.click_mapper_remove, "none") != 0) {
++            enter_suid();
++            int cfd = open(Config.click_mapper_remove, O_TRUNC | O_WRONLY, 0644);
++            leave_suid();
++
++            if (cfd < 0) {
++                debugs(50, DBG_IMPORTANT, "Failed to open SquidFlowMapper remove");
++            } else {
++                struct sockaddr_in adr_inet;
++                int len_inet = sizeof(adr_inet);
++
++                if (!getsockname(fd, (struct sockaddr *)&adr_inet, (socklen_t *) &len_inet)) {
++
++                    char buf[MAX_IPSTRLEN];
++                    std::stringstream ss;
++                    ss << "SADDR " << inet_ntoa(adr_inet.sin_addr) << ", SPORT " << (unsigned) ntohs(adr_inet.sin_port) << ", ";
++
++                    remote.ToHostname(buf, sizeof(buf));
++                    ss << "DADDR " <<  buf << ", DPORT " << remote.GetPort() << std::endl;
++                    write(cfd, ss.str().c_str(), ss.str().size());
++
++                    ::close(cfd);
++                }
++            }
++        }
++
+         comm_close(fd);
+         fd = -1;
+         if (CachePeer *p=getPeer())

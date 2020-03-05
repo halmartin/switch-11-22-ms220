@@ -1,0 +1,35 @@
+--- a/pppd/main.c	2018-07-13 12:54:58.743795902 -0700
++++ b/pppd/main.c	2018-07-13 12:56:39.204721376 -0700
+@@ -859,9 +863,29 @@
+     if (pidfilename[0] != 0 && unlink(pidfilename) < 0 && errno != ENOENT)
+ 	warn("unable to delete pid file %s: %m", pidfilename);
+     pidfilename[0] = 0;
+-    if (linkpidfile[0] != 0 && unlink(linkpidfile) < 0 && errno != ENOENT)
+-	warn("unable to delete pid file %s: %m", linkpidfile);
+-    linkpidfile[0] = 0;
++    if (linkpidfile[0] == 0)
++        return;
++
++    FILE *linkpidfile_stream = fopen(linkpidfile, "r");
++    if (linkpidfile_stream == NULL)
++        return;
++
++    int pid_from_file;
++    int scanned_values = fscanf(linkpidfile_stream, "%d", &pid_from_file);
++    fclose(linkpidfile_stream);
++    // Want to make sure fscanf returned a single int
++    if (scanned_values != 1) {
++        warn("unable to parse linkpidfile, will not remove pid file");
++        return;
++    }
++
++    if (pid_from_file == getpid()) {
++        if (unlink(linkpidfile) < 0 && errno != ENOENT)
++            warn("unable to delete pid file %s: %m", linkpidfile);
++        linkpidfile[0] = 0;
++    } else {
++        warn("meraki not removing pid file, pid %d in file does not match our pid, %d", pid_from_file, getpid());
++    }
+ }
+
+ /*

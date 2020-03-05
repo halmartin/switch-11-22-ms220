@@ -1,0 +1,58 @@
+From a59a0737da3e7b5def01d6d0767cff4ad02febec Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Mon, 2 Jul 2018 16:28:51 -0700
+Subject: [PATCH 02/26] 0910
+
+---
+ findutils/grep.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/findutils/grep.c b/findutils/grep.c
+index 88de0d4..baef6ae 100644
+--- a/findutils/grep.c
++++ b/findutils/grep.c
+@@ -82,6 +82,7 @@
+ //usage:     "\n	-w	Match whole words only"
+ //usage:     "\n	-x	Match whole lines only"
+ //usage:     "\n	-F	PATTERN is a literal (not regexp)"
++//usage:     "\n        -u      Use line buffered output"
+ //usage:     "\n	-E	PATTERN is an extended regexp"
+ //usage:	IF_EXTRA_COMPAT(
+ //usage:     "\n	-z	Input is NUL terminated"
+@@ -108,7 +109,7 @@
+ 
+ /* -e,-f are lists; -m,-A,-B,-C have numeric param */
+ #define OPTSTR_GREP \
+-	"lnqvscFiHhe:*f:*Lorm:+wx" \
++	"lnqvscFiuHhe:*f:*Lorm:+wx" \
+ 	IF_FEATURE_GREP_CONTEXT("A:+B:+C:+") \
+ 	"E" \
+ 	IF_EXTRA_COMPAT("z") \
+@@ -124,6 +125,7 @@ enum {
+ 	OPTBIT_c, /* count matches per file (suppresses normal output) */
+ 	OPTBIT_F, /* literal match */
+ 	OPTBIT_i, /* case-insensitive */
++	OPTBIT_u, /* line buffered output */
+ 	OPTBIT_H, /* force filename display */
+ 	OPTBIT_h, /* inhibit filename display */
+ 	OPTBIT_e, /* -e PATTERN */
+@@ -147,6 +149,7 @@ enum {
+ 	OPT_c = 1 << OPTBIT_c,
+ 	OPT_F = 1 << OPTBIT_F,
+ 	OPT_i = 1 << OPTBIT_i,
++	OPT_u = 1 << OPTBIT_u,
+ 	OPT_H = 1 << OPTBIT_H,
+ 	OPT_h = 1 << OPTBIT_h,
+ 	OPT_e = 1 << OPTBIT_e,
+@@ -734,6 +737,8 @@ int grep_main(int argc UNUSED_PARAM, char **argv)
+ 	getopt32(argv, "^" OPTSTR_GREP "\0" "H-h:c-n:q-n:l-n:", // why trailing ":"?
+ 		&pattern_head, &fopt, &max_matches);
+ #endif
++	if ((option_mask32 & OPT_u) != 0)
++		setlinebuf(stdout);
+ 	invert_search = ((option_mask32 & OPT_v) != 0); /* 0 | 1 */
+ 
+ 	{	/* convert char **argv to grep_list_data_t */
+-- 
+2.17.0
+

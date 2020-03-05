@@ -1,0 +1,25 @@
+From 63a0fb62476f0b45bd8e05b5b11bdcd4bdcb690f Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Mon, 2 Jul 2018 16:12:04 -0700
+Subject: [PATCH 01/26] 0175
+
+---
+ networking/udhcp/common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/networking/udhcp/common.c b/networking/udhcp/common.c
+index 52ef875..feb3a55 100644
+--- a/networking/udhcp/common.c
++++ b/networking/udhcp/common.c
+@@ -36,7 +36,7 @@ const struct dhcp_optflag dhcp_optflags[] = {
+ 	{ OPTION_IP                               , 0x10 }, /* DHCP_SWAP_SERVER   */
+ 	{ OPTION_STRING                           , 0x11 }, /* DHCP_ROOT_PATH     */
+ 	{ OPTION_U8                               , 0x17 }, /* DHCP_IP_TTL        */
+-	{ OPTION_U16                              , 0x1a }, /* DHCP_MTU           */
++	{ OPTION_U16                  | OPTION_REQ, 0x1a }, /* DHCP_MTU           */
+ //TODO: why do we request DHCP_BROADCAST? Can't we assume that
+ //in the unlikely case it is different from typical N.N.255.255,
+ //server would let us know anyway?
+-- 
+2.17.0
+

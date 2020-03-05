@@ -1,0 +1,5 @@
+Package: freeradius-mod-exec
+Priority: optional
+Section: net
+Description: EXEC module for FreeRADIUS
+Depends: freeradius

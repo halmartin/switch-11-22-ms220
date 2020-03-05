@@ -1,0 +1,7 @@
+config BR2_PACKAGE_RENDERPROTO
+        prompt "renderproto.........................X rendering extension protocol"
+	tristate
+	default n
+	help
+	  X rendering extension protocol. You probably only need this if
+	  you want to install an X server.

@@ -1,0 +1,5 @@
+Package: xmlsec1
+Priority: optional
+Section: libs
+Description: XML Security Library based off libxml2
+Depends: libxml2, openssl

@@ -1,0 +1,6 @@
+Package: lighttpd-mod-access
+Priority: optional
+Section: net
+Description: a module to deny access to files for lighttpd
+Depends: lighttpd
+

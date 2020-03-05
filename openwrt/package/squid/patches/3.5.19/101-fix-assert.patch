@@ -1,0 +1,12 @@
+diff -u -r squid-3.5.12.ORIG/src/fs/ufs/StoreFSufs.h squid-3.5.12.NEW/src/fs/ufs/StoreFSufs.h
+--- squid-3.5.12.ORIG/src/fs/ufs/StoreFSufs.h	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/src/fs/ufs/StoreFSufs.h	2015-06-30 16:05:01.948009415 -0700
+@@ -84,7 +88,7 @@
+ void
+ StoreFSufs<C>::setup()
+ {
+-    assert(!initialised);
++    assert(!this->initialised);
+     initialised = true;
+ }
+

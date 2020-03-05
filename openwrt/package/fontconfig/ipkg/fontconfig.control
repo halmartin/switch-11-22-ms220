@@ -1,0 +1,5 @@
+Package: fontconfig
+Priority: optional
+Section: libs
+Depends: freetype expat
+Description: Font configuration system

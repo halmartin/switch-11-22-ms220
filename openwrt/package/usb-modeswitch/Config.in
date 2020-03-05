@@ -1,0 +1,6 @@
+config BR2_PACKAGE_USB_MODESWITCH
+	prompt   "usb-modeswitch.................... Enables modem on select USB 3G Dongles"
+	tristate
+	default n
+	depends BR2_PACKAGE_LIBUSB
+

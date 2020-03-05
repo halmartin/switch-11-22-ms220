@@ -1,0 +1,46 @@
+--- mtd-utils-1.4.1/Makefile	2014-11-13 17:34:31.150024663 -0800
++++ mtd-utils-1.4.1/Makefile	2014-11-13 17:34:58.318159382 -0800
+@@ -3,7 +3,7 @@
+ 
+ VERSION = 1.5.1
+ 
+-CPPFLAGS += -D_GNU_SOURCE -I./include -I$(BUILDDIR)/include -I./ubi-utils/include $(ZLIBCPPFLAGS) $(LZOCPPFLAGS) $(UUIDCPPFLAGS)
++CPPFLAGS += -D_GNU_SOURCE -I./include -I$(BUILDDIR)/include -I$(BUILDDIR)/ubi-utils/include $(ZLIBCPPFLAGS) $(LZOCPPFLAGS) $(UUIDCPPFLAGS)
+ 
+ ifeq ($(WITHOUT_XATTR), 1)
+   CPPFLAGS += -DWITHOUT_XATTR
+--- a/common.mk
++++ b/common.mk
+@@ -64,7 +64,7 @@ endef
+ 
+ %: %.o $(LDDEPS)
+ 	$(call BECHO,LD)
+-	$(Q)$(CC) $(CFLAGS) $(LDFLAGS) $(LDFLAGS_$(notdir $@)) -g -o $@ $^ $(LDLIBS) $(LDLIBS_$(notdir $@))
++	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(LDFLAGS_$(notdir $@)) -g -o $@ $^ $(LDLIBS) $(LDLIBS_$(notdir $@))
+ 
+ $(BUILDDIR)/%.a:
+ 	$(call BECHO,AR)
+@@ -76,7 +76,7 @@ ifneq ($(BUILDDIR),$(CURDIR))
+ 	$(Q)mkdir -p $(dir $@)
+ endif
+ 	$(call BECHO,CC)
+-	$(Q)$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $< -g -Wp,-MD,$(BUILDDIR)/.$(<F).dep
++	$(Q)$(CC) $(CPPFLAGS) $(CFLAGS) $(CPPFLAGS) -c -o $@ $< -g -Wp,-MD,$(BUILDDIR)/.$(<F).dep
+ 
+ .SUFFIXES:
+ 
+--- a/include/common.h
++++ b/include/common.h
+@@ -122,9 +122,9 @@ static inline bool prompt(const char *msg, bool def)
+ 		}
+ 
+ 		if (strcmp("\n", line) != 0) {
+-			switch (rpmatch(line)) {
+-			case 0: ret = false; break;
+-			case 1: ret = true; break;
++			switch (line[0]) {
++			case '0': case 'n': case 'N': ret = false; break;
++			case '1': case 'y': case 'Y': ret = true; break;
+ 			case -1:
+ 				puts("unknown response; please try again");
+ 				continue;

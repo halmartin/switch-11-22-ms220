@@ -1,0 +1,8 @@
+config BR2_PACKAGE_UNZIP
+	prompt "unzip............................. Archive Utility"
+	tristate
+	default n if CONFIG_DEVEL
+	help
+	  Into-ZIP version of 'unzip'.
+	  http://www.info-zip.org/
+

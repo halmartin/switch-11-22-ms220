@@ -1,0 +1,192 @@
+From e63d7be77280918fb24cffa8ab5137fb8865b928 Mon Sep 17 00:00:00 2001
+From: Abhinav Acharya <abhinav.acharya@meraki.net>
+Date: Tue, 3 Feb 2015 14:46:09 -0800
+Subject: [PATCH 1/2] no wordexp
+
+---
+ configure.in          |    2 +-
+ src/pcm/Makefile.am   |    3 +--
+ src/pcm/Makefile.in   |    7 ++-----
+ src/pcm/pcm.c         |    2 +-
+ src/pcm/pcm_symbols.c |    1 -
+ src/userfile.c        |   49 +++----------------------------------------------
+ 6 files changed, 8 insertions(+), 56 deletions(-)
+
+diff --git a/configure.in b/configure.in
+index 6a513d6..3cca098 100644
+--- a/configure.in
++++ b/configure.in
+@@ -292,7 +292,7 @@ else
+ pcm_plugins=""
+ fi
+ 
+-PCM_PLUGIN_LIST="copy linear route mulaw alaw adpcm rate plug multi shm file null share meter hooks lfloat ladspa dmix dshare dsnoop asym iec958 softvol extplug ioplug"
++PCM_PLUGIN_LIST="copy linear route mulaw alaw adpcm rate plug multi shm file null share meter hooks lfloat dmix dshare dsnoop asym iec958 softvol extplug ioplug"
+ 
+ build_pcm_plugin="no"
+ for t in $PCM_PLUGIN_LIST; do
+diff --git a/src/pcm/Makefile.am b/src/pcm/Makefile.am
+index 990ad33..c9777d7 100644
+--- a/src/pcm/Makefile.am
++++ b/src/pcm/Makefile.am
+@@ -59,7 +59,6 @@ if BUILD_PCM_PLUGIN_LFLOAT
+ libpcm_la_SOURCES += pcm_lfloat.c
+ endif
+ if BUILD_PCM_PLUGIN_LADSPA
+-libpcm_la_SOURCES += pcm_ladspa.c
+ endif
+ if BUILD_PCM_PLUGIN_DMIX
+ libpcm_la_SOURCES += pcm_dmix.c
+@@ -100,7 +99,7 @@ endif
+ EXTRA_DIST = pcm_dmix_i386.c pcm_dmix_x86_64.c pcm_dmix_generic.c
+ 
+ noinst_HEADERS = pcm_local.h pcm_plugin.h mask.h mask_inline.h \
+-	         interval.h interval_inline.h plugin_ops.h ladspa.h \
++	         interval.h interval_inline.h plugin_ops.h \
+ 		 pcm_direct.h pcm_dmix_i386.h pcm_dmix_x86_64.h \
+ 		 pcm_generic.h pcm_ext_parm.h
+ 
+diff --git a/src/pcm/Makefile.in b/src/pcm/Makefile.in
+index 5d47dd7..a40c5ce 100644
+--- a/src/pcm/Makefile.in
++++ b/src/pcm/Makefile.in
+@@ -54,7 +54,6 @@ target_triplet = @target@
+ @BUILD_PCM_PLUGIN_METER_TRUE@am__append_15 = pcm_meter.c
+ @BUILD_PCM_PLUGIN_HOOKS_TRUE@am__append_16 = pcm_hooks.c
+ @BUILD_PCM_PLUGIN_LFLOAT_TRUE@am__append_17 = pcm_lfloat.c
+-@BUILD_PCM_PLUGIN_LADSPA_TRUE@am__append_18 = pcm_ladspa.c
+ @BUILD_PCM_PLUGIN_DMIX_TRUE@am__append_19 = pcm_dmix.c
+ @BUILD_PCM_PLUGIN_DSHARE_TRUE@am__append_20 = pcm_dshare.c
+ @BUILD_PCM_PLUGIN_DSNOOP_TRUE@am__append_21 = pcm_dsnoop.c
+@@ -84,7 +83,7 @@ am__libpcm_la_SOURCES_DIST = atomic.c mask.c interval.c pcm.c \
+ 	pcm_linear.c pcm_route.c pcm_mulaw.c pcm_alaw.c pcm_adpcm.c \
+ 	pcm_rate.c pcm_rate_linear.c pcm_plug.c pcm_multi.c pcm_shm.c \
+ 	pcm_file.c pcm_null.c pcm_share.c pcm_meter.c pcm_hooks.c \
+-	pcm_lfloat.c pcm_ladspa.c pcm_dmix.c pcm_dshare.c pcm_dsnoop.c \
++	pcm_lfloat.c pcm_dmix.c pcm_dshare.c pcm_dsnoop.c \
+ 	pcm_direct.c pcm_asym.c pcm_iec958.c pcm_softvol.c \
+ 	pcm_extplug.c pcm_ioplug.c
+ @BUILD_PCM_PLUGIN_TRUE@am__objects_1 = pcm_generic.lo pcm_plugin.lo
+@@ -105,7 +104,6 @@ am__libpcm_la_SOURCES_DIST = atomic.c mask.c interval.c pcm.c \
+ @BUILD_PCM_PLUGIN_METER_TRUE@am__objects_15 = pcm_meter.lo
+ @BUILD_PCM_PLUGIN_HOOKS_TRUE@am__objects_16 = pcm_hooks.lo
+ @BUILD_PCM_PLUGIN_LFLOAT_TRUE@am__objects_17 = pcm_lfloat.lo
+-@BUILD_PCM_PLUGIN_LADSPA_TRUE@am__objects_18 = pcm_ladspa.lo
+ @BUILD_PCM_PLUGIN_DMIX_TRUE@am__objects_19 = pcm_dmix.lo
+ @BUILD_PCM_PLUGIN_DSHARE_TRUE@am__objects_20 = pcm_dshare.lo
+ @BUILD_PCM_PLUGIN_DSNOOP_TRUE@am__objects_21 = pcm_dsnoop.lo
+@@ -348,7 +346,7 @@ libpcm_la_SOURCES = atomic.c mask.c interval.c pcm.c pcm_params.c \
+ 	$(am__append_28) $(am__append_29)
+ EXTRA_DIST = pcm_dmix_i386.c pcm_dmix_x86_64.c pcm_dmix_generic.c
+ noinst_HEADERS = pcm_local.h pcm_plugin.h mask.h mask_inline.h \
+-	         interval.h interval_inline.h plugin_ops.h ladspa.h \
++	         interval.h interval_inline.h plugin_ops.h \
+ 		 pcm_direct.h pcm_dmix_i386.h pcm_dmix_x86_64.h \
+ 		 pcm_generic.h pcm_ext_parm.h
+ 
+@@ -415,7 +413,6 @@ distclean-compile:
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pcm_hw.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pcm_iec958.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pcm_ioplug.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pcm_ladspa.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pcm_lfloat.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pcm_linear.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pcm_meter.Plo@am__quote@
+diff --git a/src/pcm/pcm.c b/src/pcm/pcm.c
+index 1512592..ff74900 100644
+--- a/src/pcm/pcm.c
++++ b/src/pcm/pcm.c
+@@ -1982,7 +1982,7 @@ snd_pcm_t *snd_async_handler_get_pcm(snd_async_handler_t *handler)
+ }
+ 
+ static char *build_in_pcms[] = {
+-	"adpcm", "alaw", "copy", "dmix", "file", "hooks", "hw", "ladspa", "lfloat",
++	"adpcm", "alaw", "copy", "dmix", "file", "hooks", "hw", "lfloat",
+ 	"linear", "meter", "mulaw", "multi", "null", "plug", "rate", "route", "share",
+ 	"shm", "dsnoop", "dshare", "asym", "iec958", "softvol", NULL
+ };
+diff --git a/src/pcm/pcm_symbols.c b/src/pcm/pcm_symbols.c
+index d4f5f1b..d1107f6 100644
+--- a/src/pcm/pcm_symbols.c
++++ b/src/pcm/pcm_symbols.c
+@@ -39,7 +39,6 @@ extern const char *_snd_module_pcm_route;
+ extern const char *_snd_module_pcm_share;
+ extern const char *_snd_module_pcm_shm;
+ extern const char *_snd_module_pcm_lfloat;
+-extern const char *_snd_module_pcm_ladspa;
+ extern const char *_snd_module_pcm_dmix;
+ extern const char *_snd_module_pcm_dsnoop;
+ extern const char *_snd_module_pcm_dshare;
+diff --git a/src/userfile.c b/src/userfile.c
+index 5fb6239..d28882c 100644
+--- a/src/userfile.c
++++ b/src/userfile.c
+@@ -1,21 +1,8 @@
+ /*
+- *  Get full filename
+- *  Copyright (c) 2003 by Jaroslav Kysela <perex@suse.cz>
+- *
+- *   This library is free software; you can redistribute it and/or modify
+- *   it under the terms of the GNU Lesser General Public License as
+- *   published by the Free Software Foundation; either version 2.1 of
+- *   the License, or (at your option) any later version.
+- *
+- *   This program is distributed in the hope that it will be useful,
+- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *   GNU Lesser General Public License for more details.
+- *
+- *   You should have received a copy of the GNU Lesser General Public
+- *   License along with this library; if not, write to the Free Software
+- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ * This is a mockup of alsalib's userfile.c without its functionality but
++ * the same interface.
+  *
++ * Maybe someone, someday wants to FIXME.
+  */
+   
+ #include <config.h>
+@@ -32,35 +19,6 @@
+  * stores the first matchine one.  The returned string is strdup'ed.
+  */
+ 
+-#ifdef HAVE_WORDEXP_H
+-#include <wordexp.h>
+-#include <assert.h>
+-int snd_user_file(const char *file, char **result)
+-{
+-	wordexp_t we;
+-	int err;
+-	
+-	assert(file && result);
+-	err = wordexp(file, &we, WRDE_NOCMD);
+-	switch (err) {
+-	case WRDE_NOSPACE:
+-		return -ENOMEM;
+-	case 0:
+-		if (we.we_wordc == 1)
+-			break;
+-		/* fall thru */
+-	default:
+-		wordfree(&we);
+-		return -EINVAL;
+-	}
+-	*result = strdup(we.we_wordv[0]);
+-	if (*result == NULL)
+-		return -ENOMEM;
+-	wordfree(&we);
+-	return 0;
+-}
+-
+-#else /* !HAVE_WORDEXP_H */
+ /* just copy the string - would be nicer to expand by ourselves, though... */
+ int snd_user_file(const char *file, char **result)
+ {
+@@ -69,4 +27,3 @@ int snd_user_file(const char *file, char **result)
+ 		return -ENOMEM;
+ 	return 0;
+ }
+-#endif /* HAVE_WORDEXP_H */
+-- 
+1.7.10.4
+

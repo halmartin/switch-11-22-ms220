@@ -1,0 +1,28 @@
+commit ff4e246e05ed690832d6f3b4a6ce395d6c35bc82
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Fri Sep 16 11:06:45 2016 -0700
+
+    Fix sockaddr.c for old Meraki bluetooth stack
+
+diff --git a/sockaddr.c b/sockaddr.c
+index 412396b..c790bb8 100644
+--- a/sockaddr.c
++++ b/sockaddr.c
+@@ -192,6 +192,9 @@ print_sockaddr_data_raw(const void *const buf, const int addrlen)
+ static void
+ print_sockaddr_data_bt(const void *const buf, const int addrlen)
+ {
++	// Because Meraki uses old bluetooth stack
++	tprintf("<NEED_UPDATED_BLUEZ>");
++#if 0
+ 	switch (addrlen) {
+ 		case sizeof(struct sockaddr_hci): {
+ 			const struct sockaddr_hci *const hci = buf;
+@@ -235,6 +238,7 @@ print_sockaddr_data_bt(const void *const buf, const int addrlen)
+ 			print_sockaddr_data_raw(buf, addrlen);
+ 			break;
+ 	}
++#endif
+ }
+ #endif /* HAVE_BLUETOOTH_BLUETOOTH_H */
+ 

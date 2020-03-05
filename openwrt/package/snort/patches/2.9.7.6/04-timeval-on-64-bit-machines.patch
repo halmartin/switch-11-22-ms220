@@ -1,0 +1,17 @@
+--- a/src/output-plugins/spo_alert_unixsock.c
++++ b/src/output-plugins/spo_alert_unixsock.c
+@@ -189,8 +189,12 @@ static void AlertUnixSock(Packet *p, const char *msg, void *arg, Event *event)
+     if(p && p->pkt)
+     {
+         uint32_t snaplen = DAQ_GetSnapLen();
+-        memmove( (void *)&alertpkt.pkth, (const void *)p->pkth,
+-            sizeof(alertpkt.pkth));
++
++        alertpkt.pkth.ts.tv_sec = (uint32_t)p->pkth->ts.tv_sec;
++        alertpkt.pkth.ts.tv_usec = (uint32_t)p->pkth->ts.tv_usec;
++        alertpkt.pkth.caplen = p->pkth->caplen;
++        alertpkt.pkth.len = p->pkth->pktlen;
++
+         memmove( alertpkt.pkt, (const void *)p->pkt,
+               alertpkt.pkth.caplen > snaplen? snaplen : alertpkt.pkth.caplen);
+     }

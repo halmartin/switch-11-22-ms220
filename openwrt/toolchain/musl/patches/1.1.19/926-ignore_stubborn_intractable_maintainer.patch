@@ -1,0 +1,18 @@
+--- a/src/sched/sched_getparam.c	2018-02-22 10:39:19.000000000 -0800
++++ b/src/sched/sched_getparam.c	2018-11-01 14:33:20.142666426 -0700
+@@ -4,5 +4,5 @@
+ 
+ int sched_getparam(pid_t pid, struct sched_param *param)
+ {
+-	return __syscall_ret(-ENOSYS);
++	return syscall(SYS_sched_getparam, pid, param);
+ }
+--- a/src/sched/sched_setparam.c	2018-02-22 10:39:19.000000000 -0800
++++ b/src/sched/sched_setparam.c	2018-11-01 14:33:12.290588220 -0700
+@@ -4,5 +4,5 @@
+ 
+ int sched_setparam(pid_t pid, const struct sched_param *param)
+ {
+-	return __syscall_ret(-ENOSYS);
++	return syscall(SYS_sched_setparam, pid, param);
+ }

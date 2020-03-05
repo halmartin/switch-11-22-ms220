@@ -1,0 +1,5 @@
+Package: freeradius-mod-digest
+Priority: optional
+Section: net
+Description: DIGEST module for FreeRADIUS
+Depends: freeradius

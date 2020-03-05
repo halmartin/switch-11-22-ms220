@@ -1,0 +1,4 @@
+Package: dnscrypt-proxy
+Priority: optional
+Section: net
+Description: A tool for securing communications between a client and a DNS resolver

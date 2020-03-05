@@ -1,0 +1,7 @@
+#
+# Vitesse Semiconductor VCore-III board(s)
+#
+
+platform-$(CONFIG_VTSS_VCOREIII) += vcoreiii/
+cflags-$(CONFIG_VTSS_VCOREIII)   += -I$(srctree)/arch/mips/include/asm/mach-vcoreiii
+load-$(CONFIG_VTSS_VCOREIII)     += 0x80100000

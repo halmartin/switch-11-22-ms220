@@ -1,0 +1,4 @@
+Package: ruby-net-ssh
+Priority: optional
+Section: net
+Description: Ruby

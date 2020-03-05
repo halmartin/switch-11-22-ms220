@@ -1,0 +1,37 @@
+From 3c40e35360bb7f6c1a45ddd0f78669cbc017812b Mon Sep 17 00:00:00 2001
+From: jscoles <jscoles@meraki.com>
+Date: Wed, 30 Mar 2016 14:24:14 -0700
+Subject: [PATCH] m_segment: s/futimens/utimes/, to remove glibc dependency
+
+Reviewed-by: nat@meraki.com
+---
+ libavformat/segment.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/libavformat/segment.c b/libavformat/segment.c
+index 057a13d682..b40de27c49 100644
+--- a/libavformat/segment.c
++++ b/libavformat/segment.c
+@@ -29,8 +29,10 @@
+ #include <float.h>
+ #include <time.h>
+ #include <sys/time.h>
++#include <sys/types.h>
+ #include <fcntl.h>
+ #include <unistd.h>
++#include <utime.h>
+ 
+ #include "avformat.h"
+ #include "avio_internal.h"
+@@ -268,7 +270,7 @@ static int touch_lockfile(AVFormatContext *s, char *filename) {
+         return err;
+     }
+     // touch lockfile in case it exists
+-    if ((err = futimens(lockfd, NULL)) < 0) {
++    if ((err = utimes(filename, NULL)) < 0) {
+         av_log(s, AV_LOG_ERROR, "Failed to touch lockfile '%s': %s\n", lockfile, strerror(errno));
+         av_free(lockfile);
+         return err;
+-- 
+2.13.0
+

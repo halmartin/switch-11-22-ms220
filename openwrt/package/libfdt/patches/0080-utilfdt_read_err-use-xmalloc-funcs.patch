@@ -1,0 +1,35 @@
+From f8cb5dd94903a5cfa1609695328b8f1d5557367f Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Wed, 10 Apr 2013 14:29:06 -0400
+Subject: [PATCH 80/98] utilfdt_read_err: use xmalloc funcs
+
+We've got these handy helpers, so let's use them.
+
+Acked-by: David Gibson <David@gibson.dropbear.id.au>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ util.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/util.c b/util.c
+index b081fa8..12f0614 100644
+--- a/util.c
++++ b/util.c
+@@ -212,12 +212,12 @@ int utilfdt_read_err(const char *filename, char **buffp)
+ 	}
+ 
+ 	/* Loop until we have read everything */
+-	buf = malloc(bufsize);
++	buf = xmalloc(bufsize);
+ 	do {
+ 		/* Expand the buffer to hold the next chunk */
+ 		if (offset == bufsize) {
+ 			bufsize *= 2;
+-			buf = realloc(buf, bufsize);
++			buf = xrealloc(buf, bufsize);
+ 			if (!buf) {
+ 				ret = ENOMEM;
+ 				break;
+-- 
+1.8.1.2
+

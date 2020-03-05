@@ -1,0 +1,34 @@
+From c6fb1d239191daa3323fb6caeff56d48c4777793 Mon Sep 17 00:00:00 2001
+From: Anders Hedlund <anders.hedlund@windriver.com>
+Date: Mon, 10 Sep 2012 13:50:56 +0200
+Subject: [PATCH 62/98] libfdt: Added missing functions to shared library
+
+Some API function symbols were set as 'local' causing linking errors,
+now they are set as global (external).
+
+Signed-off-by: Anders Hedlund <anders.hedlund@windriver.com>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ libfdt/version.lds | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/libfdt/version.lds b/libfdt/version.lds
+index 3c3994e..80b322b 100644
+--- a/libfdt/version.lds
++++ b/libfdt/version.lds
+@@ -48,6 +48,12 @@ LIBFDT_1.2 {
+ 		fdt_strerror;
+ 		fdt_offset_ptr;
+ 		fdt_next_tag;
++		fdt_appendprop;
++		fdt_create_empty_tree;
++		fdt_first_property_offset;
++		fdt_get_property_by_offset;
++		fdt_getprop_by_offset;
++		fdt_next_property_offset;
+ 
+ 	local:
+ 		*;
+-- 
+1.8.1.2
+

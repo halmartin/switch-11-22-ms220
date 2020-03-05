@@ -1,0 +1,60 @@
+From d107fdfa9ac41f56ccebe65faf914ed52e5e8508 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Tue, 3 Jul 2018 09:11:33 -0700
+Subject: [PATCH 09/26] 1000
+
+---
+ Makefile | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index c38618b..92bc75b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -528,11 +528,13 @@ else
+ include/autoconf.h: ;
+ endif
+ 
++export BUSYBOX_NAME = busybox$(BUSYBOX_SUFFIX)
++
+ # The all: target is the default when no target is given on the
+ # command line.
+ # This allow a user to issue only 'make' to build a kernel including modules
+ # Defaults busybox but it is usually overridden in the arch makefile
+-all: busybox doc
++all: $(BUSYBOX_NAME) doc
+ 
+ # arch Makefile may override CC so keep this after arch Makefile is included
+ #bbox# NOSTDINC_FLAGS += -nostdinc -isystem $(shell $(CC) -print-file-name=include)
+@@ -714,16 +716,16 @@ debug_kallsyms: .tmp_map$(last_kallsyms)
+ endif # ifdef CONFIG_KALLSYMS
+ 
+ # busybox image - including updated kernel symbols
+-busybox_unstripped: $(busybox-all) FORCE
++$(BUSYBOX_NAME)_unstripped: $(busybox-all) FORCE
+ 	$(call if_changed_rule,busybox__)
+ 	$(Q)rm -f .old_version
+ 
+-busybox: busybox_unstripped
++$(BUSYBOX_NAME): $(BUSYBOX_NAME)_unstripped
+ ifeq ($(SKIP_STRIP),y)
+ 	$(Q)cp $< $@
+ else
+ 	$(Q)$(STRIP) -s --remove-section=.note --remove-section=.comment \
+-		busybox_unstripped -o $@
++		$< -o $@
+ # strip is confused by PIE executable and does not set exec bits
+ 	$(Q)chmod a+x $@
+ endif
+@@ -1233,7 +1235,7 @@ endif #ifeq ($(mixed-targets),1)
+ 
+ PHONY += checkstack
+ checkstack:
+-	$(OBJDUMP) -d busybox $$(find . -name '*.ko') | \
++	$(OBJDUMP) -d $(BUSYBOX_NAME) $$(find . -name '*.ko') | \
+ 	$(PERL) $(src)/scripts/checkstack.pl $(ARCH)
+ 
+ kernelrelease:
+-- 
+2.17.0
+

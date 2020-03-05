@@ -1,0 +1,202 @@
+From b9e80656f2de441826ed2ff1cd9c5d43b3ae43d3 Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Fri, 24 May 2013 18:04:43 +1000
+Subject: [PATCH 90/98] util: drop "long" from usage helpers
+
+Now that all utils have converted to the new usage framework, we can
+rename to just plain "usage()" and avoid naming conflicts.
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ convert-dtsv0-lexer.l |  2 +-
+ dtc.c                 |  6 +++---
+ fdtdump.c             |  2 +-
+ fdtget.c              |  6 +++---
+ fdtput.c              |  8 ++++----
+ util.c                |  6 +++---
+ util.h                | 18 +++++++++---------
+ 7 files changed, 24 insertions(+), 24 deletions(-)
+
+diff --git a/convert-dtsv0-lexer.l b/convert-dtsv0-lexer.l
+index e62d27a..8902648 100644
+--- a/convert-dtsv0-lexer.l
++++ b/convert-dtsv0-lexer.l
+@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
+ 		}
+ 	}
+ 	if (argc < 2)
+-		long_usage("missing filename");
++		usage("missing filename");
+ 
+ 	for (i = 1; i < argc; i++) {
+ 		fprintf(stderr, "Converting %s from dts v0 to dts v1\n", argv[i]);
+diff --git a/dtc.c b/dtc.c
+index d0a1f2d..e3c9653 100644
+--- a/dtc.c
++++ b/dtc.c
+@@ -186,14 +186,14 @@ int main(int argc, char *argv[])
+ 			break;
+ 
+ 		case 'h':
+-			long_usage(NULL);
++			usage(NULL);
+ 		default:
+-			long_usage("unknown option");
++			usage("unknown option");
+ 		}
+ 	}
+ 
+ 	if (argc > (optind+1))
+-		long_usage("missing files");
++		usage("missing files");
+ 	else if (argc < (optind+1))
+ 		arg = "-";
+ 	else
+diff --git a/fdtdump.c b/fdtdump.c
+index c8a3ee7..c2f16ea 100644
+--- a/fdtdump.c
++++ b/fdtdump.c
+@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
+ 		}
+ 	}
+ 	if (optind != argc - 1)
+-		long_usage("missing input filename");
++		usage("missing input filename");
+ 	file = argv[optind];
+ 
+ 	buf = utilfdt_read_len(file, &len);
+diff --git a/fdtget.c b/fdtget.c
+index 5008cc1..4377419 100644
+--- a/fdtget.c
++++ b/fdtget.c
+@@ -319,7 +319,7 @@ int main(int argc, char *argv[])
+ 		case 't':
+ 			if (utilfdt_decode_type(optarg, &disp.type,
+ 					&disp.size))
+-				long_usage("invalid type string");
++				usage("invalid type string");
+ 			break;
+ 
+ 		case 'p':
+@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
+ 	if (optind < argc)
+ 		filename = argv[optind++];
+ 	if (!filename)
+-		long_usage("missing filename");
++		usage("missing filename");
+ 
+ 	argv += optind;
+ 	argc -= optind;
+@@ -352,7 +352,7 @@ int main(int argc, char *argv[])
+ 
+ 	/* Check for node, property arguments */
+ 	if (args_per_step == 2 && (argc % 2))
+-		long_usage("must have an even number of arguments");
++		usage("must have an even number of arguments");
+ 
+ 	if (do_fdtget(&disp, filename, argv, argc, args_per_step))
+ 		return 1;
+diff --git a/fdtput.c b/fdtput.c
+index 99eb05c..fbb283a 100644
+--- a/fdtput.c
++++ b/fdtput.c
+@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
+ 		case 't':
+ 			if (utilfdt_decode_type(optarg, &disp.type,
+ 					&disp.size))
+-				long_usage("Invalid type string");
++				usage("Invalid type string");
+ 			break;
+ 
+ 		case 'v':
+@@ -339,16 +339,16 @@ int main(int argc, char *argv[])
+ 	if (optind < argc)
+ 		filename = argv[optind++];
+ 	if (!filename)
+-		long_usage("missing filename");
++		usage("missing filename");
+ 
+ 	argv += optind;
+ 	argc -= optind;
+ 
+ 	if (disp.oper == OPER_WRITE_PROP) {
+ 		if (argc < 1)
+-			long_usage("missing node");
++			usage("missing node");
+ 		if (argc < 2)
+-			long_usage("missing property");
++			usage("missing property");
+ 	}
+ 
+ 	if (do_fdtput(&disp, filename, argv, argc))
+diff --git a/util.c b/util.c
+index d9a823a..3055c16 100644
+--- a/util.c
++++ b/util.c
+@@ -393,9 +393,9 @@ void util_version(void)
+ 	exit(0);
+ }
+ 
+-void util_long_usage(const char *errmsg, const char *synopsis,
+-		     const char *short_opts, struct option const long_opts[],
+-		     const char * const opts_help[])
++void util_usage(const char *errmsg, const char *synopsis,
++		const char *short_opts, struct option const long_opts[],
++		const char * const opts_help[])
+ {
+ 	FILE *fp = errmsg ? stderr : stdout;
+ 	const char a_arg[] = "<arg>";
+diff --git a/util.h b/util.h
+index 439b2b3..7b9a840 100644
+--- a/util.h
++++ b/util.h
+@@ -189,7 +189,7 @@ void util_version(void) __attribute__((noreturn));
+  * Show usage and exit
+  *
+  * This helps standardize the output of various utils.  You most likely want
+- * to use the long_usage() helper below rather than call this.
++ * to use the usage() helper below rather than call this.
+  *
+  * @param errmsg	If non-NULL, an error message to display
+  * @param synopsis	The initial example usage text (and possible examples)
+@@ -197,9 +197,9 @@ void util_version(void) __attribute__((noreturn));
+  * @param long_opts	The structure of long options
+  * @param opts_help	An array of help strings (should align with long_opts)
+  */
+-void util_long_usage(const char *errmsg, const char *synopsis,
+-		     const char *short_opts, struct option const long_opts[],
+-		     const char * const opts_help[]) __attribute__((noreturn));
++void util_usage(const char *errmsg, const char *synopsis,
++		const char *short_opts, struct option const long_opts[],
++		const char * const opts_help[]) __attribute__((noreturn));
+ 
+ /**
+  * Show usage and exit
+@@ -209,9 +209,9 @@ void util_long_usage(const char *errmsg, const char *synopsis,
+  *
+  * @param errmsg	If non-NULL, an error message to display
+  */
+-#define long_usage(errmsg) \
+-	util_long_usage(errmsg, usage_synopsis, usage_short_opts, \
+-			usage_long_opts, usage_opts_help)
++#define usage(errmsg) \
++	util_usage(errmsg, usage_synopsis, usage_short_opts, \
++		   usage_long_opts, usage_opts_help)
+ 
+ /**
+  * Call getopt_long() with standard options
+@@ -241,8 +241,8 @@ void util_long_usage(const char *errmsg, const char *synopsis,
+ 
+ /* Helper for getopt case statements */
+ #define case_USAGE_COMMON_FLAGS \
+-	case 'h': long_usage(NULL); \
++	case 'h': usage(NULL); \
+ 	case 'V': util_version(); \
+-	case '?': long_usage("unknown option");
++	case '?': usage("unknown option");
+ 
+ #endif /* _UTIL_H */
+-- 
+1.8.1.2
+

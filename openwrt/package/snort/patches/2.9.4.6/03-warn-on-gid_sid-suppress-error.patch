@@ -1,0 +1,39 @@
+--- a/src/parser.c	2012-06-06 07:49:28.000000000 -0700
++++ b/src/parser.c	2012-09-10 11:58:22.680274753 -0700
+@@ -2393,7 +2393,7 @@
+ 
+     if (RateFilter_Create(sc->rate_filter_config,  &thdx))
+     {
+-        ParseError(ERR_CREATE);
++        ParseWarning(ERR_CREATE);
+     }
+ 
+     mSplitFree(&toks, num_toks);
+@@ -10137,15 +10137,15 @@
+     {
+         if (thdx.sig_id == 0)
+         {
+-            ParseError(ERR_CREATE_EX, "only one per gen_id != 0");
++            ParseWarning(ERR_CREATE_EX, "only one per gen_id != 0");
+         }
+         else if (thdx.gen_id == 0)
+         {
+-            ParseError(ERR_CREATE_EX, "gen_id = 0 requires sig_id = 0");
++            ParseWarning(ERR_CREATE_EX, "gen_id = 0 requires sig_id = 0");
+         }
+         else
+         {
+-            ParseError(ERR_CREATE_EX, "gen_id, sig_id must be unique");
++            ParseWarning(ERR_CREATE_EX, "gen_id, sig_id must be unique");
+         }
+     }
+ 
+@@ -10278,7 +10278,7 @@
+ 
+     if (sfthreshold_create(sc->threshold_config, &thdx))
+     {
+-        ParseError(ERR_CREATE);
++        ParseWarning(ERR_CREATE);
+     }
+ 
+     mSplitFree(&toks, num_toks);

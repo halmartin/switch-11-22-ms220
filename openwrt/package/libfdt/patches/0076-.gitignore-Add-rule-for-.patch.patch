@@ -1,0 +1,29 @@
+From d59b8078bd79a3ed0cd4bdb9bb92de4475bc1a84 Mon Sep 17 00:00:00 2001
+From: Simon Glass <sjg@chromium.org>
+Date: Mon, 21 Jan 2013 12:59:17 -0800
+Subject: [PATCH 76/98] .gitignore: Add rule for *.patch
+
+Ignore any patch files that we find, since these are likely to be
+used when sending patches upstream.
+
+Signed-off-by: Simon Glass <sjg@chromium.org>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ .gitignore | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/.gitignore b/.gitignore
+index 7cabc49..545b899 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,6 +1,7 @@
+ *.o
+ *.d
+ *.a
++*.patch
+ *.so
+ *~
+ *.tab.[ch]
+-- 
+1.8.1.2
+

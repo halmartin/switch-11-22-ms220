@@ -1,0 +1,187 @@
+From 6e3cb6016cdf2f5bb0c13442bd04d40db108a365 Mon Sep 17 00:00:00 2001
+From: "E.O. Stinson" <yostinso@gmail.com>
+Date: Fri, 12 Jun 2015 21:36:04 +0000
+Subject: [PATCH] Add m_segment_flag to create .lock file for active segment
+
+If you pass "-m_segment_flag 1", then ffmpeg will generate a companion
+.lock
+file alongside the active segment file, e.g:
+
+./ffmpeg -i <src_url> -f segment -segment_time 5 -m_segment_flag 1
+foo-%03d.mp4
+@ 0 seconds:
+  foo-000.mp4
+  foo-000.mp4.lock
+@ 5 seconds:
+  foo-000.mp4
+  foo-001.mp4
+  foo-001.mp4.lock
+
+Reviewed-by: aacharya@meraki.com
+---
+ libavformat/segment.c | 78 +++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 72 insertions(+), 6 deletions(-)
+
+diff --git a/libavformat/segment.c b/libavformat/segment.c
+index d82a5d184c..057a13d682 100644
+--- a/libavformat/segment.c
++++ b/libavformat/segment.c
+@@ -29,6 +29,8 @@
+ #include <float.h>
+ #include <time.h>
+ #include <sys/time.h>
++#include <fcntl.h>
++#include <unistd.h>
+ 
+ #include "avformat.h"
+ #include "avio_internal.h"
+@@ -99,6 +101,7 @@ typedef struct SegmentContext {
+     int use_strftime;      ///< flag to expand filename with strftime
+     int increment_tc;      ///< flag to increment timecode if found
+     int use_merakitime;    ///< flag to expand filename with strftime + add milli/microsecond support
++    int use_meraki_segment_flag; //< flag to keep a .lock file to indicate which segment file is active
+ 
+     char *times_str;       ///< segment times specification string
+     int64_t *times;        ///< list of segment interval specification
+@@ -251,7 +254,54 @@ static int set_segment_filename(AVFormatContext *s)
+     return 0;
+ }
+ 
+-static int segment_start(AVFormatContext *s, int write_header)
++static int touch_lockfile(AVFormatContext *s, char *filename) {
++    char *lockfile;
++    int lockfile_s_len, lockfd, err;
++    // create lockfile
++    lockfile_s_len = strlen(filename) + 6;
++    lockfile = av_malloc(lockfile_s_len);
++    snprintf(lockfile, lockfile_s_len, "%s.lock", filename);
++    lockfd = open(lockfile, O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK, 0644);
++    if ((err = lockfd) < 0) {
++        av_log(s, AV_LOG_ERROR, "Failed to open lockfile '%s': %s\n", lockfile, strerror(errno));
++        av_free(lockfile);
++        return err;
++    }
++    // touch lockfile in case it exists
++    if ((err = futimens(lockfd, NULL)) < 0) {
++        av_log(s, AV_LOG_ERROR, "Failed to touch lockfile '%s': %s\n", lockfile, strerror(errno));
++        av_free(lockfile);
++        return err;
++    }
++    if ((err = close(lockfd)) < 0) {
++        av_log(s, AV_LOG_ERROR, "Failed to close lockfile '%s': %s\n", lockfile, strerror(errno));
++        av_free(lockfile);
++        return err;
++    }
++
++    av_free(lockfile);
++    return 0;
++}
++
++static int unlink_lockfile(AVFormatContext *s, char *filename) {
++    char *lockfile;
++    int lockfile_s_len, err;
++    // create lockfile
++    lockfile_s_len = strlen(filename) + 6;
++    lockfile = av_malloc(lockfile_s_len);
++    snprintf(lockfile, lockfile_s_len, "%s.lock", filename);
++
++    if ((err = unlink(lockfile)) < 0) {
++        av_log(s, AV_LOG_ERROR, "Failed to unlink lockfile '%s': %s\n", lockfile, strerror(errno));
++        av_free(lockfile);
++        return err;
++    }
++
++    av_free(lockfile);
++    return 0;
++}
++
++static int segment_start(AVFormatContext *s, int write_header, int use_meraki_segment_flag)
+ {
+     SegmentContext *seg = s->priv_data;
+     AVFormatContext *oc = seg->avf;
+@@ -279,6 +329,12 @@ static int segment_start(AVFormatContext *s, int write_header)
+     if (!seg->individual_header_trailer)
+         oc->pb->seekable = 0;
+ 
++    if (use_meraki_segment_flag) {
++        if ((err = touch_lockfile(s, oc->filename)) < 0) {
++            return err;
++        }
++    }
++
+     if (oc->oformat->priv_class && oc->priv_data)
+         av_opt_set(oc->priv_data, "mpegts_flags", "+resend_headers", 0);
+ 
+@@ -366,7 +422,7 @@ static void segment_list_print_entry(AVIOContext      *list_ioctx,
+     }
+ }
+ 
+-static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
++static int segment_end(AVFormatContext *s, int write_trailer, int is_last, int use_meraki_segment_flag)
+ {
+     SegmentContext *seg = s->priv_data;
+     AVFormatContext *oc = seg->avf;
+@@ -459,6 +515,11 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
+ end:
+     ff_format_io_close(oc, &oc->pb);
+ 
++    if (use_meraki_segment_flag) {
++        // Remove lockfile
++        unlink_lockfile(s, oc->filename);
++    }
++
+     return ret;
+ }
+ 
+@@ -863,6 +924,10 @@ static int seg_write_header(AVFormatContext *s)
+             oc->pb->seekable = 0;
+     }
+ 
++    if ((ret = touch_lockfile(s, oc->filename)) < 0) {
++        return ret;
++    }
++
+     return 0;
+ }
+ 
+@@ -919,10 +984,10 @@ calc_times:
+         if (seg->cur_entry.last_duration == 0)
+             seg->cur_entry.end_time = (double)pkt->pts * av_q2d(st->time_base);
+ 
+-        if ((ret = segment_end(s, seg->individual_header_trailer, 0)) < 0)
++        if ((ret = segment_end(s, seg->individual_header_trailer, 0, seg->use_meraki_segment_flag)) < 0)
+             goto fail;
+ 
+-        if ((ret = segment_start(s, seg->individual_header_trailer)) < 0)
++        if ((ret = segment_start(s, seg->individual_header_trailer, seg->use_meraki_segment_flag)) < 0)
+             goto fail;
+ 
+         seg->cut_pending = 0;
+@@ -988,14 +1053,14 @@ static int seg_write_trailer(struct AVFormatContext *s)
+         goto fail;
+ 
+     if (!seg->write_header_trailer) {
+-        if ((ret = segment_end(s, 0, 1)) < 0)
++        if ((ret = segment_end(s, 0, 1, seg->use_meraki_segment_flag)) < 0)
+             goto fail;
+         if ((ret = open_null_ctx(&oc->pb)) < 0)
+             goto fail;
+         ret = av_write_trailer(oc);
+         close_null_ctxp(&oc->pb);
+     } else {
+-        ret = segment_end(s, 1, 1);
++        ret = segment_end(s, 1, 1, seg->use_meraki_segment_flag);
+     }
+ fail:
+     if (seg->list)
+@@ -1077,6 +1142,7 @@ static const AVOption options[] = {
+     { "increment_tc", "increment timecode between each segment", OFFSET(increment_tc), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
+     { "break_non_keyframes", "allow breaking segments on non-keyframes", OFFSET(break_non_keyframes), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
+     { "m_strftime",          "set filename expansion with strftime (+ support %LL for ms) at segment creation", OFFSET(use_merakitime), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, E },
++    { "m_segment_flag",    "create a companion segment_file.lock file to indicate which segment is being written", OFFSET(use_meraki_segment_flag), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, E },
+ 
+     { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, E },
+     { "write_header_trailer", "write a header to the first segment and a trailer to the last one", OFFSET(write_header_trailer), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, E },
+-- 
+2.13.0
+

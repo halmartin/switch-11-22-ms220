@@ -1,0 +1,29 @@
+Index: freeradius-server-2.2.5/config.sub
+===================================================================
+--- freeradius-server-2.2.5.orig/config.sub
++++ freeradius-server-2.2.5/config.sub
+@@ -4,7 +4,7 @@
+ #   2000, 2001, 2002, 2003, 2004, 2005, 2006 Free Software Foundation,
+ #   Inc.
+ 
+-timestamp='2007-11-19'
++timestamp='2017-10-19'
+ 
+ # This file is (in principle) common to ALL GNU software.
+ # The presence of a machine in this file suggests that SOME GNU software
+@@ -238,6 +238,7 @@ case $basic_machine in
+ 	# Some are omitted here because they have special meanings below.
+ 	1750a | 580 \
+ 	| a29k \
++	| aarch64 \
+ 	| alpha | alphaev[4-8] | alphaev56 | alphaev6[78] | alphapca5[67] \
+ 	| alpha64 | alpha64ev[4-8] | alpha64ev56 | alpha64ev6[78] | alpha64pca5[67] \
+ 	| am33_2.0 \
+@@ -314,6 +315,7 @@ case $basic_machine in
+ 	# Recognize the basic CPU types with company name.
+ 	580-* \
+ 	| a29k-* \
++	| aarch64-* \
+ 	| alpha-* | alphaev[4-8]-* | alphaev56-* | alphaev6[78]-* \
+ 	| alpha64-* | alpha64ev[4-8]-* | alpha64ev56-* | alpha64ev6[78]-* \
+ 	| alphapca5[67]-* | alpha64pca5[67]-* | arc-* \

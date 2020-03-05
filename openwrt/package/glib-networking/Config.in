@@ -1,0 +1,8 @@
+config BR2_PACKAGE_GLIB-NETWORKING
+	prompt "glib-networking............................. a GLIB netwroking library"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  glib-networking is a GLib module providing cross-platform networking support.
+	  Depends: glib2, gnutls, intltool
+

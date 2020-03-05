@@ -1,0 +1,4 @@
+Package: uboot-envtools
+Priority: optional
+Section: sys
+Description: Tools for modifying uboot environmental variables

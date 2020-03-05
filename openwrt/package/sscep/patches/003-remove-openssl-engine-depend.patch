@@ -1,0 +1,67 @@
+--- a/engine.c	2018-06-21 21:11:01.598495634 -0700
++++ b/engine.c	2018-06-21 23:01:08.888225903 -0700
+@@ -1,5 +1,7 @@
+ #include "engine.h"
+ 
++#ifndef OPENSSL_NO_ENGINE
++
+ ENGINE *scep_engine_init(ENGINE *e) {
+ 	
+ 
+@@ -241,3 +243,5 @@
+ 	ERR_print_errors_fp(stderr);
+ 	ERR_free_strings();
+ }
++
++#endif
+--- a/sscep.c	2018-06-21 21:11:01.602495669 -0700
++++ b/sscep.c	2018-06-21 23:05:30.402510543 -0700
+@@ -321,7 +321,12 @@
+ 
+ 	/*enable Engine Support */
+ 	if (g_flag) {
++#ifndef OPENSSL_NO_ENGINE
+ 		scep_t.e = scep_engine_init(scep_t.e);
++#else
++		fprintf(stderr, "No engine support in OpenSSL\n");
++		exit (SCEP_PKISTATUS_ERROR);
++#endif
+ 	}
+ 	
+ 	/*
+@@ -773,7 +778,11 @@
+ 			}
+ 			
+ 			if(scep_conf != NULL) {
++#ifndef OPENSSL_NO_ENGINE
+ 				sscep_engine_read_key_new(&rsa, k_char, scep_t.e);
++#else
++				read_key(&rsa, k_char);
++#endif
+ 			} else {
+ 				read_key(&rsa, k_char);
+ 			}
+@@ -787,7 +796,11 @@
+ 			if (K_flag) {
+ 				//TODO auf hwcrhk prfen?
+ 				if(scep_conf != NULL) {
++#ifndef OPENSSL_NO_ENGINE
+ 					sscep_engine_read_key_old(&renewal_key, K_char, scep_t.e);
++#else
++					read_key(&renewal_key, K_char);
++#endif
+ 				} else {
+ 					read_key(&renewal_key, K_char);
+ 				}
+--- a/sscep.h	2018-06-21 21:11:01.602495669 -0700
++++ b/sscep.h	2018-06-21 21:39:49.601594177 -0700
+@@ -49,7 +49,9 @@
+ 
+ #include <openssl/evp.h>
+ #include <openssl/bio.h>
++#ifndef OPENSSL_NO_ENGINE
+ #include <openssl/engine.h>
++#endif
+ #include <openssl/crypto.h>
+ #include <openssl/buffer.h>
+ #include <openssl/asn1.h>

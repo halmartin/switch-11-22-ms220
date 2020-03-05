@@ -1,0 +1,679 @@
+From 45013d86197fea96810a7ae1b920d22b4c887688 Mon Sep 17 00:00:00 2001
+From: Stephen Warren <swarren@nvidia.com>
+Date: Tue, 7 Aug 2012 22:50:15 -0600
+Subject: [PATCH 58/98] dtc: Add ability to delete nodes and properties
+
+dtc currently allows the contents of properties to be changed, and the
+contents of nodes to be added to. There are situations where removing
+properties or nodes may be useful. This change implements the following
+syntax to do that:
+
+    / {
+        /delete-property/ propname;
+        /delete-node/ nodename;
+    };
+
+or:
+
+    /delete-node/ &noderef;
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ checks.c                    |   8 ++-
+ dtc-lexer.l                 |  14 +++++
+ dtc-parser.y                |  21 ++++++++
+ dtc.h                       |  48 ++++++++++++++++-
+ flattree.c                  |   3 ++
+ livetree.c                  | 125 +++++++++++++++++++++++++++++++++++++++-----
+ tests/run_tests.sh          |   4 ++
+ tests/test_tree1.dts        |  37 +------------
+ tests/test_tree1_body.dtsi  |  36 +++++++++++++
+ tests/test_tree1_delete.dts |  68 ++++++++++++++++++++++++
+ 10 files changed, 312 insertions(+), 52 deletions(-)
+ create mode 100644 tests/test_tree1_body.dtsi
+ create mode 100644 tests/test_tree1_delete.dts
+
+diff --git a/checks.c b/checks.c
+index 9061237..ee96a25 100644
+--- a/checks.c
++++ b/checks.c
+@@ -256,11 +256,15 @@ static void check_duplicate_property_names(struct check *c, struct node *dt,
+ {
+ 	struct property *prop, *prop2;
+ 
+-	for_each_property(node, prop)
+-		for (prop2 = prop->next; prop2; prop2 = prop2->next)
++	for_each_property(node, prop) {
++		for (prop2 = prop->next; prop2; prop2 = prop2->next) {
++			if (prop2->deleted)
++				continue;
+ 			if (streq(prop->name, prop2->name))
+ 				FAIL(c, "Duplicate property name %s in %s",
+ 				     prop->name, node->fullpath);
++		}
++	}
+ }
+ NODE_ERROR(duplicate_property_names, NULL);
+ 
+diff --git a/dtc-lexer.l b/dtc-lexer.l
+index 4715f31..91c4930 100644
+--- a/dtc-lexer.l
++++ b/dtc-lexer.l
+@@ -103,6 +103,20 @@ static int pop_input_file(void);
+ 			return DT_BITS;
+ 		}
+ 
++<*>"/delete-property/"	{
++			DPRINT("Keyword: /delete-property/\n");
++			DPRINT("<PROPNODENAME>\n");
++			BEGIN(PROPNODENAME);
++			return DT_DEL_PROP;
++		}
++
++<*>"/delete-node/"	{
++			DPRINT("Keyword: /delete-node/\n");
++			DPRINT("<PROPNODENAME>\n");
++			BEGIN(PROPNODENAME);
++			return DT_DEL_NODE;
++		}
++
+ <*>{LABEL}:	{
+ 			DPRINT("Label: %s\n", yytext);
+ 			yylval.labelref = xstrdup(yytext);
+diff --git a/dtc-parser.y b/dtc-parser.y
+index 6d5c2c2..f412460 100644
+--- a/dtc-parser.y
++++ b/dtc-parser.y
+@@ -62,6 +62,8 @@ static unsigned char eval_char_literal(const char *s);
+ %token DT_MEMRESERVE
+ %token DT_LSHIFT DT_RSHIFT DT_LE DT_GE DT_EQ DT_NE DT_AND DT_OR
+ %token DT_BITS
++%token DT_DEL_PROP
++%token DT_DEL_NODE
+ %token <propnodename> DT_PROPNODENAME
+ %token <literal> DT_LITERAL
+ %token <literal> DT_CHAR_LITERAL
+@@ -153,6 +155,17 @@ devicetree:
+ 				print_error("label or path, '%s', not found", $2);
+ 			$$ = $1;
+ 		}
++	| devicetree DT_DEL_NODE DT_REF ';'
++		{
++			struct node *target = get_node_by_ref($1, $3);
++
++			if (!target)
++				print_error("label or path, '%s', not found", $3);
++			else
++				delete_node(target);
++
++			$$ = $1;
++		}
+ 	;
+ 
+ nodedef:
+@@ -182,6 +195,10 @@ propdef:
+ 		{
+ 			$$ = build_property($1, empty_data);
+ 		}
++	| DT_DEL_PROP DT_PROPNODENAME ';'
++		{
++			$$ = build_property_delete($2);
++		}
+ 	| DT_LABEL propdef
+ 		{
+ 			add_label(&$2->labels, $1);
+@@ -440,6 +457,10 @@ subnode:
+ 		{
+ 			$$ = name_node($2, $1);
+ 		}
++	| DT_DEL_NODE DT_PROPNODENAME ';'
++		{
++			$$ = name_node(build_node_delete(), $2);
++		}
+ 	| DT_LABEL subnode
+ 		{
+ 			add_label(&$2->labels, $1);
+diff --git a/dtc.h b/dtc.h
+index 7ee2d54..d501c86 100644
+--- a/dtc.h
++++ b/dtc.h
+@@ -128,11 +128,13 @@ int data_is_one_string(struct data d);
+ 
+ /* Live trees */
+ struct label {
++	int deleted;
+ 	char *label;
+ 	struct label *next;
+ };
+ 
+ struct property {
++	int deleted;
+ 	char *name;
+ 	struct data val;
+ 
+@@ -142,6 +144,7 @@ struct property {
+ };
+ 
+ struct node {
++	int deleted;
+ 	char *name;
+ 	struct property *proplist;
+ 	struct node *children;
+@@ -158,28 +161,71 @@ struct node {
+ 	struct label *labels;
+ };
+ 
++static inline struct label *for_each_label_next(struct label *l)
++{
++	do {
++		l = l->next;
++	} while (l && l->deleted);
++
++	return l;
++}
++
+ #define for_each_label(l0, l) \
++	for ((l) = (l0); (l); (l) = for_each_label_next(l))
++
++#define for_each_label_withdel(l0, l) \
+ 	for ((l) = (l0); (l); (l) = (l)->next)
+ 
++static inline struct property *for_each_property_next(struct property *p)
++{
++	do {
++		p = p->next;
++	} while (p && p->deleted);
++
++	return p;
++}
++
+ #define for_each_property(n, p) \
++	for ((p) = (n)->proplist; (p); (p) = for_each_property_next(p))
++
++#define for_each_property_withdel(n, p) \
+ 	for ((p) = (n)->proplist; (p); (p) = (p)->next)
+ 
+-#define for_each_child(n, c)	\
++static inline struct node *for_each_child_next(struct node *c)
++{
++	do {
++		c = c->next_sibling;
++	} while (c && c->deleted);
++
++	return c;
++}
++
++#define for_each_child(n, c) \
++	for ((c) = (n)->children; (c); (c) = for_each_child_next(c))
++
++#define for_each_child_withdel(n, c) \
+ 	for ((c) = (n)->children; (c); (c) = (c)->next_sibling)
+ 
+ void add_label(struct label **labels, char *label);
++void delete_labels(struct label **labels);
+ 
+ struct property *build_property(char *name, struct data val);
++struct property *build_property_delete(char *name);
+ struct property *chain_property(struct property *first, struct property *list);
+ struct property *reverse_properties(struct property *first);
+ 
+ struct node *build_node(struct property *proplist, struct node *children);
++struct node *build_node_delete(void);
+ struct node *name_node(struct node *node, char *name);
+ struct node *chain_node(struct node *first, struct node *list);
+ struct node *merge_nodes(struct node *old_node, struct node *new_node);
+ 
+ void add_property(struct node *node, struct property *prop);
++void delete_property_by_name(struct node *node, char *name);
++void delete_property(struct property *prop);
+ void add_child(struct node *parent, struct node *child);
++void delete_node_by_name(struct node *parent, char *name);
++void delete_node(struct node *node);
+ 
+ const char *get_unitname(struct node *node);
+ struct property *get_property(struct node *node, const char *propname);
+diff --git a/flattree.c b/flattree.c
+index 28d0b23..665dad7 100644
+--- a/flattree.c
++++ b/flattree.c
+@@ -263,6 +263,9 @@ static void flatten_tree(struct node *tree, struct emitter *emit,
+ 	struct node *child;
+ 	int seen_name_prop = 0;
+ 
++	if (tree->deleted)
++		return;
++
+ 	emit->beginnode(etarget, tree->labels);
+ 
+ 	if (vi->flags & FTF_FULLPATH)
+diff --git a/livetree.c b/livetree.c
+index c9209d5..e856662 100644
+--- a/livetree.c
++++ b/livetree.c
+@@ -29,9 +29,11 @@ void add_label(struct label **labels, char *label)
+ 	struct label *new;
+ 
+ 	/* Make sure the label isn't already there */
+-	for_each_label(*labels, new)
+-		if (streq(new->label, label))
++	for_each_label_withdel(*labels, new)
++		if (streq(new->label, label)) {
++			new->deleted = 0;
+ 			return;
++		}
+ 
+ 	new = xmalloc(sizeof(*new));
+ 	new->label = label;
+@@ -39,6 +41,14 @@ void add_label(struct label **labels, char *label)
+ 	*labels = new;
+ }
+ 
++void delete_labels(struct label **labels)
++{
++	struct label *label;
++
++	for_each_label(*labels, label)
++		label->deleted = 1;
++}
++
+ struct property *build_property(char *name, struct data val)
+ {
+ 	struct property *new = xmalloc(sizeof(*new));
+@@ -51,6 +61,18 @@ struct property *build_property(char *name, struct data val)
+ 	return new;
+ }
+ 
++struct property *build_property_delete(char *name)
++{
++	struct property *new = xmalloc(sizeof(*new));
++
++	memset(new, 0, sizeof(*new));
++
++	new->name = name;
++	new->deleted = 1;
++
++	return new;
++}
++
+ struct property *chain_property(struct property *first, struct property *list)
+ {
+ 	assert(first->next == NULL);
+@@ -91,6 +113,17 @@ struct node *build_node(struct property *proplist, struct node *children)
+ 	return new;
+ }
+ 
++struct node *build_node_delete(void)
++{
++	struct node *new = xmalloc(sizeof(*new));
++
++	memset(new, 0, sizeof(*new));
++
++	new->deleted = 1;
++
++	return new;
++}
++
+ struct node *name_node(struct node *node, char *name)
+ {
+ 	assert(node->name == NULL);
+@@ -106,8 +139,10 @@ struct node *merge_nodes(struct node *old_node, struct node *new_node)
+ 	struct node *new_child, *old_child;
+ 	struct label *l;
+ 
++	old_node->deleted = 0;
++
+ 	/* Add new node labels to old node */
+-	for_each_label(new_node->labels, l)
++	for_each_label_withdel(new_node->labels, l)
+ 		add_label(&old_node->labels, l->label);
+ 
+ 	/* Move properties from the new node to the old node.  If there
+@@ -118,14 +153,21 @@ struct node *merge_nodes(struct node *old_node, struct node *new_node)
+ 		new_node->proplist = new_prop->next;
+ 		new_prop->next = NULL;
+ 
++		if (new_prop->deleted) {
++			delete_property_by_name(old_node, new_prop->name);
++			free(new_prop);
++			continue;
++		}
++
+ 		/* Look for a collision, set new value if there is */
+-		for_each_property(old_node, old_prop) {
++		for_each_property_withdel(old_node, old_prop) {
+ 			if (streq(old_prop->name, new_prop->name)) {
+ 				/* Add new labels to old property */
+-				for_each_label(new_prop->labels, l)
++				for_each_label_withdel(new_prop->labels, l)
+ 					add_label(&old_prop->labels, l->label);
+ 
+ 				old_prop->val = new_prop->val;
++				old_prop->deleted = 0;
+ 				free(new_prop);
+ 				new_prop = NULL;
+ 				break;
+@@ -146,8 +188,14 @@ struct node *merge_nodes(struct node *old_node, struct node *new_node)
+ 		new_child->parent = NULL;
+ 		new_child->next_sibling = NULL;
+ 
++		if (new_child->deleted) {
++			delete_node_by_name(old_node, new_child->name);
++			free(new_child);
++			continue;
++		}
++
+ 		/* Search for a collision.  Merge if there is */
+-		for_each_child(old_node, old_child) {
++		for_each_child_withdel(old_node, old_child) {
+ 			if (streq(old_child->name, new_child->name)) {
+ 				merge_nodes(old_child, new_child);
+ 				new_child = NULL;
+@@ -188,6 +236,25 @@ void add_property(struct node *node, struct property *prop)
+ 	*p = prop;
+ }
+ 
++void delete_property_by_name(struct node *node, char *name)
++{
++	struct property *prop = node->proplist;
++
++	while (prop) {
++		if (!strcmp(prop->name, name)) {
++			delete_property(prop);
++			return;
++		}
++		prop = prop->next;
++	}
++}
++
++void delete_property(struct property *prop)
++{
++	prop->deleted = 1;
++	delete_labels(&prop->labels);
++}
++
+ void add_child(struct node *parent, struct node *child)
+ {
+ 	struct node **p;
+@@ -202,6 +269,32 @@ void add_child(struct node *parent, struct node *child)
+ 	*p = child;
+ }
+ 
++void delete_node_by_name(struct node *parent, char *name)
++{
++	struct node *node = parent->children;
++
++	while (node) {
++		if (!strcmp(node->name, name)) {
++			delete_node(node);
++			return;
++		}
++		node = node->next_sibling;
++	}
++}
++
++void delete_node(struct node *node)
++{
++	struct property *prop;
++	struct node *child;
++
++	node->deleted = 1;
++	for_each_child(node, child)
++		delete_node(child);
++	for_each_property(node, prop)
++		delete_property(prop);
++	delete_labels(&node->labels);
++}
++
+ struct reserve_info *build_reserve_entry(uint64_t address, uint64_t size)
+ {
+ 	struct reserve_info *new = xmalloc(sizeof(*new));
+@@ -353,8 +446,11 @@ struct node *get_node_by_path(struct node *tree, const char *path)
+ 	const char *p;
+ 	struct node *child;
+ 
+-	if (!path || ! (*path))
++	if (!path || ! (*path)) {
++		if (tree->deleted)
++			return NULL;
+ 		return tree;
++	}
+ 
+ 	while (path[0] == '/')
+ 		path++;
+@@ -397,8 +493,11 @@ struct node *get_node_by_phandle(struct node *tree, cell_t phandle)
+ 
+ 	assert((phandle != 0) && (phandle != -1));
+ 
+-	if (tree->phandle == phandle)
++	if (tree->phandle == phandle) {
++		if (tree->deleted)
++			return NULL;
+ 		return tree;
++	}
+ 
+ 	for_each_child(tree, child) {
+ 		node = get_node_by_phandle(child, phandle);
+@@ -535,7 +634,7 @@ static void sort_properties(struct node *node)
+ 	int n = 0, i = 0;
+ 	struct property *prop, **tbl;
+ 
+-	for_each_property(node, prop)
++	for_each_property_withdel(node, prop)
+ 		n++;
+ 
+ 	if (n == 0)
+@@ -543,7 +642,7 @@ static void sort_properties(struct node *node)
+ 
+ 	tbl = xmalloc(n * sizeof(*tbl));
+ 
+-	for_each_property(node, prop)
++	for_each_property_withdel(node, prop)
+ 		tbl[i++] = prop;
+ 
+ 	qsort(tbl, n, sizeof(*tbl), cmp_prop);
+@@ -571,7 +670,7 @@ static void sort_subnodes(struct node *node)
+ 	int n = 0, i = 0;
+ 	struct node *subnode, **tbl;
+ 
+-	for_each_child(node, subnode)
++	for_each_child_withdel(node, subnode)
+ 		n++;
+ 
+ 	if (n == 0)
+@@ -579,7 +678,7 @@ static void sort_subnodes(struct node *node)
+ 
+ 	tbl = xmalloc(n * sizeof(*tbl));
+ 
+-	for_each_child(node, subnode)
++	for_each_child_withdel(node, subnode)
+ 		tbl[i++] = subnode;
+ 
+ 	qsort(tbl, n, sizeof(*tbl), cmp_subnode);
+@@ -598,7 +697,7 @@ static void sort_node(struct node *node)
+ 
+ 	sort_properties(node);
+ 	sort_subnodes(node);
+-	for_each_child(node, c)
++	for_each_child_withdel(node, c)
+ 		sort_node(c);
+ }
+ 
+diff --git a/tests/run_tests.sh b/tests/run_tests.sh
+index f5eebd6..e2158f7 100755
+--- a/tests/run_tests.sh
++++ b/tests/run_tests.sh
+@@ -367,6 +367,10 @@ dtc_tests () {
+     run_dtc_test -I dts -O dtb -o dtc_tree1_merge_path.test.dtb test_tree1_merge_path.dts
+     tree1_tests dtc_tree1_merge_path.test.dtb test_tree1.dtb
+ 
++    # Check prop/node delete functionality
++    run_dtc_test -I dts -O dtb -o dtc_tree1_delete.test.dtb test_tree1_delete.dts
++    tree1_tests dtc_tree1_delete.test.dtb
++
+     # Check some checks
+     check_tests dup-nodename.dts duplicate_node_names
+     check_tests dup-propname.dts duplicate_property_names
+diff --git a/tests/test_tree1.dts b/tests/test_tree1.dts
+index cf530ce..c7b170c 100644
+--- a/tests/test_tree1.dts
++++ b/tests/test_tree1.dts
+@@ -1,38 +1,3 @@
+ /dts-v1/;
+ 
+-/memreserve/ 0xdeadbeef00000000 0x100000;
+-/memreserve/ 123456789 010000;
+-
+-/ {
+-	compatible = "test_tree1";
+-	prop-int = <0xdeadbeef>;
+-	prop-int64 = /bits/ 64 <0xdeadbeef01abcdef>;
+-	prop-str = "hello world";
+-
+-	subnode@1 {
+-		compatible = "subnode1";
+-		prop-int = [deadbeef];
+-
+-		subsubnode {
+-			compatible = "subsubnode1", "subsubnode";
+-			prop-int = <0xdeadbeef>;
+-		};
+-
+-		ss1 {
+-		};
+-	};
+-
+-	subnode@2 {
+-		linux,phandle = <0x2000>;
+-		prop-int = <123456789>;
+-
+-		ssn0: subsubnode@0 {
+-			phandle = <0x2001>;
+-			compatible = "subsubnode2", "subsubnode";
+-			prop-int = <0726746425>;
+-		};
+-
+-		ss2 {
+-		};
+-	};
+-};
++/include/ "test_tree1_body.dtsi"
+diff --git a/tests/test_tree1_body.dtsi b/tests/test_tree1_body.dtsi
+new file mode 100644
+index 0000000..1446191
+--- /dev/null
++++ b/tests/test_tree1_body.dtsi
+@@ -0,0 +1,36 @@
++/memreserve/ 0xdeadbeef00000000 0x100000;
++/memreserve/ 123456789 010000;
++
++/ {
++	compatible = "test_tree1";
++	prop-int = <0xdeadbeef>;
++	prop-int64 = /bits/ 64 <0xdeadbeef01abcdef>;
++	prop-str = "hello world";
++
++	subnode@1 {
++		compatible = "subnode1";
++		prop-int = [deadbeef];
++
++		subsubnode {
++			compatible = "subsubnode1", "subsubnode";
++			prop-int = <0xdeadbeef>;
++		};
++
++		ss1 {
++		};
++	};
++
++	subnode@2 {
++		linux,phandle = <0x2000>;
++		prop-int = <123456789>;
++
++		ssn0: subsubnode@0 {
++			phandle = <0x2001>;
++			compatible = "subsubnode2", "subsubnode";
++			prop-int = <0726746425>;
++		};
++
++		ss2 {
++		};
++	};
++};
+diff --git a/tests/test_tree1_delete.dts b/tests/test_tree1_delete.dts
+new file mode 100644
+index 0000000..a2f1bfd
+--- /dev/null
++++ b/tests/test_tree1_delete.dts
+@@ -0,0 +1,68 @@
++/dts-v1/;
++
++/include/ "test_tree1_body.dtsi"
++
++/ {
++	nonexistant-property = <0xdeadbeef>;
++
++	nonexistant-subnode {
++		prop-int = <1>;
++	};
++
++	dellabel: deleted-by-label {
++		prop-int = <1>;
++	};
++
++	subnode@1 {
++		delete-this-str = "deadbeef";
++	};
++
++};
++
++/ {
++	/delete-property/ nonexistant-property;
++
++	/delete-node/ nonexistant-subnode;
++
++	subnode@1 {
++		/delete-property/ delete-this-str;
++	};
++};
++
++/delete-node/ &dellabel;
++
++/ {
++	/delete-property/ prop-str;
++};
++
++/ {
++	prop-str = "hello world";
++};
++
++/ {
++	subnode@1 {
++		/delete-node/ ss1;
++	};
++};
++
++/ {
++	subnode@1 {
++		ss1 {
++		};
++	};
++};
++
++/{
++	duplabel1: foo1 = "bar";
++	duplabel2: foo2 = "bar";
++};
++
++/{
++	duplabel1: baz1 = "qux";
++	duplabel2: baz2 = "qux";
++};
++
++/{
++	/delete-property/ foo1;
++	/delete-property/ baz2;
++};
+-- 
+1.8.1.2
+

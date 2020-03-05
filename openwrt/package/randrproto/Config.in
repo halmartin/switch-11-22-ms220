@@ -1,0 +1,7 @@
+config BR2_PACKAGE_RANDRPROTO
+        prompt "randrproto..........................X rotate and resize extension protocol"
+	tristate
+	default n
+	help
+	  X rotate and resize extension protocol. You probably only need
+	  this if you want to install an X server.

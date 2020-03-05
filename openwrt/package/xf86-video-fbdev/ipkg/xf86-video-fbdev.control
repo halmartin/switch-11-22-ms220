@@ -1,0 +1,5 @@
+Package: xf86-video-fbdev
+Priority: optional
+Section: x11
+Depends: xorg-server
+Description: xf86 frame buffer driver

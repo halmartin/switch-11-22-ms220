@@ -1,0 +1,29 @@
+From bb21f0a766056114e4d9336324b4c294f640d9d1 Mon Sep 17 00:00:00 2001
+From: Simon Glass <sjg@chromium.org>
+Date: Tue, 10 Jul 2012 05:56:44 -0700
+Subject: [PATCH 52/98] fdtput: Fix nit in help message
+
+There was an extra < in the help message, so fix it.
+
+Signed-off-by: Simon Glass <sjg@chromium.org>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ fdtput.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fdtput.c b/fdtput.c
+index f6ebd24..244d1f1 100644
+--- a/fdtput.c
++++ b/fdtput.c
+@@ -162,7 +162,7 @@ static const char *usage_msg =
+ 	"The command line arguments are joined together into a single value.\n"
+ 	"\n"
+ 	"Usage:\n"
+-	"	fdtput <options> <dt file> <<node> <property> [<value>...]\n"
++	"	fdtput <options> <dt file> <node> <property> [<value>...]\n"
+ 	"Options:\n"
+ 	"\t-t <type>\tType of data\n"
+ 	"\t-v\t\tVerbose: display each value decoded from command line\n"
+-- 
+1.8.1.2
+

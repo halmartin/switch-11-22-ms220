@@ -1,0 +1,39 @@
+From 414bdf0ae268a224ef6f63cd6d2e7055e6eb434c Mon Sep 17 00:00:00 2001
+From: Ethan Everett <eeverett@meraki.com>
+Date: Fri, 30 Nov 2018 18:40:17 -0800
+Subject: [PATCH] no strip
+
+---
+ clients/tools/Makefile.in | 2 +-
+ servers/slapd/Makefile.in | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/clients/tools/Makefile.in b/clients/tools/Makefile.in
+index f7f1689..6f2981a 100644
+--- a/clients/tools/Makefile.in
++++ b/clients/tools/Makefile.in
+@@ -120,7 +120,7 @@ install-local:	FORCE
+ 	-$(MKDIR) $(DESTDIR)$(bindir)
+ 	@(								\
+ 	    for prg in $(PROGRAMS); do					\
+-		$(LTINSTALL) $(INSTALLFLAGS) $(STRIP) -m 755 $$prg$(EXEEXT)	\
++		$(LTINSTALL) $(INSTALLFLAGS) -m 755 $$prg$(EXEEXT)	\
+ 		    $(DESTDIR)$(bindir);				\
+ 	    done							\
+ 	)
+diff --git a/servers/slapd/Makefile.in b/servers/slapd/Makefile.in
+index 36d51e2..0c02577 100644
+--- a/servers/slapd/Makefile.in
++++ b/servers/slapd/Makefile.in
+@@ -378,7 +378,7 @@ install-local-srv: install-slapd install-tools \
+ install-slapd: FORCE
+ 	-$(MKDIR) $(DESTDIR)$(libexecdir)
+ 	-$(MKDIR) $(DESTDIR)$(localstatedir)/run
+-	$(LTINSTALL) $(INSTALLFLAGS) $(STRIP) -m 755 \
++	$(LTINSTALL) $(INSTALLFLAGS) -m 755 \
+ 		slapd$(EXEEXT) $(DESTDIR)$(libexecdir)
+ 	@for i in $(SUBDIRS); do \
+ 	    if test -d $$i && test -f $$i/Makefile ; then \
+-- 
+2.18.0
+

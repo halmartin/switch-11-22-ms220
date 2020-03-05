@@ -1,0 +1,32 @@
+From 1d81a1a38233fbfce3ead8b8780692f52810f4ba Mon Sep 17 00:00:00 2001
+From: Brian Malehorn <bmalehorn@gmail.com>
+Date: Fri, 7 Jul 2017 17:46:54 -0700
+Subject: [PATCH] newlines, not carriage returns
+
+Always output on a newline, never use carriage returns. This make
+the log files much nicer, since "less" doesn't understand carriage
+returns.
+
+On 2.8.6 we had a patch that did this conditionally based on whether or
+not stdout was a tty. But in this version of ffmpeg, it would be awkward
+to do that same detection.
+---
+ ffmpeg.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ffmpeg.c b/ffmpeg.c
+index 4b4dae47fe..9163c79fc9 100644
+--- a/ffmpeg.c
++++ b/ffmpeg.c
+@@ -1809,7 +1809,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
+     }
+ 
+     if (print_stats || is_last_report) {
+-        const char end = is_last_report ? '\n' : '\r';
++        const char end = '\n';
+         if (print_stats==1 && AV_LOG_INFO > av_log_get_level()) {
+             fprintf(stderr, "%s    %c", buf, end);
+         } else
+-- 
+2.13.0
+

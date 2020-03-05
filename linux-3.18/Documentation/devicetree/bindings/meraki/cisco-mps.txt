@@ -1,0 +1,31 @@
+Bindings for Cisco Modular Power Supply driver
+
+This is a platform device driver.
+
+Required properties:
+- compatible : "meraki,cisco-mps"
+- id : Unique identifier used in the userspace endpoint's filename
+    for the device
+- reg-names : Addresses for devices on the i2c bus
+    - "control-i2c" for address of the power control device
+    - "data-i2c" for eeprom device
+- power_good : Power_Good GPIO pin. Specify the gpio-controller
+    devicetree node, then the pin number, then GPIO_ACTIVE_HIGH
+    or GPIO_ACTIVE_LOW.
+- present : PS_Present GPIO pin. Specify the gpio-controller
+    devicetree node, then the pin number, then GPIO_ACTIVE_HIGH
+    or GPIO_ACTIVE_LOW
+-i2c : Reference to the i2c bus on which the power control and
+    eeprom devices live.
+
+Examples:
+
+	psu1 {
+		id = <1>;
+		compatible = "meraki,cisco-mps";
+		power_good = <&gpio_chip4 9 GPIO_ACTIVE_HIGH>;
+		present = <&gpio_chip4 11 GPIO_ACTIVE_HIGH>;
+		reg-names = "control-i2c", "data-i2c";
+		reg = <0x5a 1>, <0x52 1>;
+		i2c = <&i2c0>;
+	};

@@ -1,0 +1,43 @@
+diff --git a/src/racoon/isakmp_ident.c b/src/racoon/isakmp_ident.c
+index a9c3a01..c9a9653 100644
+--- a/src/racoon/isakmp_ident.c
++++ b/src/racoon/isakmp_ident.c
+@@ -1749,6 +1749,9 @@ ident_ir3mx(iph1)
+ 	vchar_t *gsstoken = NULL;
+ 	vchar_t *gsshash = NULL;
+ #endif
++#ifdef ENABLE_DPD
++	vchar_t *vid_dpd = NULL;
++#endif
+ 
+ 	switch (iph1->approval->authmethod) {
+ 	case OAKLEY_ATTR_AUTH_METHOD_PSKEY:
+@@ -1844,6 +1847,17 @@ ident_ir3mx(iph1)
+ 		goto end;
+ 	}
+ 
++        /* send DPD vendor ID if we are the responder */
++#ifdef ENABLE_DPD
++        if (iph1->side == RESPONDER && iph1->dpd_support) {
++            vid_dpd = set_vendorid(VENDORID_DPD);
++            if (vid_dpd != NULL) {
++                plist = isakmp_plist_append(plist, vid_dpd, ISAKMP_NPTYPE_VID);
++                plog(LLV_DEBUG, LOCATION, NULL, "sending DPD vendor ID\n");
++            }
++        }
++#endif
++
+ 	buf = isakmp_plist_set_all (&plist, iph1);
+ 
+ #ifdef HAVE_PRINT_ISAKMP_C
+@@ -1866,6 +1880,10 @@ end:
+ 	if (gsstoken)
+ 		vfree(gsstoken);
+ #endif
++#ifdef ENABLE_DPD
++	if (vid_dpd != NULL)
++		vfree(vid_dpd);
++#endif
+ 	if (error && buf != NULL) {
+ 		vfree(buf);
+ 		buf = NULL;

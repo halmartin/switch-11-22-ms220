@@ -1,0 +1,39 @@
+From 81f11f4f109cc16e1ec31a85c222a1caabea5654 Mon Sep 17 00:00:00 2001
+From: David Gibson <david@gibson.dropbear.id.au>
+Date: Fri, 3 Feb 2012 16:12:00 +1100
+Subject: [PATCH 22/98] Update .gitignore for tests
+
+We've add some test (generated) binaries that aren't currently listed in
+.gitignore, in addition more scripts now generate various tmp.* files
+during operation.  This adds them all to .gitignore.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ tests/.gitignore | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/tests/.gitignore b/tests/.gitignore
+index 9e062c3..0b71bcf 100644
+--- a/tests/.gitignore
++++ b/tests/.gitignore
+@@ -1,7 +1,9 @@
+ *.dtb
+ *.dtb.test.dts
+ *.dts.test.s
++tmp.*
+ /add_subnode_with_nops
++/appendprop[12]
+ /asm_tree_dump
+ /boot-cpuid
+ /char_literal
+@@ -46,6 +48,7 @@
+ /supernode_atdepth_offset
+ /sw_tree1
+ /truncated_property
++/utilfdt_test
+ /value-labels
+ /dtb_reverse
+ /dtbs_equal_unordered
+-- 
+1.8.1.2
+

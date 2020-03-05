@@ -1,0 +1,7 @@
+config BR2_PACKAGE_CONNTRACK
+	prompt "conntrack......................... Linux conntrack utility"
+	tristate
+	default m if CONFIG_DEVEL
+	depends BR2_PACKAGE_LIBNETFILTER_CONNTRACK
+	help
+      linux conntrack package.

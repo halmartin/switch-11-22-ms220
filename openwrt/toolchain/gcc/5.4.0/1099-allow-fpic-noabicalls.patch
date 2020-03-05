@@ -1,0 +1,61 @@
+commit b400e24bdcfef0458e89500126a2cf02809709f1
+Author: James Parks <james.parks@meraki.net>
+Date:   Wed Nov 5 15:21:22 2014 -0800
+
+    Revert "2012-08-04  Sandra Loosemore  <sandra@codesourcery.com>"
+    
+    This reverts commit 2ea5a0786149c6a9faba9fdf3575af66db9902e6.
+    
+    Conflicts:
+    	gcc/ChangeLog
+    	gcc/testsuite/ChangeLog
+
+:100644 100644 252e828... 69f4420... M	gcc/config/mips/mips.c
+:100644 100644 88bd6ad... 36c8588... M	gcc/testsuite/g++.dg/lto/20090303_0.C
+:100644 100644 40a496e... 6300896... M	gcc/testsuite/g++.dg/opt/enum2.C
+
+diff --git a/gcc/config/mips/mips.c b/gcc/config/mips/mips.c
+index 252e828..69f4420 100644
+--- a/gcc/config/mips/mips.c
++++ b/gcc/config/mips/mips.c
+@@ -16614,16 +16614,6 @@ mips_option_override (void)
+       target_flags &= ~MASK_ABICALLS;
+     }
+ 
+-  /* PIC requires -mabicalls.  */
+-  if (flag_pic)
+-    {
+-      if (mips_abi == ABI_EABI)
+-	error ("cannot generate position-independent code for %qs",
+-	       "-mabi=eabi");
+-      else if (!TARGET_ABICALLS)
+-	error ("position-independent code requires %qs", "-mabicalls");
+-    }
+-
+   if (TARGET_ABICALLS_PIC2)
+     /* We need to set flag_pic for executables as well as DSOs
+        because we may reference symbols that are not defined in
+diff --git a/gcc/testsuite/g++.dg/lto/20090303_0.C b/gcc/testsuite/g++.dg/lto/20090303_0.C
+index 88bd6ad..36c8588 100644
+--- a/gcc/testsuite/g++.dg/lto/20090303_0.C
++++ b/gcc/testsuite/g++.dg/lto/20090303_0.C
+@@ -1,5 +1,4 @@
+ /* { dg-lto-do run } */
+-/* { dg-require-effective-target fpic } */
+ /* { dg-lto-options {{-flto -flto-partition=1to1 -fPIC}} } */
+ /* { dg-lto-options {{-flto -flto-partition=1to1}} { target sparc*-*-* } } */
+ /* { dg-suppress-ld-options {-fPIC} }  */
+diff --git a/gcc/testsuite/g++.dg/opt/enum2.C b/gcc/testsuite/g++.dg/opt/enum2.C
+index 40a496e..6300896 100644
+--- a/gcc/testsuite/g++.dg/opt/enum2.C
++++ b/gcc/testsuite/g++.dg/opt/enum2.C
+@@ -1,8 +1,8 @@
+ // PR c++/43680
+ // Test that we don't make excessively aggressive assumptions about what
+ // values an enum variable can have.
+-// { dg-do run { target fpic } }
+ // { dg-options "-O2 -fPIC" }
++// { dg-do run }
+ 
+ extern "C" void abort ();
+ 

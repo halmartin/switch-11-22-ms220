@@ -1,0 +1,7 @@
+config BR2_PACKAGE_LVM2
+	prompt "lvm2......................... lvm2
+	tristate
+	default m if CONFIG_DEVEL
+	help
+          lvm2
+

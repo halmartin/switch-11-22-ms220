@@ -1,0 +1,18 @@
+diff -Naur --exclude '*~' origpppd/pppd/plugins/pppol2tp/pppol2tp.c newpppd/pppd/plugins/pppol2tp/pppol2tp.c
+--- origpppd/pppd/plugins/pppol2tp/pppol2tp.c	2012-02-16 15:00:39.000000000 -0800
++++ newpppd/pppd/plugins/pppol2tp/pppol2tp.c	2012-02-21 17:57:02.000000000 -0800
+@@ -500,14 +500,6 @@
+ 
+ void plugin_init(void)
+ {
+-#if defined(__linux__)
+-	extern int new_style_driver;	/* From sys-linux.c */
+-	if (!ppp_available() && !new_style_driver)
+-		fatal("Kernel doesn't support ppp_generic - "
+-		    "needed for PPPoL2TP");
+-#else
+-	fatal("No PPPoL2TP support on this OS");
+-#endif
+ 	add_options(pppol2tp_options);
+ }
+ 

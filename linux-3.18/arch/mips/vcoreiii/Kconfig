@@ -1,0 +1,101 @@
+config VTSS_VCOREIII_JAGUAR_EVAL
+	bool "Support Vitesse Semiconductor VCore-III Jaguar board"
+	depends on VTSS_VCOREIII_EVAL
+	select VTSS_VCOREIII_JAGUAR
+	help
+	  This enables support for the Jaguar-based Vitesse Semiconductor
+	  VCore-III evaluation board(s).
+
+config VTSS_VCOREIII_JAGUAR_DUAL
+       bool "Support Dual Jaguar chips"
+       depends on VTSS_VCOREIII_JAGUAR
+       help
+         This enables support for dual-Jaguar configurations.
+
+config VTSS_VCOREIII_JAGUAR_DUAL_PI_TIMEOUT
+       bool "Timeout on slave chip communication failure"
+       depends on VTSS_VCOREIII_JAGUAR_DUAL
+       help
+         This option adds logic that prevents the CPU from hanging
+         when an attempt to communicate with a slave chip fails. If
+         unsure, say Y here.
+
+config VTSS_VCOREIII_LUTON26_EVAL
+	bool "Support Vitesse Semiconductor VCore-III Luton26 board"
+	depends on VTSS_VCOREIII_EVAL
+	select VTSS_VCOREIII_LUTON26
+	help
+	  This enables support for the Luton26-based Vitesse Semiconductor
+	  VCore-III evaluation board(s).
+
+config VTSS_VCOREIII
+       bool
+
+config VTSS_VCOREIII_JAGUAR
+       bool
+
+config VTSS_VCOREIII_LUTON26
+       bool
+
+choice
+	prompt "Kernel binary format"
+	depends on VTSS_VCOREIII
+	help
+	  Select the binary format for the produced kernel. The
+	  value selected depends on the boot loader being used.
+
+config BOOT_ELF32
+       bool "Generate an Elf-32 format kernel image"
+       help
+         Create a Elf-32 format kernel image. This image is
+	 suitable for the RedBoot and Das U-Boot boot loaders,
+	 among others.
+
+config BOOT_ROM_LOADER
+       bool "Generate a self-loading ROM image"
+       help
+         Create an image suitable for direct programming into
+	 ROM/FLASH.
+endchoice
+
+config BOOT_ROM_LOADER
+       bool
+
+config BOOT_ROM_LOADER_PAYLOAD_OFFSET
+       hex "Offset from ROM start to image payload"
+       depends on BOOT_ROM_LOADER
+       default "0x00040000"
+       help
+         This is the offset in the ROM in which the payload, i.e.
+	 the linux kernel image, will reside. The recommended
+	 value is the size of an erase block on the flash, which
+	 will allow for the payload to be updated independently of
+	 the loader. Note that this is the offset from the start
+	 of the ROM, not the start of the loader or the ROM physical
+	 address.
+
+config VTSS_VCOREIII_PHY8512_GPIO
+       tristate "Generic GPIO on the Vitesse 8512 PHY"
+       depends on VTSS_VCOREIII && GPIOLIB
+       help
+         This is a GPIO driver for the VSC8512 PHY. This includes
+	 drivers for the PHY via GPIOLIB. To be useful, the platform
+	 must explicitly declare the existence of VSC8512 PHYs and
+	 their MDIO address.
+
+config VTSS_VCOREIII_PHY8488_GPIO
+       tristate "Generic GPIO on the Vitesse 8488 PHY"
+       depends on VTSS_VCOREIII && GPIOLIB
+       help
+         This is a GPIO driver for the VSC8488 PHY. This includes
+	 drivers for the PHY via GPIOLIB. To be useful, the platform
+	 must explicitly declare the existence of VSC8488 PHYs and
+	 their MDIO address.
+
+config VTSS_VCOREIII_SGPIO
+       tristate "Generic GPIO on the VCore-III SGPIO"
+       depends on VTSS_VCOREIII && GPIOLIB
+       help
+         This is a GPIO driver for the serial GPIO controllers
+	 (including the serial LED controllers) on the Luton and
+	 Jaguar chip families.

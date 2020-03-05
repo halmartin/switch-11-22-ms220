@@ -1,0 +1,4 @@
+Package: patch
+Priority: optional
+Section: util
+Description: GNU Patch

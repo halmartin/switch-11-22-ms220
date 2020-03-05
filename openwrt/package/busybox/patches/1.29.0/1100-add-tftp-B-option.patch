@@ -1,0 +1,151 @@
+From cf2b89ce47ead1d28dafcdf395eb5cc96d62361f Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Tue, 3 Jul 2018 10:23:39 -0700
+Subject: [PATCH 13/26] 1100
+
+---
+ networking/tftp.c | 52 ++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 33 insertions(+), 19 deletions(-)
+
+diff --git a/networking/tftp.c b/networking/tftp.c
+index 4cd3918..81b04e4 100644
+--- a/networking/tftp.c
++++ b/networking/tftp.c
+@@ -95,6 +95,7 @@
+ //usage:       "Transfer a file from/to tftp server\n"
+ //usage:     "\n	-l FILE	Local FILE"
+ //usage:     "\n	-r FILE	Remote FILE"
++//usage:     "\n	-B Broadcast TFTP is allowed"
+ //usage:	IF_FEATURE_TFTP_GET(
+ //usage:     "\n	-g	Get file"
+ //usage:	)
+@@ -156,8 +157,9 @@
+ 
+ /* masks coming from getopt32 */
+ enum {
+-	TFTP_OPT_GET = (1 << 0),
+-	TFTP_OPT_PUT = (1 << 1),
++	TFTP_OPT_BROADCAST = (1 << 0),
++	TFTP_OPT_GET = (1 << 1),
++	TFTP_OPT_PUT = (1 << 2),
+ 	/* pseudo option: if set, it's tftpd */
+ 	TFTPD_OPT = (1 << 7) * ENABLE_TFTPD,
+ 	TFTPD_OPT_r = (1 << 8) * ENABLE_TFTPD,
+@@ -168,12 +170,12 @@ enum {
+ 
+ #if ENABLE_FEATURE_TFTP_GET && !ENABLE_FEATURE_TFTP_PUT
+ #define IF_GETPUT(...)
+-#define CMD_GET(cmd) 1
++#define CMD_GET(cmd) (1 << 1)
+ #define CMD_PUT(cmd) 0
+ #elif !ENABLE_FEATURE_TFTP_GET && ENABLE_FEATURE_TFTP_PUT
+ #define IF_GETPUT(...)
+ #define CMD_GET(cmd) 0
+-#define CMD_PUT(cmd) 1
++#define CMD_PUT(cmd) (1 << 1)
+ #else
+ #define IF_GETPUT(...) __VA_ARGS__
+ #define CMD_GET(cmd) ((cmd) & TFTP_OPT_GET)
+@@ -294,6 +296,7 @@ static int tftp_protocol(
+ 		/* NULL if tftp, !NULL if tftpd: */
+ 		len_and_sockaddr *our_lsa,
+ 		len_and_sockaddr *peer_lsa,
++		int broadcast_allowed,
+ 		const char *local_file
+ 		IF_TFTP(, const char *remote_file)
+ #if !ENABLE_TFTP
+@@ -331,7 +334,9 @@ static int tftp_protocol(
+ 
+ 	socket_fd = xsocket(peer_lsa->u.sa.sa_family, SOCK_DGRAM, 0);
+ 	setsockopt_reuseaddr(socket_fd);
+-
++	setsockopt(socket_fd, SOL_SOCKET, SO_BROADCAST,
++		   (void *)&broadcast_allowed,
++		   sizeof(broadcast_allowed));
+ 	if (!ENABLE_TFTP || our_lsa) { /* tftpd */
+ 		/* Create a socket which is:
+ 		 * 1. bound to IP:port peer sent 1st datagram to,
+@@ -580,14 +585,20 @@ static int tftp_protocol(
+ 		case 1:
+ 			if (!our_lsa) {
+ 				/* tftp (not tftpd!) receiving 1st packet */
+-				our_lsa = ((void*)(ptrdiff_t)-1); /* not NULL */
++
+ 				len = recvfrom(socket_fd, rbuf, io_bufsize, 0,
+ 						&peer_lsa->u.sa, &peer_lsa->len);
+ 				/* Our first dgram went to port 69
+ 				 * but reply may come from different one.
+ 				 * Remember and use this new port (and IP) */
+-				if (len >= 0)
++				if (len >= 4) {
++					opcode = ntohs( ((uint16_t*)rbuf)[0] );
++					if ((opcode == TFTP_ERROR) && broadcast_allowed) {
++						goto recv_again;
++					}
+ 					xconnect(socket_fd, &peer_lsa->u.sa, peer_lsa->len);
++					our_lsa = ((void*)(ptrdiff_t)-1); /* not NULL */
++				}
+ 			} else {
+ 				/* tftpd, or not the very first packet:
+ 				 * socket is connect()ed, can just read from it. */
+@@ -758,19 +769,20 @@ int tftp_main(int argc UNUSED_PARAM, char **argv)
+ # endif
+ 	int result;
+ 	int port;
+-	IF_GETPUT(int opt;)
++	int broadcast_allowed;
++	int opt;
+ 
+ 	INIT_G();
+ 
+-	IF_GETPUT(opt =) getopt32(argv, "^"
+-			IF_FEATURE_TFTP_GET("g") IF_FEATURE_TFTP_PUT("p")
+-			"l:r:" IF_FEATURE_TFTP_BLOCKSIZE("b:")
+-			"\0"
+-			/* -p or -g is mandatory, and they are mutually exclusive */
+-			IF_FEATURE_TFTP_GET("g:") IF_FEATURE_TFTP_PUT("p:")
+-			IF_GETPUT("g--p:p--g:"),
+-			&local_file, &remote_file
+-			IF_FEATURE_TFTP_BLOCKSIZE(, &blksize_str)
++	opt = getopt32(argv, "^" "B"
++		       IF_FEATURE_TFTP_GET("g") IF_FEATURE_TFTP_PUT("p")
++		       "l:r:" IF_FEATURE_TFTP_BLOCKSIZE("b:")
++		       "\0"
++		       /* -p or -g is mandatory, and they are mutually exclusive */
++		       IF_FEATURE_TFTP_GET("g:") IF_FEATURE_TFTP_PUT("p:")
++		       IF_GETPUT("g--p:p--g:"),
++		       &local_file, &remote_file
++		       IF_FEATURE_TFTP_BLOCKSIZE(, &blksize_str)
+ 	);
+ 	argv += optind;
+ 
+@@ -784,6 +796,8 @@ int tftp_main(int argc UNUSED_PARAM, char **argv)
+ 	}
+ # endif
+ 
++	broadcast_allowed = ((opt & TFTP_OPT_BROADCAST) != 0);
++
+ 	if (remote_file) {
+ 		if (!local_file) {
+ 			const char *slash = strrchr(remote_file, '/');
+@@ -810,7 +824,7 @@ int tftp_main(int argc UNUSED_PARAM, char **argv)
+ 	G.file = remote_file;
+ # endif
+ 	result = tftp_protocol(
+-		NULL /*our_lsa*/, peer_lsa,
++		NULL /*our_lsa*/, peer_lsa, broadcast_allowed,
+ 		local_file, remote_file
+ 		IF_FEATURE_TFTP_BLOCKSIZE(, 1 /* want_transfer_size */)
+ 		IF_FEATURE_TFTP_BLOCKSIZE(, blksize)
+@@ -946,7 +960,7 @@ int tftpd_main(int argc UNUSED_PARAM, char **argv)
+ 	close(STDIN_FILENO); /* close old, possibly wildcard socket */
+ 	/* tftp_protocol() will create new one, bound to particular local IP */
+ 	result = tftp_protocol(
+-		our_lsa, peer_lsa,
++		our_lsa, peer_lsa, FALSE,
+ 		local_file IF_TFTP(, NULL /*remote_file*/)
+ 		IF_FEATURE_TFTP_BLOCKSIZE(, want_transfer_size)
+ 		IF_FEATURE_TFTP_BLOCKSIZE(, blksize)
+-- 
+2.17.0
+

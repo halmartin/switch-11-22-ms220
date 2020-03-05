@@ -1,0 +1,80 @@
+From 4adbb5336b0eed99f30c852d9dcf3cd125cae921 Mon Sep 17 00:00:00 2001
+From: David Gibson <david@gibson.dropbear.id.au>
+Date: Fri, 1 Jun 2012 14:12:36 +1000
+Subject: [PATCH 45/98] Remove test_tree1_dts0 testcases
+
+The testcases based on test_tree1_dts0.dts were added purely to test dtc's
+backwards compatibility handling of the old dts-v0 format.  Since that
+support has been removed, the dts has been updated to use the current
+dts-v1 syntax, which makes the testcases pass, but be completely useless.
+
+This patch removes the now obsolete testcases.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ tests/run_tests.sh        |  4 ----
+ tests/test_tree1_dts0.dts | 37 -------------------------------------
+ 2 files changed, 41 deletions(-)
+ delete mode 100644 tests/test_tree1_dts0.dts
+
+diff --git a/tests/run_tests.sh b/tests/run_tests.sh
+index ab8133c..9a2a7d9 100755
+--- a/tests/run_tests.sh
++++ b/tests/run_tests.sh
+@@ -254,10 +254,6 @@ dtc_tests () {
+     tree1_tests_rw dtc_tree1.test.dtb
+     run_test dtbs_equal_ordered dtc_tree1.test.dtb test_tree1.dtb
+ 
+-    run_dtc_test -I dts -O dtb -o dtc_tree1_dts0.test.dtb test_tree1_dts0.dts
+-    tree1_tests dtc_tree1_dts0.test.dtb
+-    tree1_tests_rw dtc_tree1_dts0.test.dtb
+-
+     run_dtc_test -I dts -O dtb -o dtc_escapes.test.dtb escapes.dts
+     run_test string_escapes dtc_escapes.test.dtb
+ 
+diff --git a/tests/test_tree1_dts0.dts b/tests/test_tree1_dts0.dts
+deleted file mode 100644
+index 032d540..0000000
+--- a/tests/test_tree1_dts0.dts
++++ /dev/null
+@@ -1,37 +0,0 @@
+-/dts-v1/;
+-
+-/memreserve/ 0xdeadbeef00000000 0x0000000000100000;
+-/memreserve/ 0x00000000075bcd15 0x0000000000001000;
+-
+-/ {
+-	compatible = "test_tree1";
+-	prop-int = <0xdeadbeef>;
+-	prop-str = "hello world";
+-
+-	subnode@1 {
+-		compatible = "subnode1";
+-		prop-int = [deadbeef];
+-
+-		subsubnode {
+-			compatible = "subsubnode1", "subsubnode";
+-			prop-int = < 0xdeadbeef>;
+-		};
+-
+-		ss1 {
+-		};
+-	};
+-
+-	subnode@2 {
+-		linux,phandle = <0x2000>;
+-		prop-int = < 123456789>;
+-
+-		subsubnode@0 {
+-			linux,phandle = <0x2001>;
+-			compatible = "subsubnode2", "subsubnode";
+-			prop-int = < 0726746425>;
+-		};
+-
+-		ss2 {
+-		};
+-	};
+-};
+-- 
+1.8.1.2
+

@@ -1,0 +1,88 @@
+Common subdirectories: memtester-4.2.2-orig//ipkg and memtester-4.2.2//ipkg
+diff -u memtester-4.2.2-orig//memtester.c memtester-4.2.2//memtester.c
+--- memtester-4.2.2-orig//memtester.c	2011-07-24 10:46:31.000000000 -0700
++++ memtester-4.2.2//memtester.c	2011-12-20 11:02:51.851212731 -0800
+@@ -23,6 +23,7 @@
+ #include <unistd.h>
+ #include <fcntl.h>
+ #include <errno.h>
++#include <string.h>
+ 
+ #include "types.h"
+ #include "sizes.h"
+@@ -100,7 +101,7 @@
+ 
+ /* Function definitions */
+ void usage(char *me) {
+-    fprintf(stderr, "\nUsage: %s [-p physaddrbase] <mem>[B|K|M|G] [loops]\n", me);
++    fprintf(stderr, "\nUsage: %s [-p physaddrbase] [-t \"test name\"] <mem>[B|K|M|G] [loops]\n", me);
+     exit(EXIT_FAIL_NONSTARTER);
+ }
+ 
+@@ -108,7 +109,7 @@
+     ul loops, loop, i;
+     size_t pagesize, wantraw, wantmb, wantbytes, wantbytes_orig, bufsize,
+          halflen, count;
+-    char *memsuffix, *addrsuffix, *loopsuffix;
++    char *memsuffix, *addrsuffix, *loopsuffix, *run_only_this_test = 0;
+     ptrdiff_t pagesizemask;
+     void volatile *buf, *aligned;
+     ulv *bufa, *bufb;
+@@ -127,7 +128,7 @@
+     pagesizemask = (ptrdiff_t) ~(pagesize - 1);
+     printf("pagesizemask is 0x%tx\n", pagesizemask);
+ 
+-    while ((opt = getopt(argc, argv, "p:")) != -1) {
++    while ((opt = getopt(argc, argv, "p:t:")) != -1) {
+         switch (opt) {
+             case 'p':
+                 errno = 0;
+@@ -154,6 +155,9 @@
+                 /* okay, got address */
+                 use_phys = 1;
+                 break;
++            case 't':
++                run_only_this_test = optarg;
++                break;
+             default: /* '?' */
+                 usage(argv[0]); /* doesn't return */
+         }
+@@ -323,22 +327,26 @@
+             printf("/%lu", loops);
+         }
+         printf(":\n");
+-        printf("  %-20s: ", "Stuck Address");
+-        fflush(stdout);
+-        if (!test_stuck_address(aligned, bufsize / sizeof(ul))) {
+-             printf("ok\n");
+-        } else {
+-            exit_code |= EXIT_FAIL_ADDRESSLINES;
++        if (!run_only_this_test || 0 == strcmp(run_only_this_test, "Stuck Address")) {
++            printf("  %-20s: ", "Stuck Address");
++            fflush(stdout);
++            if (!test_stuck_address(aligned, bufsize / sizeof(ul))) {
++                printf("ok\n");
++            } else {
++                exit_code |= EXIT_FAIL_ADDRESSLINES;
++            }
+         }
+         for (i=0;;i++) {
+             if (!tests[i].name) break;
+-            printf("  %-20s: ", tests[i].name);
+-            if (!tests[i].fp(bufa, bufb, count)) {
+-                printf("ok\n");
+-            } else {
+-                exit_code |= EXIT_FAIL_OTHERTEST;
++            if (!run_only_this_test || 0 == strcmp(run_only_this_test, tests[i].name)) {
++                printf("  %-20s: ", tests[i].name);
++                if (!tests[i].fp(bufa, bufb, count)) {
++                    printf("ok\n");
++                } else {
++                    exit_code |= EXIT_FAIL_OTHERTEST;
++                }
++                fflush(stdout);
+             }
+-            fflush(stdout);
+         }
+         printf("\n");
+         fflush(stdout);

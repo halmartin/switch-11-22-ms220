@@ -1,0 +1,4 @@
+Package: ffmpeg
+Priority: optional
+Section: net
+Description: Record, convert, and stream video.

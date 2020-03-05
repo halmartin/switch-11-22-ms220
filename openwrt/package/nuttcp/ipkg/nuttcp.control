@@ -1,0 +1,4 @@
+Package: nuttcp
+Priority: optional
+Section: net
+Description: A program to performance test tcp/udp

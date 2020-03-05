@@ -1,0 +1,52 @@
+commit 14878296aa8171d2d559e779a5a9e2d09660f32a
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Sun Oct 16 22:50:43 2016 -0700
+
+    support musl
+
+diff --git a/libbridge/libbridge.h b/libbridge/libbridge.h
+index 20d5bb5..18d97da 100644
+--- a/libbridge/libbridge.h
++++ b/libbridge/libbridge.h
+@@ -21,6 +21,8 @@
+ 
+ #include <net/if.h>
+ #include <linux/if_bridge.h>
++#include <sys/time.h>
++#include <stdint.h>
+ 
+ struct bridge_id
+ {
+@@ -39,7 +41,7 @@ struct bridge_info
+ 	struct timeval bridge_max_age;
+ 	struct timeval bridge_hello_time;
+ 	struct timeval bridge_forward_delay;
+-	u_int16_t root_port;
++	uint16_t root_port;
+ 	unsigned char stp_enabled;
+ 	unsigned char topology_change;
+ 	unsigned char topology_change_detected;
+@@ -52,8 +54,8 @@ struct bridge_info
+ 
+ struct fdb_entry
+ {
+-	u_int8_t mac_addr[6];
+-	u_int16_t port_no;
++	uint8_t mac_addr[6];
++	uint16_t port_no;
+ 	unsigned char is_local;
+ 	struct timeval ageing_timer_value;
+ };
+@@ -63,9 +65,9 @@ struct port_info
+ 	unsigned port_no;
+ 	struct bridge_id designated_root;
+ 	struct bridge_id designated_bridge;
+-	u_int16_t port_id;
+-	u_int16_t designated_port;
+-	u_int8_t priority;
++	uint16_t port_id;
++	uint16_t designated_port;
++	uint8_t priority;
+ 	unsigned char top_change_ack;
+ 	unsigned char config_pending;
+ 	unsigned char state;

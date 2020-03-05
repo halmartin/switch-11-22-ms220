@@ -1,0 +1,5 @@
+Package: ppp-mod-l2tp
+Priority: optional
+Section: net
+Description: an L2TP plugin for PPP
+Depends: ppp

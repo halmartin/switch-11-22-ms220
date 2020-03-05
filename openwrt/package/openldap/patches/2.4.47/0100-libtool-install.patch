@@ -1,0 +1,68 @@
+From 8335fcb46791b4a2f41536fcf1805c52f235d81b Mon Sep 17 00:00:00 2001
+From: Ethan Everett <eeverett@meraki.com>
+Date: Fri, 30 Nov 2018 17:10:02 -0800
+Subject: [PATCH] libtool install
+
+---
+ build/ltmain.sh | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/build/ltmain.sh b/build/ltmain.sh
+index a4e64c8..c800d7d 100755
+--- a/build/ltmain.sh
++++ b/build/ltmain.sh
+@@ -2572,15 +2572,15 @@ EOF
+ 	    # Hardcode the library path.
+ 	    # Skip directories that are in the system default run-time
+ 	    # search path.
+-	    case " $sys_lib_dlsearch_path " in
+-	    *" $absdir "*) ;;
+-	    *)
+-	      case "$compile_rpath " in
+-	      *" $absdir "*) ;;
+-	      *) compile_rpath="$compile_rpath $absdir"
+-	      esac
+-	      ;;
+-	    esac
++	    #case " $sys_lib_dlsearch_path " in
++	    #*" $absdir "*) ;;
++	    #*)
++	    #  case "$compile_rpath " in
++	    #  *" $absdir "*) ;;
++	    #  *) compile_rpath="$compile_rpath $absdir"
++	    #  esac
++	    #  ;;
++	    #esac
+ 	    case " $sys_lib_dlsearch_path " in
+ 	    *" $libdir "*) ;;
+ 	    *)
+@@ -4872,7 +4872,7 @@ static const void *lt_preloaded_setup() {
+       if test "$hardcode_action" = relink; then
+ 	# Fast installation is not supported
+ 	link_command="$compile_var$compile_command$compile_rpath"
+-	relink_command="$finalize_var$finalize_command$finalize_rpath"
++	relink_command="$finalize_var$finalize_command$finalize_c"
+ 
+ 	$echo "$modename: warning: this platform does not like uninstalled shared libraries" 1>&2
+ 	$echo "$modename: \`$output' will be relinked during installation" 1>&2
+@@ -5980,7 +5980,7 @@ relink_command=\"$relink_command\""
+ 	test "X$dir" = "X$file/" && dir=
+ 	dir="$dir$objdir"
+ 
+-	if test -n "$relink_command"; then
++	if test "$fast_install" = no && test -n "$relink_command"; then
+ 	  # Determine the prefix the user has applied to our future dir.
+ 	  inst_prefix_dir=`$echo "$destdir" | $SED "s%$libdir\$%%"`
+ 
+@@ -6019,7 +6019,7 @@ relink_command=\"$relink_command\""
+ 	  shift
+ 
+ 	  srcname="$realname"
+-	  test -n "$relink_command" && srcname="$realname"T
++	  test "$fast_install" = no && test -n "$relink_command" && srcname="$realname"T
+ 
+ 	  # Install the shared library and build the symlinks.
+ 	  $show "$install_prog $dir/$srcname $destdir/$realname"
+-- 
+2.18.0
+

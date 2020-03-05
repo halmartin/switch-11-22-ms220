@@ -1,0 +1,8 @@
+config BR2_PACKAGE_XCMISCPROTO
+        prompt "xcmiscproto........................ XCMisc extension headers"
+	tristate
+	default n
+	help
+	  XCMisc extension headers. You probably only want this if you
+	  install an X server.
+

@@ -1,0 +1,26 @@
+From 9cf26ffa4a9dfa477971f989dcd7392bedbaaaed Mon Sep 17 00:00:00 2001
+From: David Gibson <david@gibson.dropbear.id.au>
+Date: Fri, 3 Feb 2012 16:12:01 +1100
+Subject: [PATCH 23/98] Add quilt files to .gitignore
+
+For the benefit of quilt users (such as myself, sometimes) have git
+ignore the quilt control and patches files.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ .gitignore | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/.gitignore b/.gitignore
+index 5074980..7cabc49 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -12,3 +12,5 @@ lex.yy.c
+ /version_gen.h
+ /fdtget
+ /fdtput
++/patches
++/.pc
+-- 
+1.8.1.2
+

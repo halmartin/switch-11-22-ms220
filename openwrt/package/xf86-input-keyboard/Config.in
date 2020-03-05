@@ -1,0 +1,7 @@
+config BR2_PACKAGE_XF86_INPUT_KEYBOARD
+	prompt "xf86-input-keyboard................ X server keyboard input driver"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  X window server keyboard driver. You probably only need this
+	  if you are building an X server.

@@ -1,0 +1,17 @@
+config BR2_PACKAGE_FREESWITCH
+	prompt "freeswitch.............................. FreeSWITCH open source telephony platform"
+	tristate
+	default n if CONFIG_DEVEL
+	select BR2_PACKAGE_LIBNCURSES
+	select BR2_PACKAGE_LIBPCRE
+	select BR2_PACKAGE_LIBREADLINE
+	select BR2_PACKAGE_LIBPTHREAD
+	select BR2_PACKAGE_LIBGNUTLS
+	select BR2_PACKAGE_LIBSPEEX
+	select BR2_PACKAGE_LIBSPEEXDSP
+	select BR2_PACKAGE_LIBUUID
+	select BR2_PACKAGE_LIBJPEG
+	select BR2_PACKAGE_SQLITE3
+	select BR2_PACKAGE_LIBCURL
+	help
+    FreeSWITCH is an open source telephony platform designed to facilitate the creation of voice and chat driven products scaling from a soft-phone up to a soft-switch.  It can be used as a simple switching engine, a PBX, a media gateway or a media server to host IVR applications using simple scripts or XML to control the callflow. 

@@ -1,0 +1,4 @@
+Package: pam-ldap
+Section: net
+Priority: optional
+Description: pam_ldap

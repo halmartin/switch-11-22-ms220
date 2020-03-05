@@ -1,0 +1,22 @@
+commit c26b5e069102fa3a863a5f80a75e43cd92f88a91
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Fri Sep 30 18:39:36 2016 -0700
+
+    Fix for GCC 5
+    
+    Adding this attribute preserves C89 semantics for inlines.  Otherwise
+    compiler errors ensue with GCC 5.
+
+diff --git a/glib.h b/glib.h
+index 84ee794..ab0ecbf 100644
+--- a/glib.h
++++ b/glib.h
+@@ -205,7 +205,7 @@ extern "C" {
+ #ifndef G_INLINE_FUNC
+ #  ifdef __GNUC__
+ #    ifdef __OPTIMIZE__
+-#      define G_INLINE_FUNC extern inline
++#      define G_INLINE_FUNC extern inline __attribute__ ((__gnu_inline__))
+ #    else
+ #      undef G_CAN_INLINE
+ #      define G_INLINE_FUNC extern

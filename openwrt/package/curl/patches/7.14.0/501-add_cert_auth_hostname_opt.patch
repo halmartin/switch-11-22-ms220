@@ -1,0 +1,141 @@
+diff -u -r curl-7.14.0/include/curl/curl.h curl-7.14.0-xyu/include/curl/curl.h
+--- curl-7.14.0/include/curl/curl.h	2008-09-17 11:34:46.000000000 -0700
++++ curl-7.14.0-xyu/include/curl/curl.h	2008-09-17 15:31:37.000000000 -0700
+@@ -890,6 +890,9 @@
+      "account" info */
+   CINIT(FTP_ACCOUNT, OBJECTPOINT, 134),
+
++  /* The hostname used to check the server certificate */
++  CINIT(AUTH_HOSTNAME, OBJECTPOINT, 135),
++
+   CURLOPT_LASTENTRY /* the last unused */
+ } CURLoption;
+
+diff -u -r curl-7.14.0/lib/sslgen.c curl-7.14.0-xyu/lib/sslgen.c
+--- curl-7.14.0/lib/sslgen.c	2008-09-17 11:34:46.000000000 -0700
++++ curl-7.14.0-xyu/lib/sslgen.c	2008-09-17 13:31:44.000000000 -0700
+@@ -110,6 +110,12 @@
+     if(!dest->CApath)
+       return FALSE;
+   }
++
++  if(source->Cauth_hostname) {
++    dest->Cauth_hostname = strdup(source->Cauth_hostname);
++    if(!dest->Cauth_hostname)
++      return FALSE;
++  }
+
+   if(source->cipher_list) {
+     dest->cipher_list = strdup(source->cipher_list);
+@@ -140,6 +146,9 @@
+   if(sslc->CApath)
+     free(sslc->CApath);
+
++  if(sslc->Cauth_hostname)
++    free(sslc->Cauth_hostname);
++
+   if(sslc->cipher_list)
+     free(sslc->cipher_list);
+
+diff -u -r curl-7.14.0/lib/ssluse.c curl-7.14.0-xyu/lib/ssluse.c
+--- curl-7.14.0/lib/ssluse.c	2008-09-17 15:30:05.000000000 -0700
++++ curl-7.14.0-xyu/lib/ssluse.c	2008-09-17 15:34:25.000000000 -0700
+@@ -979,10 +979,13 @@
+         infof(data, "\t common name: WARNING couldn't obtain\n");
+       }
+     }
+-    else if(!cert_hostcheck((const char *)peer_CN, conn->host.name)) {
++    else if(!cert_hostcheck((const char *)peer_CN, conn->host.name) &&
++            (conn->ssl_config.Cauth_hostname == NULL ||
++             !cert_hostcheck((const char *)peer_CN, conn->ssl_config.Cauth_hostname))) {
+       if(data->set.ssl.verifyhost > 1) {
+         failf(data, "SSL: certificate subject name '%s' does not match "
+-              "target host name '%s'", peer_CN, conn->host.dispname);
++              "target host name '%s' (force: '%s')", peer_CN, conn->host.dispname,
++              (conn->ssl_config.Cauth_hostname ? conn->ssl_config.Cauth_hostname : ""));
+         res = CURLE_SSL_PEER_CERTIFICATE;
+       }
+       else
+diff -u -r curl-7.14.0/lib/url.c curl-7.14.0-xyu/lib/url.c
+--- curl-7.14.0/lib/url.c	2008-09-17 11:34:46.000000000 -0700
++++ curl-7.14.0-xyu/lib/url.c	2008-09-17 12:45:13.000000000 -0700
+@@ -1216,6 +1216,13 @@
+     /* This does not work on windows. */
+     data->set.ssl.CApath = va_arg(param, char *);
+     break;
++  case CURLOPT_AUTH_HOSTNAME:
++    /*
++     * Set the hostname used to authorize the certificate's hostname from the
++     * SSL connection.
++     */
++    data->set.ssl.Cauth_hostname = va_arg(param, char *);
++    break;
+   case CURLOPT_TELNETOPTIONS:
+     /*
+      * Set a linked list of telnet options
+diff -u -r curl-7.14.0/lib/urldata.h curl-7.14.0-xyu/lib/urldata.h
+--- curl-7.14.0/lib/urldata.h	2008-09-17 11:34:46.000000000 -0700
++++ curl-7.14.0-xyu/lib/urldata.h	2008-09-17 12:44:58.000000000 -0700
+@@ -157,6 +157,7 @@
+                             2: CN must match hostname */
+   char *CApath;          /* DOES NOT WORK ON WINDOWS */
+   char *CAfile;          /* cerficate to verify peer against */
++  char *Cauth_hostname;  /* hostname to verify certificate against*/
+   char *random_file;     /* path to file containing "random" data */
+   char *egdsocket;       /* path to file containing the EGD daemon socket */
+   char *cipher_list;     /* list of ciphers to use */
+diff -u -r curl-7.14.0/src/main.c curl-7.14.0-xyu/src/main.c
+--- curl-7.14.0/src/main.c	2008-09-17 11:34:46.000000000 -0700
++++ curl-7.14.0-xyu/src/main.c	2008-09-17 15:36:39.000000000 -0700
+@@ -349,6 +349,7 @@
+     "    --cacert <file> CA certificate to verify peer against (SSL)",
+     "    --capath <directory> CA directory (made using c_rehash) to verify",
+     "                    peer against (SSL)",
++    "    --use-auth-hostname <hostname> Force the URL to be interpreted as this host name",
+     "    --ciphers <list> SSL ciphers to use (SSL)",
+     "    --compressed    Request compressed response (using deflate or gzip)",
+     "    --connect-timeout <seconds> Maximum time allowed for connection",
+@@ -495,6 +496,7 @@
+   char *cert_type;
+   char *cacert;
+   char *capath;
++  char *cert_auth_hostname;
+   char *key;
+   char *key_type;
+   char *key_passwd;
+@@ -1293,6 +1295,7 @@
+     {"Ee","pass",        TRUE},
+     {"Ef","engine",      TRUE},
+     {"Eg","capath ",     TRUE},
++    {"Eh", "use-auth-hostname", TRUE},
+     {"f", "fail",        FALSE},
+     {"F", "form",        TRUE},
+     {"Fs","form-string", TRUE},
+@@ -1819,6 +1822,9 @@
+         /* CA cert directory */
+         GetStr(&config->capath, nextarg);
+         break;
++      case 'h': /* use-auth-hostname */
++        GetStr(&config->cert_auth_hostname, nextarg);
++        break;
+       default: /* certificate file */
+         {
+           char *ptr = strchr(nextarg, ':');
+@@ -2960,6 +2966,8 @@
+     curl_formfree(config->httppost);
+   if(config->cacert)
+     free(config->cacert);
++  if(config->cert_auth_hostname)
++    free(config->cert_auth_hostname);
+   if(config->capath)
+     free(config->capath);
+   if(config->cookiejar)
+@@ -3686,6 +3694,8 @@
+
+         /* default to strict verifyhost */
+         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
++        if(config->cert_auth_hostname)
++          curl_easy_setopt(curl, CURLOPT_AUTH_HOSTNAME, config->cert_auth_hostname);
+         if(config->cacert || config->capath) {
+           if (config->cacert)
+             curl_easy_setopt(curl, CURLOPT_CAINFO, config->cacert);

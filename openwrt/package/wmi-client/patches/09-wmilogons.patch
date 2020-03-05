@@ -1,0 +1,457 @@
+--- a/Samba/source/wmi/config.mk	2011-07-26 07:39:47.000000000 -0700
++++ b/Samba/source/wmi/config.mk	2011-07-26 10:38:22.135700116 -0700
+@@ -14,6 +14,27 @@
+ # End LIBRARY async_wmi_lib
+ #######################
+ #################################
++# Start BINARY wmilogons
++[BINARY::wmilogons]
++PRIVATE_PROTO_HEADER = proto.h
++INSTALLDIR = BINDIR
++OBJ_FILES = wmilogons.o
++PRIVATE_DEPENDENCIES = \
++                POPT_SAMBA \
++                POPT_CREDENTIALS \
++                LIBPOPT \
++		RPC_NDR_OXIDRESOLVER \
++		NDR_DCOM \
++		RPC_NDR_REMACT \
++		NDR_TABLE \
++		DCOM_PROXY_DCOM \
++		KERBEROS_LIB \
++		dcom \
++		wmi
++# End BINARY wmilogons
++#################################
++
++#################################
+ # Start BINARY wmic
+ [BINARY::wmic]
+ PRIVATE_PROTO_HEADER = proto.h
+--- /dev/null	2011-07-13 11:39:39.770909008 -0700
++++ b/Samba/source/wmi/wmilogons.c	2011-10-13 16:15:01.023156679 -0700
+@@ -0,0 +1,423 @@
++// Author: Derrick Pallas, Meraki Inc.
++#include "includes.h"
++
++#include <inttypes.h>
++#include "lib/cmdline/popt_common.h"
++#include "auth/credentials/credentials.h"
++
++#include "librpc/rpc/dcerpc.h"
++#include "librpc/rpc/dcerpc_table.h"
++
++#include "librpc/gen_ndr/com_dcom.h"
++#include "librpc/gen_ndr/ndr_dcom_c.h"
++#include "librpc/gen_ndr/ndr_dcom.h"
++#include "librpc/gen_ndr/ndr_epmapper_c.h"
++#include "librpc/gen_ndr/ndr_oxidresolver_c.h"
++#include "librpc/gen_ndr/ndr_oxidresolver.h"
++#include "librpc/gen_ndr/ndr_remact_c.h"
++
++#include "lib/com/proto.h"
++#include "lib/com/dcom/dcom.h"
++#include "lib/com/dcom/proto.h"
++
++#include "wmi/wmi.h"
++
++struct WBEMCLASS;
++struct WBEMOBJECT;
++
++struct program_args {
++    char *hostname;
++    unsigned int sleep_time;
++    uint32_t last_record;
++    int test;
++    uint32_t max_result_sets;
++    int verbose;
++};
++
++static void parse_args(int argc, const char *argv[], struct program_args *pmyargs)
++{
++    poptContext pc;
++    int opt, i;
++
++    int argc_new;
++    char **argv_new;
++    char * last_record = NULL;
++
++    pmyargs->sleep_time = 5;
++    pmyargs->last_record = 0;
++    pmyargs->test = 0;
++    pmyargs->max_result_sets = 0;
++    pmyargs->verbose = 0;
++
++    struct poptOption long_options[] = {
++        POPT_AUTOHELP
++        POPT_COMMON_SAMBA
++        POPT_COMMON_CONNECTION
++        POPT_COMMON_CREDENTIALS
++        {"sleeptime", 0, POPT_ARG_INT, &pmyargs->sleep_time, 0,
++         "amount of time to sleep when event log is empty", 0 },
++        {"lastrecord", 0, POPT_ARG_STRING, &last_record, 0,
++         "last record from database", 0 },
++        {"test", 0, POPT_ARG_NONE, &pmyargs->test, 0,
++         "test credentials only, do not stream", 0 },
++        {"maxresultset", 0, POPT_ARG_INT, &pmyargs->max_result_sets, 0,
++         "limit maximum result sets per request", 0 },
++        {"verbose", 0, POPT_ARG_NONE, &pmyargs->verbose, 0,
++         "verbose logging of wmi queries", 0},
++        POPT_TABLEEND
++    };
++
++    pc = poptGetContext( "wmilogons", argc, argv,
++                long_options, POPT_CONTEXT_KEEP_FIRST);
++
++    poptSetOtherOptionHelp(pc, "//host");
++
++    while ((opt = poptGetNextOpt(pc)) != -1) {
++        poptPrintUsage(pc, stdout, 0);
++        poptFreeContext(pc);
++        exit(EXIT_FAILURE);
++    }
++
++    argv_new = discard_const_p(char *, poptGetArgs(pc));
++
++    argc_new = argc;
++    for (i = 0; i < argc; i++) {
++        if (argv_new[i] == NULL) {
++            argc_new = i;
++            break;
++        }
++    }
++
++    if (argc_new != 2 || strncmp(argv_new[1], "//", 2) != 0) {
++        poptPrintUsage(pc, stdout, 0);
++        poptFreeContext(pc);
++        exit(EXIT_FAILURE);
++    }
++
++    /* skip over leading "//" in host name */
++    pmyargs->hostname = argv_new[1] + 2;
++
++    if (last_record && sscanf(last_record, "%" SCNu32, &pmyargs->last_record) != 1) {
++      fprintf(stderr, "Error parsing lastrecord argument [%s]\n");
++      exit(EXIT_FAILURE);
++    }
++
++    poptFreeContext(pc);
++
++    if (pmyargs->sleep_time <= 0) pmyargs->sleep_time =  1;
++    if (pmyargs->sleep_time > 30) pmyargs->sleep_time = 30;
++}
++
++void
++report_error(WERROR error) {
++    NTSTATUS status =  werror_to_ntstatus(error);
++    fprintf(stderr, "%s: %s\n"
++                  , nt_errstr(status)
++                  , get_friendly_nt_error_msg(status)
++                  );
++}
++
++#define WERR_CHECK(fun) do { \
++    result = (fun); \
++    if (!W_ERROR_IS_OK(result)) \
++    if (!W_ERROR_EQUAL(result, WERR_BADFUNC)) \
++        goto bail; \
++} while(0)
++
++typedef struct event_t {
++    CIMSTRING address;
++    CIMSTRING username;
++    CIMSTRING domain;
++    uint32_t record_number;
++} event_t;
++
++void
++release_event(event_t * event) {
++    talloc_free((void*)event->address);
++    talloc_free((void*)event->username);
++    talloc_free((void*)event->domain);
++    memset(event, 0, sizeof *event);
++}
++
++WERROR
++extract_event(TALLOC_CTX *mem_ctx, event_t * event, struct WbemClassObject * object) {
++    WERROR result = WERR_OK;
++
++    struct arr_CIMSTRING * insertion_strings = NULL;
++
++    union CIMVAR value;
++    enum CIMTYPE_ENUMERATION type;
++
++    WERR_CHECK(WbemClassObject_Get( object, mem_ctx, "EventCode"
++                                  , 0, &value, &type, NULL));
++    if (CIM_UINT16 != (type & CIM_TYPEMASK)) WERR_CHECK(WERR_INVALID_DATATYPE);
++    uint16_t event_code = value.v_uint16;
++
++    WERR_CHECK(WbemClassObject_Get( object, mem_ctx, "InsertionStrings", 0
++                                  , &value, &type, NULL));
++    if (CIM_ARR_STRING != (type & CIM_TYPEMASK)) WERR_CHECK(WERR_INVALID_DATATYPE);
++    insertion_strings = value.a_string;
++
++    switch(event_code) {
++    case 540:
++        if (insertion_strings->count <= 13) WERR_CHECK(WERR_BADFUNC);
++        event->address   = talloc_steal(mem_ctx, insertion_strings->item[13]);
++        event->username  = talloc_steal(mem_ctx, insertion_strings->item[ 0]);
++        event->domain    = talloc_steal(mem_ctx, insertion_strings->item[ 1]);
++        break;
++
++    case 672:
++        if (insertion_strings->count <= 9) WERR_CHECK(WERR_BADFUNC);
++        event->address   = talloc_steal(mem_ctx, insertion_strings->item[ 9]);
++        event->username  = talloc_steal(mem_ctx, insertion_strings->item[ 0]);
++        event->domain    = talloc_steal(mem_ctx, insertion_strings->item[ 1]);
++        break;
++
++    case 4624:
++        if (insertion_strings->count <= 18) WERR_CHECK(WERR_BADFUNC);
++        event->address   = talloc_steal(mem_ctx, insertion_strings->item[18]);
++        event->username  = talloc_steal(mem_ctx, insertion_strings->item[ 5]);
++        event->domain    = talloc_steal(mem_ctx, insertion_strings->item[ 6]);
++        break;
++
++    case 4768:
++        if (insertion_strings->count <= 9) WERR_CHECK(WERR_BADFUNC);
++        event->address   = talloc_steal(mem_ctx, insertion_strings->item[ 9]);
++        event->username  = talloc_steal(mem_ctx, insertion_strings->item[ 0]);
++        event->domain    = talloc_steal(mem_ctx, insertion_strings->item[ 1]);
++        break;
++
++    default:
++        WERR_CHECK(WERR_BADFUNC);
++        break;
++    };
++
++    WERR_CHECK(WbemClassObject_Get( object, mem_ctx, "RecordNumber"
++                                  , 0, &value, &type, NULL));
++    if (CIM_UINT32 != (type & CIM_TYPEMASK)) WERR_CHECK(WERR_INVALID_DATATYPE);
++    event->record_number = value.v_uint32;
++
++bail:
++    if (!W_ERROR_IS_OK(result)) release_event(event);
++    talloc_free(insertion_strings);
++    return result;
++}
++
++typedef struct server_t {
++    CIMSTRING name;
++    CIMSTRING domain;
++} server_t;
++
++void
++release_server(server_t * server) {
++    talloc_free((void*)server->name);
++    talloc_free((void*)server->domain);
++    memset(server, 0, sizeof *server);
++}
++
++WERROR
++extract_server(TALLOC_CTX *mem_ctx, server_t * server, struct WbemClassObject * object) {
++    WERROR result = WERR_OK;
++
++    union CIMVAR value;
++    enum CIMTYPE_ENUMERATION type;
++
++    WERR_CHECK(WbemClassObject_Get( object, mem_ctx, "Name", 0
++                                  , &value, &type, NULL));
++    if (CIM_STRING != (type & CIM_TYPEMASK)) WERR_CHECK(WERR_INVALID_DATATYPE);
++    server->name = talloc_steal(mem_ctx, value.v_string);
++
++    WERR_CHECK(WbemClassObject_Get( object, mem_ctx, "Domain", 0
++                                  , &value, &type, NULL));
++    if (CIM_STRING != (type & CIM_TYPEMASK)) WERR_CHECK(WERR_INVALID_DATATYPE);
++    server->domain = talloc_steal(mem_ctx, value.v_string);
++
++bail:
++    if (!W_ERROR_IS_OK(result)) release_server(server);
++    return result;
++}
++
++int
++main(int argc, const char *argv[]) {
++    struct program_args args = {};
++    parse_args(argc, argv, &args);
++
++    WERROR result = WERR_OK;
++
++    dcerpc_init();
++    dcerpc_table_init();
++
++    dcom_proxy_IUnknown_init();
++    dcom_proxy_IWbemLevel1Login_init();
++    dcom_proxy_IWbemServices_init();
++    dcom_proxy_IEnumWbemClassObject_init();
++    dcom_proxy_IRemUnknown_init();
++    dcom_proxy_IWbemFetchSmartEnum_init();
++    dcom_proxy_IWbemWCOSmartEnum_init();
++
++    struct com_context *com_ctx = NULL;
++    com_init_ctx(&com_ctx, NULL);
++    dcom_client_init(com_ctx, cmdline_credentials);
++
++    struct IWbemServices *services = NULL;
++    WERR_CHECK(WBEM_ConnectServer( com_ctx
++        , args.hostname
++        , "root\\cimv2" // namespace
++        , cmdline_credentials->username
++        , cmdline_credentials->password
++        , NULL // locale
++        , 0 //flags
++        , NULL // authority
++        , NULL // wbem_ctx
++        , &services
++        ));
++
++    if (args.test) {
++        char * query = talloc_strdup(com_ctx,
++            "SELECT Name,Domain"
++                " FROM Win32_ComputerSystem"
++                );
++
++        if (args.verbose)
++            fprintf(stderr, "performing %s\n", query);
++        struct IEnumWbemClassObject *iterator = NULL;
++        WERR_CHECK(IWbemServices_ExecQuery( services, com_ctx
++            , "WQL"
++            , query
++            , WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY
++            , NULL
++            , &iterator
++            ));
++        IEnumWbemClassObject_Reset(iterator, com_ctx);
++        talloc_free(query);
++
++        uint32_t count = 0;
++        struct WbemClassObject *objects[1] = { };
++        const size_t N_OBJECTS = sizeof(objects)/sizeof(*objects);
++
++        do {
++            WERR_CHECK(IEnumWbemClassObject_SmartNext( iterator, com_ctx
++                , 15000 /* 15 seconds */
++                , args.last_record ? N_OBJECTS : 1
++                , objects
++                , &count
++                ));
++            int i;
++            for (i = 0 ; i < count ; ++i) {
++                server_t server = { };
++                WERR_CHECK(extract_server(com_ctx, &server, objects[i]));
++                talloc_free(objects[i]);
++                if (W_ERROR_EQUAL(result, WERR_BADFUNC)) continue;
++
++                if (server.name && server.domain) {
++                    fprintf( stdout, "%s.%s\n"
++                           , server.name
++                           , server.domain
++                           );
++                    fflush(stdout);
++                }
++
++                release_server(&server);
++            }
++        } while (count);
++    }
++
++    for(;;) {
++        char * query = talloc_strdup(com_ctx,
++            "SELECT EventCode,InsertionStrings,RecordNumber"
++                " FROM Win32_NTLogEvent"
++                " WHERE Logfile = 'Security'"
++                " AND Type LIKE '%Success%'"
++                " AND (EventCode=540 OR EventCode=672 OR EventCode=4624 OR EventCode=4768)"
++                );
++
++        if (args.last_record)
++            query = talloc_asprintf_append( query
++                                          , " AND RecordNumber > %" PRIu32
++                                          , args.last_record
++                                          );
++
++        if (args.verbose)
++            fprintf(stderr, "performing %s\n", query);
++        struct IEnumWbemClassObject *iterator = NULL;
++        WERR_CHECK(IWbemServices_ExecQuery( services, com_ctx
++            , "WQL"
++            , query
++            , WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY
++            , NULL
++            , &iterator
++            ));
++        IEnumWbemClassObject_Reset(iterator, com_ctx);
++        talloc_free(query);
++
++        size_t records = 0;
++        uint32_t count = 0;
++        struct WbemClassObject *objects[256] = { };
++        const size_t N_OBJECTS = sizeof(objects)/sizeof(*objects);
++
++        uint32_t sets = 0;
++
++        do {
++            WERR_CHECK(IEnumWbemClassObject_SmartNext( iterator, com_ctx
++                , 15000 /* 15 seconds */
++                , args.last_record ? N_OBJECTS : 1
++                , objects
++                , &count
++                ));
++            if (args.test)
++                goto bail;
++
++            int i;
++            for (i = 0 ; i < count ; ++i) {
++                event_t event = { };
++                WERR_CHECK(extract_event(com_ctx, &event, objects[i]));
++                talloc_free(objects[i]);
++                if (W_ERROR_EQUAL(result, WERR_BADFUNC)) continue;
++
++                if (!args.last_record) {
++                    args.last_record = event.record_number;
++                    count = 0; // start from this record
++                } else
++                if (args.last_record < event.record_number) {
++                    args.last_record = event.record_number;
++                }
++
++                if (0 != strcmp(event.address, "-")
++                        && !strpbrk(event.username,"$")) {
++                    fprintf( stdout, "%s,%s,%s,%" PRIu32 "\n"
++                           , event.address
++                           , event.username
++                           , event.domain
++                           , event.record_number
++                           );
++                    fflush(stdout);
++                }
++
++                release_event(&event);
++            }
++        
++            if (args.verbose)
++                fprintf(stderr, "total=%d\t" "count=%d\t" "blocks=%d\t" "memory=%d\n",
++                        records+=count, count,
++                        talloc_total_blocks(com_ctx),
++                        talloc_total_size(com_ctx) );
++
++            if (args.max_result_sets && args.max_result_sets <= ++sets)
++                break;
++        } while (count);
++
++        IUnknown_Release((struct IUnknown *)iterator, com_ctx);
++
++        if (!records) {
++            if (args.verbose)
++                fprintf(stderr, "no objects, sleeping\n");
++            sleep(args.sleep_time);
++        }
++    }
++
++bail:
++    if (!W_ERROR_IS_OK(result))
++        report_error(result);
++    talloc_free(com_ctx);
++    return W_ERROR_IS_OK(result) ? EXIT_SUCCESS : EXIT_FAILURE;
++}
++//

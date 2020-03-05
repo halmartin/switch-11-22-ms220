@@ -1,0 +1,22 @@
+commit ceeb5bddf29ffd0854fb96a61286f26271f5253b
+Author: Jignesh <jignesh@ubuntu>
+Date:   Fri Aug 15 14:39:19 2014 -0700
+
+    004-nobacktrace.patch
+
+    We do not include backtrace in our openwrt.
+    So removing calls to backtrace.
+
+diff --git a/src/lib/debug.c b/src/lib/debug.c
+index 2cada22..35e6c11 100644
+--- a/src/lib/debug.c
++++ b/src/lib/debug.c
+@@ -23,6 +23,8 @@
+  */
+ #include <freeradius-devel/libradius.h>
+
++#undef HAVE_EXECINFO_H
++
+ /*
+  *	runtime backtrace functions are not POSIX but are included in
+  *	glibc, OSX >= 10.5 and various BSDs

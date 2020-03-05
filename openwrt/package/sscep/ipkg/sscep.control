@@ -1,0 +1,5 @@
+Package: sscep
+Priority: optional
+Section: net
+Description: A Simple SCEP (Simple Certificate Enrollment Protocol) client
+Depends: openssl

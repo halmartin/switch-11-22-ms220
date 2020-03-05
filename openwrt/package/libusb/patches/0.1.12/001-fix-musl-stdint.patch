@@ -1,0 +1,734 @@
+commit 0841c66cfb43bc24b83d4b60e7359112ac7c4e3d
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Thu Jun 2 00:40:11 2016 -0700
+
+    001-fix_stdint_for_musl.patch
+
+diff --git a/darwin.c b/darwin.c
+index 6f90ecc..10b4d1f 100644
+--- a/darwin.c
++++ b/darwin.c
+@@ -54,6 +54,7 @@
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <unistd.h>
++#include <stdint.h>
+ 
+ /* standard includes for darwin/os10 (IOKit) */
+ #include <mach/mach_port.h>
+@@ -136,10 +137,10 @@
+ typedef IOReturn io_return_t;
+ typedef IOCFPlugInInterface *io_cf_plugin_ref_t;
+ typedef SInt32 s_int32_t;
+-typedef IOReturn (*rw_async_func_t)(void *self, UInt8 pipeRef, void *buf, UInt32 size,
++typedef IOReturn (*rw_async_func_t)(void *self, UInt8 pipeRef, void *buf, uint32_t size,
+ 				    IOAsyncCallback1 callback, void *refcon);
+-typedef IOReturn (*rw_async_to_func_t)(void *self, UInt8 pipeRef, void *buf, UInt32 size,
+-				       UInt32 noDataTimeout, UInt32 completionTimeout,
++typedef IOReturn (*rw_async_to_func_t)(void *self, UInt8 pipeRef, void *buf, uint32_t size,
++				       uint32_t noDataTimeout, uint32_t completionTimeout,
+ 				       IOAsyncCallback1 callback, void *refcon);
+ 
+ #if !defined(IO_OBJECT_NULL)
+@@ -242,7 +243,7 @@ static int usb_setup_iterator (io_iterator_t *deviceIterator)
+   return 0;
+ }
+ 
+-static usb_device_t **usb_get_next_device (io_iterator_t deviceIterator, UInt32 *locationp)
++static usb_device_t **usb_get_next_device (io_iterator_t deviceIterator, uint32_t *locationp)
+ {
+   io_cf_plugin_ref_t *plugInInterface = NULL;
+   usb_device_t **device;
+@@ -281,8 +282,8 @@ int usb_os_open(usb_dev_handle *dev)
+ 
+   usb_device_t **darwin_device;
+ 
+-  UInt32 location = *((UInt32 *)dev->device->dev);
+-  UInt32 dlocation;
++  uint32_t location = *((uint32_t *)dev->device->dev);
++  uint32_t dlocation;
+ 
+   if (!dev)
+     USB_ERROR(-ENXIO);
+@@ -387,9 +388,9 @@ static int get_endpoints (struct darwin_dev_handle *device)
+ {
+   io_return_t ret;
+ 
+-  u_int8_t numep, direction, number;
+-  u_int8_t dont_care1, dont_care3;
+-  u_int16_t dont_care2;
++  uint8_t numep, direction, number;
++  uint8_t dont_care1, dont_care3;
++  uint16_t dont_care2;
+ 
+   int i;
+ 
+@@ -475,7 +476,7 @@ static int claim_interface (usb_dev_handle *dev, int interface)
+   IOObjectRelease(interface_iterator);
+ 
+   if (!usbInterface) {
+-    u_int8_t nConfig;			     /* Index of configuration to use */
++    uint8_t nConfig;			     /* Index of configuration to use */
+     IOUSBConfigurationDescriptorPtr configDesc; /* to describe which configuration to select */
+     /* Only a composite class device with no vendor-specific driver will
+        be configured. Otherwise, we need to do it ourselves, or there
+@@ -758,7 +759,7 @@ static int ep_to_pipeRef (struct darwin_dev_handle *device, int ep)
+ 
+ /* argument to handle multiple parameters to rw_completed */
+ struct rw_complete_arg {
+-  UInt32        io_size;
++  uint32_t        io_size;
+   IOReturn      result;
+   CFRunLoopRef  cf_loop;
+ };
+@@ -769,9 +770,9 @@ static void rw_completed(void *refcon, io_return_t result, void *io_size)
+ 
+   if (usb_debug > 2)
+     fprintf(stderr, "io async operation completed: %s, size=%lu, result=0x%08x\n", darwin_error_str(result),
+-	    (UInt32)io_size, result);
++	    (uint32_t)io_size, result);
+ 
+-  rw_arg->io_size = (UInt32)io_size;
++  rw_arg->io_size = (uint32_t)io_size;
+   rw_arg->result  = result;
+ 
+   CFRunLoopStop(rw_arg->cf_loop);
+@@ -789,11 +790,11 @@ static int usb_bulk_transfer (usb_dev_handle *dev, int ep, char *bytes, int size
+ 
+   struct rw_complete_arg rw_arg;
+ 
+-  u_int8_t  transferType;
++  uint8_t  transferType;
+ 
+   /* None of the values below are used in libusb for bulk transfers */
+-  u_int8_t  direction, number, interval;
+-  u_int16_t maxPacketSize;
++  uint8_t  direction, number, interval;
++  uint16_t maxPacketSize;
+ 
+   if (!dev)
+     USB_ERROR_STR ( -ENXIO, "usb_bulk_transfer: Called with NULL device" );
+@@ -979,7 +980,7 @@ int usb_os_find_busses(struct usb_bus **busses)
+ 
+   usb_device_t **device;
+ 
+-  UInt32 location;
++  uint32_t location;
+ 
+   char buf[20];
+   int i = 1;
+@@ -1036,9 +1037,9 @@ int usb_os_find_devices(struct usb_bus *bus, struct usb_device **devices)
+ 
+   usb_device_t **device;
+ 
+-  u_int16_t address;
+-  UInt32 location;
+-  UInt32 bus_loc = bus->location;
++  uint16_t address;
++  uint32_t location;
++  uint32_t bus_loc = bus->location;
+ 
+   /* for use in retrieving device description */
+   IOUSBDevRequest req;
+diff --git a/linux.h b/linux.h
+index 8f20ef3..9c50a73 100644
+--- a/linux.h
++++ b/linux.h
+@@ -4,16 +4,17 @@
+ #include <unistd.h>
+ #include <sys/stat.h>
+ #include <sys/ioctl.h>
++#include <stdint.h>
+ 
+ struct usb_ctrltransfer {
+ 	/* keep in sync with usbdevice_fs.h:usbdevfs_ctrltransfer */
+-	u_int8_t  bRequestType;
+-	u_int8_t  bRequest;
+-	u_int16_t wValue;
+-	u_int16_t wIndex;
+-	u_int16_t wLength;
++	uint8_t  bRequestType;
++	uint8_t  bRequest;
++	uint16_t wValue;
++	uint16_t wIndex;
++	uint16_t wLength;
+ 
+-	u_int32_t timeout;	/* in milliseconds */
++	uint32_t timeout;	/* in milliseconds */
+ 
+ 	/* pointer to data */
+ 	void *data;
+diff --git a/usb.h.in b/usb.h.in
+index 443c7c0..a5c90e9 100644
+--- a/usb.h.in
++++ b/usb.h.in
+@@ -14,6 +14,7 @@
+ #include <unistd.h>
+ #include <stdlib.h>
+ #include <limits.h>
++#include <stdint.h>
+ 
+ #include <dirent.h>
+ 
+@@ -64,40 +65,40 @@
+ 
+ /* All standard descriptors have these 2 fields in common */
+ struct usb_descriptor_header {
+-	u_int8_t  bLength;
+-	u_int8_t  bDescriptorType;
++	uint8_t  bLength;
++	uint8_t  bDescriptorType;
+ };
+ 
+ /* String descriptor */
+ struct usb_string_descriptor {
+-	u_int8_t  bLength;
+-	u_int8_t  bDescriptorType;
+-	u_int16_t wData[1];
++	uint8_t  bLength;
++	uint8_t  bDescriptorType;
++	uint16_t wData[1];
+ };
+ 
+ /* HID descriptor */
+ struct usb_hid_descriptor {
+-	u_int8_t  bLength;
+-	u_int8_t  bDescriptorType;
+-	u_int16_t bcdHID;
+-	u_int8_t  bCountryCode;
+-	u_int8_t  bNumDescriptors;
+-	/* u_int8_t  bReportDescriptorType; */
+-	/* u_int16_t wDescriptorLength; */
++	uint8_t  bLength;
++	uint8_t  bDescriptorType;
++	uint16_t bcdHID;
++	uint8_t  bCountryCode;
++	uint8_t  bNumDescriptors;
++	/* uint8_t  bReportDescriptorType; */
++	/* uint16_t wDescriptorLength; */
+ 	/* ... */
+ };
+ 
+ /* Endpoint descriptor */
+ #define USB_MAXENDPOINTS	32
+ struct usb_endpoint_descriptor {
+-	u_int8_t  bLength;
+-	u_int8_t  bDescriptorType;
+-	u_int8_t  bEndpointAddress;
+-	u_int8_t  bmAttributes;
+-	u_int16_t wMaxPacketSize;
+-	u_int8_t  bInterval;
+-	u_int8_t  bRefresh;
+-	u_int8_t  bSynchAddress;
++	uint8_t  bLength;
++	uint8_t  bDescriptorType;
++	uint8_t  bEndpointAddress;
++	uint8_t  bmAttributes;
++	uint16_t wMaxPacketSize;
++	uint8_t  bInterval;
++	uint8_t  bRefresh;
++	uint8_t  bSynchAddress;
+ 
+ 	unsigned char *extra;	/* Extra descriptors */
+ 	int extralen;
+@@ -115,15 +116,15 @@ struct usb_endpoint_descriptor {
+ /* Interface descriptor */
+ #define USB_MAXINTERFACES	32
+ struct usb_interface_descriptor {
+-	u_int8_t  bLength;
+-	u_int8_t  bDescriptorType;
+-	u_int8_t  bInterfaceNumber;
+-	u_int8_t  bAlternateSetting;
+-	u_int8_t  bNumEndpoints;
+-	u_int8_t  bInterfaceClass;
+-	u_int8_t  bInterfaceSubClass;
+-	u_int8_t  bInterfaceProtocol;
+-	u_int8_t  iInterface;
++	uint8_t  bLength;
++	uint8_t  bDescriptorType;
++	uint8_t  bInterfaceNumber;
++	uint8_t  bAlternateSetting;
++	uint8_t  bNumEndpoints;
++	uint8_t  bInterfaceClass;
++	uint8_t  bInterfaceSubClass;
++	uint8_t  bInterfaceProtocol;
++	uint8_t  iInterface;
+ 
+ 	struct usb_endpoint_descriptor *endpoint;
+ 
+@@ -141,14 +142,14 @@ struct usb_interface {
+ /* Configuration descriptor information.. */
+ #define USB_MAXCONFIG		8
+ struct usb_config_descriptor {
+-	u_int8_t  bLength;
+-	u_int8_t  bDescriptorType;
+-	u_int16_t wTotalLength;
+-	u_int8_t  bNumInterfaces;
+-	u_int8_t  bConfigurationValue;
+-	u_int8_t  iConfiguration;
+-	u_int8_t  bmAttributes;
+-	u_int8_t  MaxPower;
++	uint8_t  bLength;
++	uint8_t  bDescriptorType;
++	uint16_t wTotalLength;
++	uint8_t  bNumInterfaces;
++	uint8_t  bConfigurationValue;
++	uint8_t  iConfiguration;
++	uint8_t  bmAttributes;
++	uint8_t  MaxPower;
+ 
+ 	struct usb_interface *interface;
+ 
+@@ -158,28 +159,28 @@ struct usb_config_descriptor {
+ 
+ /* Device descriptor */
+ struct usb_device_descriptor {
+-	u_int8_t  bLength;
+-	u_int8_t  bDescriptorType;
+-	u_int16_t bcdUSB;
+-	u_int8_t  bDeviceClass;
+-	u_int8_t  bDeviceSubClass;
+-	u_int8_t  bDeviceProtocol;
+-	u_int8_t  bMaxPacketSize0;
+-	u_int16_t idVendor;
+-	u_int16_t idProduct;
+-	u_int16_t bcdDevice;
+-	u_int8_t  iManufacturer;
+-	u_int8_t  iProduct;
+-	u_int8_t  iSerialNumber;
+-	u_int8_t  bNumConfigurations;
++	uint8_t  bLength;
++	uint8_t  bDescriptorType;
++	uint16_t bcdUSB;
++	uint8_t  bDeviceClass;
++	uint8_t  bDeviceSubClass;
++	uint8_t  bDeviceProtocol;
++	uint8_t  bMaxPacketSize0;
++	uint16_t idVendor;
++	uint16_t idProduct;
++	uint16_t bcdDevice;
++	uint8_t  iManufacturer;
++	uint8_t  iProduct;
++	uint8_t  iSerialNumber;
++	uint8_t  bNumConfigurations;
+ };
+ 
+ struct usb_ctrl_setup {
+-	u_int8_t  bRequestType;
+-	u_int8_t  bRequest;
+-	u_int16_t wValue;
+-	u_int16_t wIndex;
+-	u_int16_t wLength;
++	uint8_t  bRequestType;
++	uint8_t  bRequest;
++	uint16_t wValue;
++	uint16_t wIndex;
++	uint16_t wLength;
+ };
+ 
+ /*
+@@ -250,7 +251,7 @@ struct usb_device {
+ 
+   void *dev;		/* Darwin support */
+ 
+-  u_int8_t devnum;
++  uint8_t devnum;
+ 
+   unsigned char num_children;
+   struct usb_device **children;
+@@ -262,7 +263,7 @@ struct usb_bus {
+   char dirname[PATH_MAX + 1];
+ 
+   struct usb_device *devices;
+-  u_int32_t location;
++  uint32_t location;
+ 
+   struct usb_device *root_dev;
+ };
+diff --git a/usbpp.cpp b/usbpp.cpp
+index 7286ed7..1d0b4bf 100644
+--- a/usbpp.cpp
++++ b/usbpp.cpp
+@@ -10,6 +10,7 @@
+ #include <errno.h>
+ #include <cstdlib>
+ #include <stdio.h>
++#include <stdint.h>
+ 
+ //remove after debugging
+ #include <iostream>
+@@ -110,7 +111,7 @@ namespace USB {
+     }
+   }
+ 
+-  std::list<Device *> Busses::match(u_int8_t class_code)
++  std::list<Device *> Busses::match(uint8_t class_code)
+   {
+     std::list<Device *> match_list;
+     USB::Bus *bus;
+@@ -176,7 +177,7 @@ namespace USB {
+     return m_fileName;
+   }
+ 
+-  int Device::string(std::string &buf, int index, u_int16_t langID)
++  int Device::string(std::string &buf, int index, uint16_t langID)
+   {
+     int retval;
+     char tmpBuff[256];
+@@ -230,32 +231,32 @@ namespace USB {
+   }
+ #endif /* USE_UNTESTED_LIBUSBPP_METHODS */
+ 
+-  u_int16_t Device::idVendor(void)
++  uint16_t Device::idVendor(void)
+   {
+     return m_descriptor.idVendor;
+   }
+ 
+-  u_int16_t Device::idProduct(void)
++  uint16_t Device::idProduct(void)
+   {
+     return m_descriptor.idProduct;
+   }
+ 
+-  u_int16_t Device::idRevision(void)
++  uint16_t Device::idRevision(void)
+   {
+     return m_descriptor.bcdDevice;
+   }
+ 
+-  u_int8_t Device::devClass(void)
++  uint8_t Device::devClass(void)
+   {
+     return m_descriptor.bDeviceClass;
+   }
+ 
+-  u_int8_t Device::devSubClass(void)
++  uint8_t Device::devSubClass(void)
+   {
+     return m_descriptor.bDeviceSubClass;
+   }
+ 
+-  u_int8_t Device::devProtocol(void)
++  uint8_t Device::devProtocol(void)
+   {
+     return m_descriptor.bDeviceProtocol;
+   }
+@@ -295,7 +296,7 @@ namespace USB {
+     m_SerialNumber = serialnumber;
+   }
+ 
+-  u_int8_t Device::numConfigurations(void)
++  uint8_t Device::numConfigurations(void)
+   {
+     return m_descriptor.bNumConfigurations;
+   }
+@@ -329,14 +330,14 @@ namespace USB {
+     return back();
+   }
+ 
+-  int Device::controlTransfer(u_int8_t requestType, u_int8_t request,
+-			       u_int16_t value, u_int16_t index, u_int16_t length,
++  int Device::controlTransfer(uint8_t requestType, uint8_t request,
++			       uint16_t value, uint16_t index, uint16_t length,
+ 			       unsigned char *payload, int timeout)
+   {
+     return usb_control_msg(m_handle, requestType, request, value, index, (char *)payload, length, timeout);
+   }
+ 
+-  u_int8_t Configuration::numInterfaces(void)
++  uint8_t Configuration::numInterfaces(void)
+   {
+     return m_NumInterfaces;
+   }
+@@ -415,12 +416,12 @@ namespace USB {
+   }
+ #endif /* USE_UNTESTED_LIBUSBPP_METHODS */
+ 
+-  u_int8_t Interface::numAltSettings(void)
++  uint8_t Interface::numAltSettings(void)
+   {
+     return m_numAltSettings;
+   }
+ 
+-  void Interface::setNumAltSettings(u_int8_t num_altsetting)
++  void Interface::setNumAltSettings(uint8_t num_altsetting)
+   {
+     m_numAltSettings = num_altsetting;
+   }
+@@ -497,7 +498,7 @@ namespace USB {
+     return back();
+   }
+ 
+-  u_int8_t AltSetting::numEndpoints(void)
++  uint8_t AltSetting::numEndpoints(void)
+   {
+     return m_NumEndpoints;
+   }
+@@ -562,18 +563,18 @@ namespace USB {
+     printf("      bSynchAddress:    %d\n", m_SynchAddress);
+   }
+ 
+-  DeviceID::DeviceID(u_int16_t vendor, u_int16_t product)
++  DeviceID::DeviceID(uint16_t vendor, uint16_t product)
+   {
+     m_vendor = vendor;
+     m_product = product;
+   }
+ 
+-  u_int16_t DeviceID::vendor(void)
++  uint16_t DeviceID::vendor(void)
+   {
+     return m_vendor;
+   }
+ 
+-  u_int16_t DeviceID::product(void)
++  uint16_t DeviceID::product(void)
+   {
+     return m_product;
+   }
+diff --git a/usbpp.h b/usbpp.h
+index abda64f..5cdf71b 100644
+--- a/usbpp.h
++++ b/usbpp.h
+@@ -4,6 +4,7 @@
+ 
+ #include <string>
+ #include <list>
++#include <stdint.h>
+ 
+ #include <usb.h>
+ 
+@@ -99,14 +100,14 @@ namespace USB {
+ 	private:
+ 		void setDescriptor(struct usb_endpoint_descriptor);
+ 		void setParent(Device *parent);
+-		u_int8_t  m_Length;
+-		u_int8_t  m_DescriptorType;
+-		u_int8_t  m_EndpointAddress;
+-		u_int8_t  m_Attributes;
+-		u_int16_t m_MaxPacketSize;
+-		u_int8_t  m_Interval;
+-		u_int8_t  m_Refresh;
+-		u_int8_t  m_SynchAddress;
++		uint8_t  m_Length;
++		uint8_t  m_DescriptorType;
++		uint8_t  m_EndpointAddress;
++		uint8_t  m_Attributes;
++		uint16_t m_MaxPacketSize;
++		uint8_t  m_Interval;
++		uint8_t  m_Refresh;
++		uint8_t  m_SynchAddress;
+ 		Device    *m_parent;
+ 	};
+ 
+@@ -118,7 +119,7 @@ namespace USB {
+ 		friend class Busses;
+ 	public:
+ 		AltSetting() {};
+-		u_int8_t numEndpoints(void);
++		uint8_t numEndpoints(void);
+ 
+ 		/**
+ 		 * \brief AltSetting descriptor information output
+@@ -140,15 +141,15 @@ namespace USB {
+ 		void setDescriptor(struct usb_interface_descriptor);
+ 		/* we don't use a normal usb_interface_descriptor */
+ 		/* because that would bring in the endpoint list */
+-		u_int8_t m_Length;
+-		u_int8_t m_DescriptorType;
+-		u_int8_t m_InterfaceNumber;
+-		u_int8_t m_AlternateSetting;
+-		u_int8_t m_NumEndpoints;
+-		u_int8_t m_InterfaceClass;
+-		u_int8_t m_InterfaceSubClass;
+-		u_int8_t m_InterfaceProtocol;
+-		u_int8_t m_Interface;
++		uint8_t m_Length;
++		uint8_t m_DescriptorType;
++		uint8_t m_InterfaceNumber;
++		uint8_t m_AlternateSetting;
++		uint8_t m_NumEndpoints;
++		uint8_t m_InterfaceClass;
++		uint8_t m_InterfaceSubClass;
++		uint8_t m_InterfaceProtocol;
++		uint8_t m_Interface;
+ 	};
+ 
+ 	/**
+@@ -226,7 +227,7 @@ namespace USB {
+ 		 * This is a simple accessor method that specifies the number
+ 		 * alternative settings that this device interface has.
+ 		 */
+-		u_int8_t numAltSettings(void);
++		uint8_t numAltSettings(void);
+ 
+ 		/**
+ 		 * \brief First AltSetting for the Interface
+@@ -287,9 +288,9 @@ namespace USB {
+ 	private:
+ 		std::list<AltSetting *>::const_iterator iter;
+ 
+-		void setNumAltSettings(u_int8_t);
++		void setNumAltSettings(uint8_t);
+ 		void setParent(Device *parent);
+-		u_int8_t m_numAltSettings;
++		uint8_t m_numAltSettings;
+ 		Device    *m_parent;
+ 
+ 		/* index representing the interface, in this configuration */
+@@ -330,7 +331,7 @@ namespace USB {
+ 		 * This is a simple accessor method that specifies the number
+ 		 * Interfaces that this device configuration has.
+ 		 */
+-		u_int8_t numInterfaces(void);
++		uint8_t numInterfaces(void);
+ 
+ 		/**
+ 		 * \brief First Interface for the Configuration
+@@ -386,14 +387,14 @@ namespace USB {
+ 		void setDescriptor(struct usb_config_descriptor);
+ 		/* we don't use a normal usb_config_descriptor */
+ 		/* because that would bring in the interface list */
+-		u_int8_t  m_Length;
+-		u_int8_t  m_DescriptorType;
+-		u_int16_t m_TotalLength;
+-		u_int8_t  m_NumInterfaces;
+-		u_int8_t  m_ConfigurationValue;
+-		u_int8_t  m_Configuration;
+-		u_int8_t  m_Attributes;
+-		u_int8_t  m_MaxPower; 
++		uint8_t  m_Length;
++		uint8_t  m_DescriptorType;
++		uint16_t m_TotalLength;
++		uint8_t  m_NumInterfaces;
++		uint8_t  m_ConfigurationValue;
++		uint8_t  m_Configuration;
++		uint8_t  m_Attributes;
++		uint8_t  m_MaxPower; 
+ 	};
+ 
+ 	/**
+@@ -453,7 +454,7 @@ namespace USB {
+ 		 *
+ 		 * \see Vendor()
+ 		 */ 
+-		u_int16_t idVendor(void);
++		uint16_t idVendor(void);
+ 
+ 		/** 
+ 		 * \brief The product ID number, as provided by the device.
+@@ -464,7 +465,7 @@ namespace USB {
+ 		 *
+ 		 * \see Product()
+ 		 */ 
+-		u_int16_t idProduct(void);
++		uint16_t idProduct(void);
+ 
+ 		/**
+ 		 * \brief The product's revision ID, as provided by the device.
+@@ -475,7 +476,7 @@ namespace USB {
+ 		 * decimal version nominally has a major version in the high byte,
+ 		 * and a minor version in the low byte. 
+ 		 */
+-		u_int16_t idRevision(void);
++		uint16_t idRevision(void);
+ 
+ 		/**
+ 		 * \brief The device's USB class, as provided by the device.
+@@ -493,7 +494,7 @@ namespace USB {
+ 		 * protocol.
+ 		 *
+ 		 */
+-		u_int8_t devClass(void);
++		uint8_t devClass(void);
+ 
+ 		/**
+ 		 * \brief The device's USB subclass, as provided by the device.
+@@ -502,7 +503,7 @@ namespace USB {
+ 		 * These subclasses are defined by the USB Implementer's Forum,
+ 		 * and only have meaning in the context of a specified class. 
+ 		 */
+-		u_int8_t devSubClass(void);
++		uint8_t devSubClass(void);
+ 
+ 		/**
+ 		 * \brief The device's USB protocol, as provided by the device.
+@@ -512,7 +513,7 @@ namespace USB {
+ 		 * only have meaning in the context of a specified class and
+ 		 * subclass. 
+ 		 */
+-		u_int8_t devProtocol(void);
++		uint8_t devProtocol(void);
+ 
+     
+ 		/**
+@@ -566,7 +567,7 @@ namespace USB {
+ 		 * This is a simple accessor method that specifies the number
+ 		 * configurations that this device has.
+ 		 */
+-		u_int8_t numConfigurations(void);
++		uint8_t numConfigurations(void);
+ 
+ 		/**
+ 		 * \brief fetch an arbitrary string from the device
+@@ -579,7 +580,7 @@ namespace USB {
+ 		 *
+ 		 * \return length of string, or 0 on error.
+ 		 */
+-		int string(std::string &buf, int index, u_int16_t lang=0);
++		int string(std::string &buf, int index, uint16_t lang=0);
+ 
+ 		/**
+ 		 * \brief First Configuration for the Device
+@@ -641,8 +642,8 @@ namespace USB {
+ 		 * \return number of bytes sent or received, or a negative number
+ 		 * in case of error.
+ 		 */
+-		int controlTransfer(u_int8_t requestType, u_int8_t request,
+-				    u_int16_t value, u_int16_t index, u_int16_t length,
++		int controlTransfer(uint8_t requestType, uint8_t request,
++				    uint16_t value, uint16_t index, uint16_t length,
+ 				    unsigned char *payload,
+ 				    int timeout = 100); 
+ 
+@@ -750,25 +751,25 @@ namespace USB {
+ 		 * \param vendor the 16 bit vendor number for the device
+ 		 * \param product the 16 bit product number for the device
+ 		 */
+-		DeviceID(u_int16_t vendor, u_int16_t product);
++		DeviceID(uint16_t vendor, uint16_t product);
+ 
+ 		/**
+ 		 * \brief vendor number for the device
+ 		 *
+ 		 * This method returns the 16 bit vendor number.
+ 		 */
+-		u_int16_t vendor(void);
++		uint16_t vendor(void);
+ 
+ 		/**
+ 		 * \brief product number for the device
+ 		 *
+ 		 * This method returns the 16 bit product number.
+ 		 */
+-		u_int16_t product(void);
++		uint16_t product(void);
+ 
+ 	private:
+-		u_int16_t m_vendor;
+-		u_int16_t m_product;
++		uint16_t m_vendor;
++		uint16_t m_product;
+ 	};
+ 
+ 	/**
+@@ -809,7 +810,7 @@ namespace USB {
+ 		 * list of pointers to the devices that have a matching device
+ 		 * class code
+ 		 */
+-		std::list<Device *> match(u_int8_t Class);
++		std::list<Device *> match(uint8_t Class);
+ 
+ 		/**
+ 		 * \brief find all devices with matching device IDs

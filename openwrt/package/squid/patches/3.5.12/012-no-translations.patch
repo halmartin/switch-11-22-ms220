@@ -1,0 +1,75 @@
+diff -u -r squid-3.5.12.ORIG/configure.ac squid-3.5.12.NEW/configure.ac
+--- squid-3.5.12.ORIG/configure.ac	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/configure.ac	2015-06-30 16:05:01.948009415 -0700
+@@ -3855,7 +3855,5 @@
+ 	src/parser/Makefile
+ 	src/snmp/Makefile
+ 	contrib/Makefile
+-	icons/Makefile
+-	errors/Makefile
+ 	test-suite/Makefile
+ 	doc/Makefile
+diff -u -r squid-3.5.12.ORIG/Makefile.am squid-3.5.12.NEW/Makefile.am
+--- squid-3.5.12.ORIG/Makefile.am	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/Makefile.am	2015-06-30 16:05:01.948009415 -0700
+@@ -6,12 +6,12 @@
+ ##
+
+ AUTOMAKE_OPTIONS = dist-bzip2 1.5 foreign
+-DIST_SUBDIRS	= compat lib libltdl scripts icons errors contrib doc helpers src test-suite tools
++DIST_SUBDIRS	= compat lib libltdl scripts contrib doc helpers src test-suite tools
+ SUBDIRS		= compat lib
+ if ENABLE_LOADABLE_MODULES
+ SUBDIRS += libltdl
+ endif
+-SUBDIRS += scripts icons errors doc helpers src tools test-suite
++SUBDIRS += scripts doc helpers src tools test-suite
+
+ DISTCLEANFILES = include/stamp-h include/stamp-h[0-9]*
+ DEFAULT_PINGER = $(libexecdir)/`echo pinger | sed '$(transform);s/$$/$(EXEEXT)/'`
+diff -u -r squid-3.5.12.ORIG/configure squid-3.5.12.NEW/configure
+--- squid-3.5.12.ORIG/configure	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/configure	2015-06-30 16:05:01.948009415 -0700
+@@ -40436,7 +40436,7 @@
+
+ rm -f core
+
+-ac_config_files="$ac_config_files Makefile compat/Makefile lib/Makefile lib/ntlmauth/Makefile lib/libTrie/Makefile lib/libTrie/test/Makefile lib/profiler/Makefile lib/rfcnb/Makefile lib/smblib/Makefile lib/snmplib/Makefile scripts/Makefile src/Makefile src/anyp/Makefile src/ftp/Makefile src/base/Makefile src/acl/Makefile src/clients/Makefile src/servers/Makefile src/fs/Makefile src/repl/Makefile src/auth/Makefile src/auth/basic/Makefile src/auth/digest/Makefile src/auth/negotiate/Makefile src/auth/ntlm/Makefile src/adaptation/Makefile src/adaptation/icap/Makefile src/adaptation/ecap/Makefile src/comm/Makefile src/esi/Makefile src/eui/Makefile src/format/Makefile src/helper/Makefile src/http/Makefile src/icmp/Makefile src/ident/Makefile src/ip/Makefile src/log/Makefile src/ipc/Makefile src/ssl/Makefile src/mgr/Makefile src/parser/Makefile src/snmp/Makefile contrib/Makefile icons/Makefile errors/Makefile test-suite/Makefile doc/Makefile doc/manuals/Makefile doc/release-notes/Makefile helpers/Makefile helpers/basic_auth/Makefile helpers/basic_auth/DB/Makefile helpers/basic_auth/fake/Makefile helpers/basic_auth/getpwnam/Makefile helpers/basic_auth/LDAP/Makefile helpers/basic_auth/MSNT-multi-domain/Makefile helpers/basic_auth/NCSA/Makefile helpers/basic_auth/NIS/Makefile helpers/basic_auth/PAM/Makefile helpers/basic_auth/POP3/Makefile helpers/basic_auth/RADIUS/Makefile helpers/basic_auth/SASL/Makefile helpers/basic_auth/SMB/Makefile helpers/basic_auth/SMB_LM/Makefile helpers/basic_auth/SSPI/Makefile helpers/digest_auth/Makefile helpers/digest_auth/eDirectory/Makefile helpers/digest_auth/file/Makefile helpers/digest_auth/LDAP/Makefile helpers/ntlm_auth/Makefile helpers/ntlm_auth/fake/Makefile helpers/ntlm_auth/smb_lm/Makefile helpers/ntlm_auth/SSPI/Makefile helpers/negotiate_auth/Makefile helpers/negotiate_auth/kerberos/Makefile helpers/negotiate_auth/SSPI/Makefile helpers/negotiate_auth/wrapper/Makefile helpers/external_acl/Makefile helpers/external_acl/AD_group/Makefile helpers/external_acl/delayer/Makefile helpers/external_acl/eDirectory_userip/Makefile helpers/external_acl/file_userip/Makefile helpers/external_acl/kerberos_ldap_group/Makefile helpers/external_acl/LDAP_group/Makefile helpers/external_acl/LM_group/Makefile helpers/external_acl/session/Makefile helpers/external_acl/SQL_session/Makefile helpers/external_acl/unix_group/Makefile helpers/external_acl/wbinfo_group/Makefile helpers/external_acl/time_quota/Makefile helpers/log_daemon/Makefile helpers/log_daemon/DB/Makefile helpers/log_daemon/file/Makefile helpers/url_rewrite/Makefile helpers/url_rewrite/fake/Makefile helpers/ssl/Makefile helpers/storeid_rewrite/Makefile helpers/storeid_rewrite/file/Makefile tools/Makefile tools/purge/Makefile tools/squidclient/Makefile tools/systemd/Makefile tools/sysvinit/Makefile"
++ac_config_files="$ac_config_files Makefile compat/Makefile lib/Makefile lib/ntlmauth/Makefile lib/libTrie/Makefile lib/libTrie/test/Makefile lib/profiler/Makefile lib/rfcnb/Makefile lib/smblib/Makefile lib/snmplib/Makefile scripts/Makefile src/Makefile src/anyp/Makefile src/ftp/Makefile src/base/Makefile src/acl/Makefile src/clients/Makefile src/servers/Makefile src/fs/Makefile src/repl/Makefile src/auth/Makefile src/auth/basic/Makefile src/auth/digest/Makefile src/auth/negotiate/Makefile src/auth/ntlm/Makefile src/adaptation/Makefile src/adaptation/icap/Makefile src/adaptation/ecap/Makefile src/comm/Makefile src/esi/Makefile src/eui/Makefile src/format/Makefile src/helper/Makefile src/http/Makefile src/icmp/Makefile src/ident/Makefile src/ip/Makefile src/log/Makefile src/ipc/Makefile src/ssl/Makefile src/mgr/Makefile src/parser/Makefile src/snmp/Makefile contrib/Makefile test-suite/Makefile doc/Makefile doc/manuals/Makefile doc/release-notes/Makefile helpers/Makefile helpers/basic_auth/Makefile helpers/basic_auth/DB/Makefile helpers/basic_auth/fake/Makefile helpers/basic_auth/getpwnam/Makefile helpers/basic_auth/LDAP/Makefile helpers/basic_auth/MSNT-multi-domain/Makefile helpers/basic_auth/NCSA/Makefile helpers/basic_auth/NIS/Makefile helpers/basic_auth/PAM/Makefile helpers/basic_auth/POP3/Makefile helpers/basic_auth/RADIUS/Makefile helpers/basic_auth/SASL/Makefile helpers/basic_auth/SMB/Makefile helpers/basic_auth/SMB_LM/Makefile helpers/basic_auth/SSPI/Makefile helpers/digest_auth/Makefile helpers/digest_auth/eDirectory/Makefile helpers/digest_auth/file/Makefile helpers/digest_auth/LDAP/Makefile helpers/ntlm_auth/Makefile helpers/ntlm_auth/fake/Makefile helpers/ntlm_auth/smb_lm/Makefile helpers/ntlm_auth/SSPI/Makefile helpers/negotiate_auth/Makefile helpers/negotiate_auth/kerberos/Makefile helpers/negotiate_auth/SSPI/Makefile helpers/negotiate_auth/wrapper/Makefile helpers/external_acl/Makefile helpers/external_acl/AD_group/Makefile helpers/external_acl/delayer/Makefile helpers/external_acl/eDirectory_userip/Makefile helpers/external_acl/file_userip/Makefile helpers/external_acl/kerberos_ldap_group/Makefile helpers/external_acl/LDAP_group/Makefile helpers/external_acl/LM_group/Makefile helpers/external_acl/session/Makefile helpers/external_acl/SQL_session/Makefile helpers/external_acl/unix_group/Makefile helpers/external_acl/wbinfo_group/Makefile helpers/external_acl/time_quota/Makefile helpers/log_daemon/Makefile helpers/log_daemon/DB/Makefile helpers/log_daemon/file/Makefile helpers/url_rewrite/Makefile helpers/url_rewrite/fake/Makefile helpers/ssl/Makefile helpers/storeid_rewrite/Makefile helpers/storeid_rewrite/file/Makefile tools/Makefile tools/purge/Makefile tools/squidclient/Makefile tools/systemd/Makefile tools/sysvinit/Makefile"
+
+
+ # must configure libltdl subdir unconditionally for "make distcheck" to work
+@@ -41783,7 +41783,5 @@
+     "src/parser/Makefile") CONFIG_FILES="$CONFIG_FILES src/parser/Makefile" ;;
+     "src/snmp/Makefile") CONFIG_FILES="$CONFIG_FILES src/snmp/Makefile" ;;
+     "contrib/Makefile") CONFIG_FILES="$CONFIG_FILES contrib/Makefile" ;;
+-    "icons/Makefile") CONFIG_FILES="$CONFIG_FILES icons/Makefile" ;;
+-    "errors/Makefile") CONFIG_FILES="$CONFIG_FILES errors/Makefile" ;;
+     "test-suite/Makefile") CONFIG_FILES="$CONFIG_FILES test-suite/Makefile" ;;
+     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
+diff -u -r squid-3.5.12.ORIG/Makefile.in squid-3.5.12.NEW/Makefile.in
+--- squid-3.5.12.ORIG/Makefile.in	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/Makefile.in	2015-06-30 16:05:01.948009415 -0700
+@@ -491,8 +491,8 @@
+ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+ AUTOMAKE_OPTIONS = dist-bzip2 1.5 foreign
+-DIST_SUBDIRS = compat lib libltdl scripts icons errors contrib doc helpers src test-suite tools
+-SUBDIRS = compat lib $(am__append_1) scripts icons errors doc helpers \
++DIST_SUBDIRS = compat lib libltdl scripts contrib doc helpers src test-suite tools
++SUBDIRS = compat lib $(am__append_1) scripts doc helpers \
+ 	src tools test-suite
+ DISTCLEANFILES = include/stamp-h include/stamp-h[0-9]*
+ DEFAULT_PINGER = $(libexecdir)/`echo pinger | sed '$(transform);s/$$/$(EXEEXT)/'`
+diff -Neur squid-3.5.12.ORIG/src/cache_cf.cc squid-3.5.12.NEW/cache_cf.cc
+--- squid-3.5.12.ORIG/src/cache_cf.cc	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/src/cache_cf.cc	2016-01-21 16:05:01.948009415 -0700
+@@ -724,8 +724,6 @@
+     if (Config.Program.store_id)
+         requirePathnameExists("store_id_program", Config.Program.store_id->key);
+
+-    requirePathnameExists("Icon Directory", Config.icons.directory);
+-
+     if (Config.errorDirectory)
+         requirePathnameExists("Error Directory", Config.errorDirectory);
+

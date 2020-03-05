@@ -1,0 +1,5 @@
+Package: imagemagick
+Priority: optional
+Section: libs
+Depends: libpthread, libstdcxx, zlib
+Description: The ImageMagick image manipulation library

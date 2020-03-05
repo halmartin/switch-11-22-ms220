@@ -1,0 +1,67 @@
+commit b66b6335223d9eec93a2367024e7ed61f1dd7fdd
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Fri Jan 13 12:12:34 2017 -0800
+
+    101-endianness
+
+diff --git a/bytesex.h b/bytesex.h
+index 14ce1d1..deea332 100644
+--- a/bytesex.h
++++ b/bytesex.h
+@@ -7,11 +7,16 @@
+ #ifndef ARS_BYTESEX_H
+ #define ARS_BYTESEX_H
+ 
+-#if 	defined(__i386__) \
++#if 	defined(__i386__) || defined(__x86_64) \
+ 	|| defined(__alpha__) \
++	|| (defined(__arm__) && (defined(ARMEL) || defined(__ARMEL__)))  \
++	|| (defined(__aarch64__) && (defined(AARCH64EL) || defined(__AARCH64EL__))) \
+ 	|| (defined(__mips__) && (defined(MIPSEL) || defined (__MIPSEL__)))
+ #define BYTE_ORDER_LITTLE_ENDIAN
+-#elif 	defined(__mc68000__) \
++#elif defined(__mc68000__) \
++	|| (defined(__arm__) && (defined(ARMEB) || defined(__ARMEB__))) \
++	|| (defined(__aarch64__) && (defined(AARCH64EB) || defined(__AARCH64EB__))) \
++	|| defined (__avr32__) \
+ 	|| defined (__sparc__) \
+ 	|| defined (__sparc) \
+ 	|| defined (__PPC__) \
+diff --git a/hping2.h b/hping2.h
+index 70e2035..32fd1cb 100644
+--- a/hping2.h
++++ b/hping2.h
+@@ -13,6 +13,7 @@
+ #ifndef _HPING2_H
+ #define _HPING2_H
+ 
++#include <endian.h>
+ #include <sys/types.h>
+ #include <sys/socket.h>
+ #include <netinet/in.h>
+@@ -248,10 +249,10 @@
+  * IP header
+  */
+ struct myiphdr {
+-#if defined(__LITTLE_ENDIAN_BITFIELD)
++#if __BYTE_ORDER == __LITTLE_ENDIAN
+         __u8    ihl:4,
+                 version:4;
+-#elif defined (__BIG_ENDIAN_BITFIELD)
++#elif __BYTE_ORDER == __BIG_ENDIAN
+         __u8    version:4,
+                 ihl:4;
+ #else
+@@ -287,10 +288,10 @@ struct mytcphdr {
+ 	__u16	th_dport;               /* destination port */
+ 	__u32	th_seq;                 /* sequence number */
+ 	__u32	th_ack;                 /* acknowledgement number */
+-#if defined (__LITTLE_ENDIAN_BITFIELD)
++#if __BYTE_ORDER == __LITTLE_ENDIAN
+ 	__u8    th_x2:4,                /* (unused) */
+ 		th_off:4;               /* data offset */
+-#elif defined (__BIG_ENDIAN_BITFIELD)
++#elif __BYTE_ORDER == __BIG_ENDIAN
+ 	__u8    th_off:4,               /* data offset */
+ 		th_x2:4;                /* (unused) */
+ #else

@@ -1,0 +1,101 @@
+#
+# Copyright (C) 2013, Broadcom Corporation. All Rights Reserved.
+# 
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
+# OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+# CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+config GMAC_XGS_IPROC
+	tristate "BRCM XGS iProc GMAC support "
+	select ET
+	select ET_ALL_PASSIVE_ON
+	depends on ARCH_BCM_SWITCH_ARM
+	default n
+	help
+	  Add GMAC support
+	
+	  If unsure, say N.
+
+menu "BRCM XGS iProc GMAC options"
+choice
+	prompt "ET ALL PASSIVE mode"
+	optional
+config ET_ALL_PASSIVE_ON
+	bool "ET ALL PASSIVE on"
+config ET_ALL_PASSIVE_RUNTIME
+	bool "ET ALL PASSIVE with runtime setting"
+endchoice
+config ET_NAPI2_POLL
+	bool "BCM GMAC NAPI2_POLL"
+	default n
+	depends on !ET_ALL_PASSIVE_ON && !ET_ALL_PASSIVE_RUNTIME && ARCH_BCM_SWITCH_ARM
+config BCM_IPROC_GMAC_ACP
+	tristate "BCM GMAC_ACP support"
+	depends on ARCH_BCM_SWITCH_ARM
+	default n
+	help
+	  Add GMAC_ACP support to improve performance without
+	  cache flushing/invalidate. The uboot's bootargs must
+	  include "mem=240M" to limit whole Kernel memory inside
+	  ACP region which is 256MB from 0x80000000; since kernel
+	  starts from 0x81000000, total mem is 240MB only
+	  If unsure, say N.
+config BCM_IPROC_GMAC_PREFETCH
+	tristate "BCM GMAC prefetching support"
+	depends on ARCH_BCM_SWITCH_ARM
+	default n
+	help
+	  If unsure, say N.
+config BCM_IPROC_GMAC_TXONCPU1
+	tristate "BCM GMAC TX-ON-CPU1 support"
+	depends on SMP && (ET_ALL_PASSIVE_ON || ET_ALL_PASSIVE_RUNTIME) && ARCH_BCM_SWITCH_ARM
+	default n
+	help
+	  Run "Passive Mode" Tx workthread on CPU1 for
+	  multi-cores utilizing;
+	  If unsure, say N.
+config BCM_IPROC_GMAC_LOCK_OPT
+	tristate "BCM GMAC LOCK OPTIMIZATION support"
+	depends on ARCH_BCM_SWITCH_ARM
+	default n
+	help
+	  Minimize locks during Tx/Rx tasks;
+	  it is tested under "Passive Mode" (workthread) only.
+	  If unsure, say N.
+config BCM_IPROC_GMAC_RWREG_OPT
+	tristate "BCM GMAC R/W_REG OPTIMIZATION support"
+	depends on ARCH_BCM_SWITCH_ARM
+	default n
+	help
+	  Remove unnecessary "DSB" intructions of R/W_REG Macro.
+	  If unsure, say N.
+config BCM_IPROC_GMAC_SG
+	bool "BCM GMAC Scatter Gather support"
+	depends on ARCH_BCM_SWITCH_ARM
+	default n
+config IPROC_SDK_MGT_PORT_HANDOFF
+	bool "GMAC SDK Management port handoff"
+	depends on ARCH_BCM_SWITCH_ARM
+	default n
+config IPROC_2STAGE_RX
+	bool "GMAC 2 stage packet RX"
+	depends on ARCH_BCM_SWITCH_ARM
+	default n
+config SERDES_ASYMMETRIC_MODE
+	bool "GMAC SDK Serdes Asymmetric Mode"
+	depends on ARCH_BCM_SWITCH_ARM
+	default n
+	depends on (MACH_KT2 || MACH_HX4)
+config JUMBO_FRAME
+	bool "GMAC Jumbo Frame Support"
+	depends on ARCH_BCM_SWITCH_ARM
+	default n
+endmenu

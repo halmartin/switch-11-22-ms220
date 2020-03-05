@@ -1,0 +1,28 @@
+commit 7f021a83aa62c85cf5ce1f4c9b98c8f4cebf2d96
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Thu Jun 2 15:43:14 2016 -0700
+
+    600-more_wtmp_removal.patch
+
+diff --git a/pppd/session.c b/pppd/session.c
+index 56385dd..0edcacc 100644
+--- a/pppd/session.c
++++ b/pppd/session.c
+@@ -365,7 +365,7 @@ session_start(flags, user, passwd, ttyName, msg)
+     if (SESS_ACCT & flags) {
+ 	if (strncmp(ttyName, "/dev/", 5) == 0)
+ 	    ttyName += 5;
+-	logwtmp(ttyName, user, ifname); /* Add wtmp login entry */
++	//logwtmp(ttyName, user, ifname); /* Add wtmp login entry */
+ 	logged_in = 1;
+ 
+ #if defined(_PATH_LASTLOG) && !defined(USE_PAM)
+@@ -418,7 +418,7 @@ session_end(const char* ttyName)
+     if (logged_in) {
+ 	if (strncmp(ttyName, "/dev/", 5) == 0)
+ 	    ttyName += 5;
+-	logwtmp(ttyName, "", ""); /* Wipe out utmp logout entry */
++	//logwtmp(ttyName, "", ""); /* Wipe out utmp logout entry */
+ 	logged_in = 0;
+     }
+ }

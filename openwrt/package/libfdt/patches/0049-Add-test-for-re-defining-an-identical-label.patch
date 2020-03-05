@@ -1,0 +1,57 @@
+From f67dfe845930b32ea14df6ff18d69799828a5909 Mon Sep 17 00:00:00 2001
+From: Stephen Warren <swarren@nvidia.com>
+Date: Tue, 3 Jul 2012 14:09:30 -0600
+Subject: [PATCH 49/98] Add test for re-defining an identical label
+
+When merging one device tree over the top of a previous tree, it is
+possible to define a duplicate label that has the same name and points
+to the same property or node. This is currently allowed by the duplicate
+label checking code. However, alternative duplicate label checking
+algorithms might not allow this. Add an explicit test to ensure this
+capability is maintained.
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ tests/label_repeated.dts | 15 +++++++++++++++
+ tests/run_tests.sh       |  2 ++
+ 2 files changed, 17 insertions(+)
+ create mode 100644 tests/label_repeated.dts
+
+diff --git a/tests/label_repeated.dts b/tests/label_repeated.dts
+new file mode 100644
+index 0000000..34225d3
+--- /dev/null
++++ b/tests/label_repeated.dts
+@@ -0,0 +1,15 @@
++/dts-v1/;
++
++/ {
++	l0: prop = "foo";
++
++	l1: node {
++	};
++};
++
++/ {
++	l0: prop = "foo";
++
++	l1: node {
++	};
++};
+diff --git a/tests/run_tests.sh b/tests/run_tests.sh
+index 9a2a7d9..e0299e3 100755
+--- a/tests/run_tests.sh
++++ b/tests/run_tests.sh
+@@ -281,6 +281,8 @@ dtc_tests () {
+     run_dtc_test -I dts -O dtb -o multilabel.test.dtb multilabel.dts
+     run_test references multilabel.test.dtb
+ 
++    run_dtc_test -I dts -O dtb -o label_repeated.test.dtb label_repeated.dts
++
+     run_dtc_test -I dts -O dtb -o dtc_comments.test.dtb comments.dts
+     run_dtc_test -I dts -O dtb -o dtc_comments-cmp.test.dtb comments-cmp.dts
+     run_test dtbs_equal_ordered dtc_comments.test.dtb dtc_comments-cmp.test.dtb
+-- 
+1.8.1.2
+

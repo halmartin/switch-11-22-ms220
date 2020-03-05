@@ -1,0 +1,44 @@
+--- a/configure	2013-04-30 14:31:12.837809168 -0700
++++ b/configure	2013-04-30 14:32:42.075449664 -0700
+@@ -14204,13 +14204,12 @@
+ 
+ 
+ # In case INADDR_NONE is not defined (like on Solaris)
+-have_inaddr_none="no"
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for INADDR_NONE" >&5
+ $as_echo_n "checking for INADDR_NONE... " >&6; }
+ if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+@@ -14581,7 +14580,7 @@
+ if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+@@ -15433,7 +15432,7 @@
+ if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+@@ -15497,7 +15496,7 @@
+     if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext

@@ -1,0 +1,18 @@
+config GPIO_HR3
+	tristate "Hurricane 3 GPIO support"
+	default y
+	depends on ARCH_BCM_SWITCH_ARM
+	select GPIO_GENERIC
+	select GPIOLIB_IRQCHIP
+	help
+		Say yes here to enable GPIO support for the Broadcom
+		Hurricane 3 SoC.
+
+config PCIE_HR3
+	tristate "Hurricane 3 PCIe controller"
+	select PCI_DOMAINS
+	depends on ARCH_BCM_SWITCH_ARM
+	default y
+	help
+		Say yes here to enable PCIe support for the Broadcom
+		Hurricane 3 SoC.

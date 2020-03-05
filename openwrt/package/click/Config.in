@@ -1,0 +1,10 @@
+config BR2_PACKAGE_CLICK
+	prompt "click............................. The Click Modular Router"
+	tristate
+	select BR2_PACKAGE_KMOD_TUN
+	default m if CONFIG_DEVEL
+	help
+		http://pdos.csail.mit.edu/click/
+
+
+

@@ -1,0 +1,18 @@
+commit 56b07dd26cd09008cab1810365a2d737e6251ea7
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Tue Jan 20 14:35:59 2015 -0800
+
+    Support off_t type in libfdisk.h
+
+diff --git a/libfdisk/src/libfdisk.h.in b/libfdisk/src/libfdisk.h.in
+index d2d84f5..8cb829b 100644
+--- a/libfdisk/src/libfdisk.h.in
++++ b/libfdisk/src/libfdisk.h.in
+@@ -28,6 +28,7 @@ extern "C" {
+ #include <stdio.h>
+ #include <stdarg.h>
+ #include <stdint.h>
++#include <sys/types.h>
+ 
+ /**
+  * LIBFDISK_VERSION:

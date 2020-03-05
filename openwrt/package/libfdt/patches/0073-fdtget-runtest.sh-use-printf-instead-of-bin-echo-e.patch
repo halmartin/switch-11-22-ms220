@@ -1,0 +1,37 @@
+From 1760e7ca03894689118646e229ca9487158cd0e8 Mon Sep 17 00:00:00 2001
+From: Stephen Warren <swarren@nvidia.com>
+Date: Tue, 11 Dec 2012 10:05:51 -0700
+Subject: [PATCH 73/98] fdtget-runtest.sh: use printf instead of /bin/echo -e
+
+Not all /bin/echo implementations support the -e option. Instead, use
+printf, which appears to be more widely available than /bin/echo -e.
+
+See commit eaec1db "fdtget-runtest.sh: Fix failures when /bin/sh isn't
+bash" for history.
+
+I have tested this on Ubuntu 10.04 with /bin/sh pointing to both dash
+and bash.
+
+Reported-by: Mike Frysinger <vapier@gentoo.org> # and implemented-by
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ tests/fdtget-runtest.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/fdtget-runtest.sh b/tests/fdtget-runtest.sh
+index c3a3559..8d8b058 100755
+--- a/tests/fdtget-runtest.sh
++++ b/tests/fdtget-runtest.sh
+@@ -8,7 +8,7 @@ rm -f $LOG $EXPECT
+ trap "rm -f $LOG $EXPECT" 0
+ 
+ expect="$1"
+-/bin/echo -e $expect >$EXPECT
++printf '%b\n' "$expect" > $EXPECT
+ shift
+ 
+ verbose_run_log_check "$LOG" $VALGRIND $DTGET "$@"
+-- 
+1.8.1.2
+

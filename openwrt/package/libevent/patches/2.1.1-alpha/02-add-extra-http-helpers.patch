@@ -1,0 +1,88 @@
+--- a/http.c	2012-02-29 12:54:36.000000000 -0800
++++ b/http.c	2012-11-09 23:35:49.666132337 -0800
+@@ -2296,6 +2296,12 @@
+ 	*port = evcon->port;
+ }
+ 
++size_t
++evhttp_connection_get_buffered_output_len(struct evhttp_connection *evcon)
++{
++	return evbuffer_get_length(bufferevent_get_output(evcon->bufev));
++}
++
+ int
+ evhttp_connection_connect_(struct evhttp_connection *evcon)
+ {
+@@ -2582,6 +2588,15 @@
+ void
+ evhttp_send_reply_chunk(struct evhttp_request *req, struct evbuffer *databuf)
+ {
++    evhttp_send_reply_chunk_withcb(req, databuf,
++	(evhttp_write_buffer_cb_t)NULL, NULL);
++}
++
++void
++evhttp_send_reply_chunk_withcb(struct evhttp_request *req,
++    struct evbuffer *databuf, evhttp_write_buffer_cb_t cb,
++    void *arg)
++{
+ 	struct evhttp_connection *evcon = req->evcon;
+ 	struct evbuffer *output;
+ 
+@@ -2602,7 +2617,7 @@
+ 	if (req->chunked) {
+ 		evbuffer_add(output, "\r\n", 2);
+ 	}
+-	evhttp_write_buffer(evcon, NULL, NULL);
++	evhttp_write_buffer(evcon, cb, arg);
+ }
+ 
+ void
+--- a/include/event2/http.h	2012-02-29 12:54:36.000000000 -0800
++++ b/include/event2/http.h	2012-11-09 23:35:56.569952698 -0800
+@@ -389,13 +389,34 @@
+    The reply chunk consists of the data in databuf.  After calling
+    evhttp_send_reply_chunk() databuf will be empty, but the buffer is
+    still owned by the caller and needs to be deallocated by the caller
+-   if necessary.
++   if necessary.  evhttp_send_reply_chunk_withcb() can be used if a
++   callback is required once the data has been flushed to the client.
+ 
+    @param req a request object
+    @param databuf the data chunk to send as part of the reply.
+ */
+ void evhttp_send_reply_chunk(struct evhttp_request *req,
+     struct evbuffer *databuf);
++
++/**
++   Send another data chunk as part of an ongoing chunked reply.
++
++   Same as evhttp_send_reply_chunk(), except that the given callback is
++   executed once the data has been flushed to the client.  Only the most
++   recent outstanding evhttp_send_reply_chunk_withcb() callback will be
++   remembered.
++
++   @param req a request object
++   @param databuf the data chunk to send as part of the reply.
++   @param cb the callback to executed
++   @param arg argument given to callback
++*/
++struct evhttp_connection;
++typedef void (*evhttp_write_buffer_cb_t)(struct evhttp_connection *, void *);
++void evhttp_send_reply_chunk_withcb(struct evhttp_request *req,
++    struct evbuffer *databuf, evhttp_write_buffer_cb_t cb,
++    void *arg);
++
+ /**
+    Complete a chunked reply, freeing the request as appropriate.
+ 
+@@ -557,6 +578,9 @@
+ void evhttp_connection_get_peer(struct evhttp_connection *evcon,
+     char **address, ev_uint16_t *port);
+ 
++/** Get the length of the buffered output associated with this connection. */
++size_t evhttp_connection_get_buffered_output_len(struct evhttp_connection *evcon);
++
+ /**
+     Make an HTTP request over the specified connection.
+ 

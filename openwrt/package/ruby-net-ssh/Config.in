@@ -1,0 +1,7 @@
+config BR2_PACKAGE_RUBY_NET_SSH
+	prompt "ruby_net_ssh......................... Ruby net::ssh"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  Ruby.. hopefully you know what it is
+

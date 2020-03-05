@@ -1,0 +1,98 @@
+From 2ff52133e29897968193149990c5ffcee1f709a3 Mon Sep 17 00:00:00 2001
+From: aacharya <aacharya@meraki.net>
+Date: Thu, 21 Dec 2017 06:50:10 -0800
+Subject: [PATCH 3/4] add option to ignore ramdisk
+
+---
+ kexec/arch/arm/include/arch/options.h |  2 ++
+ kexec/arch/arm/kexec-fit-arm.c        | 11 +++++++++++
+ 2 files changed, 13 insertions(+)
+
+diff --git a/kexec/arch/arm/include/arch/options.h b/kexec/arch/arm/include/arch/options.h
+index e37fc1f..0fc1cd9 100644
+--- a/kexec/arch/arm/include/arch/options.h
++++ b/kexec/arch/arm/include/arch/options.h
+@@ -13,6 +13,7 @@
+ #define OPT_REUSE_CMDLINE	(OPT_ARCH_MAX+4)
+ #define OPT_CONFIG	(OPT_ARCH_MAX+5)
+ #define OPT_LOADADDR	(OPT_ARCH_MAX+6)
++#define OPT_IGN_RAMDISK	(OPT_ARCH_MAX+7)
+ 
+ /* Options relevant to the architecture (excluding loader-specific ones),
+  * in this case none:
+@@ -49,6 +50,7 @@
+ 	{ "page-offset",	1, 0, OPT_PAGE_OFFSET }, \
+ 	{ "reuse-cmdline",	0, 0, OPT_REUSE_CMDLINE }, \
+ 	{ "use-loadaddr",	0, 0, OPT_LOADADDR }, \
++	{ "ignore-ramdisk",     0, 0, OPT_IGN_RAMDISK }, \
+ 	{ "config",			1, 0, OPT_CONFIG },
+ 
+ #define KEXEC_ALL_OPT_STR KEXEC_ARCH_OPT_STR "a:r:s:"
+diff --git a/kexec/arch/arm/kexec-fit-arm.c b/kexec/arch/arm/kexec-fit-arm.c
+index 6c9af16..bdba9dc 100644
+--- a/kexec/arch/arm/kexec-fit-arm.c
++++ b/kexec/arch/arm/kexec-fit-arm.c
+@@ -52,6 +52,7 @@ void fit_arm_usage(void)
+ 		"    --append=STRING       Set the kernel command line to STRING.\n"
+ 		"    --reuse-cmdline       Use kernel command line from running system.\n"
+ 		"    --use-loadaddr        Use load address specified in FIT.\n"
++		"    --ignore-ramdisk      Allow empty ramdisk in FIT.\n"
+ 		);
+ }
+ 
+@@ -59,6 +60,7 @@ static int do_fit_arm_load(struct kexec_info *info,
+ 			   const void *fit,  off_t data_len,
+ 			   const char *command_line,
+ 			   const char *config_name,
++			   const char ignore_ramdisk,
+ 			   const char loadaddr_config)
+ {
+ 	int images_offset;
+@@ -132,7 +134,10 @@ static int do_fit_arm_load(struct kexec_info *info,
+ 	if (ramdisk_name)
+ 		if (find_fit_subimage(fit, images_offset, ramdisk_name,
+ 				      &ramdisk_data, &ramdisk_len, &ramdisk_load, NULL, NULL, "arm") < 0)
++	{
++		if (!ignore_ramdisk)
+ 			return -1;
++	}
+ 
+ 	if (dtb_name)
+ 		if (find_fit_subimage(fit, images_offset, dtb_name,
+@@ -182,6 +187,7 @@ int fit_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 	const char *append = NULL;
+ 	char *config = NULL;
+ 	char loadaddr_config = 0;
++	char ignore_ramdisk = 0;
+ 	int opt;
+ 	int result;
+ 
+@@ -192,6 +198,7 @@ int fit_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 		{ "reuse-cmdline",	0, 0, OPT_REUSE_CMDLINE },
+ 		{ "config",             1, 0, OPT_CONFIG },
+ 		{ "use-loadaddr",       0, 0, OPT_LOADADDR },
++		{ "ignore-ramdisk",     0, 0, OPT_IGN_RAMDISK },
+ 		{ 0,                    0, 0, 0},
+ 	};
+ 	static const char short_options[] = KEXEC_ARCH_OPT_STR "d";
+@@ -215,6 +222,9 @@ int fit_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 		case OPT_LOADADDR:
+ 			loadaddr_config = 1;
+ 			break;
++		case OPT_IGN_RAMDISK:
++			ignore_ramdisk = 1;
++			break;
+ 		}
+ 	}
+ 	command_line = concat_cmdline(tmp_cmdline, append);
+@@ -226,6 +236,7 @@ int fit_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 				 buf, len,
+ 				 command_line,
+ 				 config,
++				 ignore_ramdisk,
+ 				 loadaddr_config);
+ 	free(command_line);
+ 	if (config != NULL)
+-- 
+2.14.2
+

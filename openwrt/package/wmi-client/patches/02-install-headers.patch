@@ -1,0 +1,17 @@
+--- a/Samba/source/headermap.txt	2011-07-25 12:33:01.119675531 -0700
++++ b/Samba/source/headermap.txt	2011-07-25 12:32:49.131675527 -0700
+@@ -94,3 +94,4 @@
+ param/share_proto.h: param/share_proto.h
+ lib/util/util_tdb.h: util_tdb.h
+ lib/util/wrap_xattr.h: wrap_xattr.h
++wmi/wmi.h: wmi.h
+--- a/Samba/source/wmi/config.mk	2011-07-25 12:08:17.235675072 -0700
++++ b/Samba/source/wmi/config.mk	2011-07-25 12:22:29.723675335 -0700
+@@ -81,6 +81,7 @@
+                 NDR_TABLE \
+                 DCOM_PROXY_DCOM \
+                 dcom 
++PUBLIC_HEADERS = wmi.h
+ PRIVATE_DEPENDENCIES = POPT_SAMBA WINSMB
+ OBJ_FILES = \
+                 wmicso.o \

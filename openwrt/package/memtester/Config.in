@@ -1,0 +1,7 @@
+config BR2_PACKAGE_MEMTESTER
+	prompt "memtester......................... A utility for testing memory."
+	tristate
+	help
+	  memtester allocates memory and tests it.
+	  
+	  http://pyropus.ca/software/memtester/

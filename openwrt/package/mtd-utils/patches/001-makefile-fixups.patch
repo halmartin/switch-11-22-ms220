@@ -1,0 +1,11 @@
+diff -ur mtd-utils-1.4.1-orig//common.mk mtd-utils-1.4.1/common.mk
+--- mtd-utils-1.4.1-orig//common.mk	2010-10-16 08:38:34.000000000 -0700
++++ mtd-utils-1.4.1/common.mk	2010-12-18 15:33:31.175123414 -0800
+@@ -1,7 +1,3 @@
+-CC := $(CROSS)gcc
+-AR := $(CROSS)ar
+-RANLIB := $(CROSS)ranlib
+-
+ # Stolen from Linux build system
+ try-run = $(shell set -e; ($(1)) >/dev/null 2>&1 && echo "$(2)" || echo "$(3)")
+ cc-option = $(call try-run, $(CC) $(1) -c -xc /dev/null -o /dev/null,$(1),$(2))

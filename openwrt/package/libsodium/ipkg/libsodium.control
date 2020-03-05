@@ -1,0 +1,4 @@
+Package: libsodium
+Priority: optional
+Section: libs
+Description: NaCl-based crypto library

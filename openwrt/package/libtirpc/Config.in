@@ -1,0 +1,7 @@
+config BR2_PACKAGE_LIBTIRPC
+        prompt "libtirpc.......................... Sun RPC library"
+        bool
+        help
+          A Sun RPC implementation
+
+

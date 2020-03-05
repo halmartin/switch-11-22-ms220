@@ -1,0 +1,6 @@
+Package: libdirectfb
+Priority: optional
+Section: libs
+Depends: libfreetype
+Description: foo
+

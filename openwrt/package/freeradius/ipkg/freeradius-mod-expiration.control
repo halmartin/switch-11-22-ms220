@@ -1,0 +1,5 @@
+Package: freeradius-mod-expiration
+Priority: optional
+Section: net
+Description: EXPIRATION module for FreeRADIUS
+Depends: freeradius

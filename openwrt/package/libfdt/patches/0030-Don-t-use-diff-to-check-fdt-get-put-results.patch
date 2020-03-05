@@ -1,0 +1,72 @@
+From c34e88354a07099dbc15a41621c81f71325d25fd Mon Sep 17 00:00:00 2001
+From: David Gibson <david@gibson.dropbear.id.au>
+Date: Fri, 3 Feb 2012 16:12:08 +1100
+Subject: [PATCH 30/98] Don't use diff to check fdt{get,put} results
+
+Currently the fdt{get,put}-runtest.sh scripts invoke diff to check if
+fdt{get,put} did the right thing.  This isn't great though: it's not
+obvious from the diff output which is the expected and which is the
+actual result; diff's line by line behaviour is useless here, since all
+the results are a single line and finally, when there is a difference
+it always prints information even when the tests are supposed to be
+running in quiet mode.
+
+This patch uses cmp instead, and explicitly prints the expected results,
+when running in verbose mode (the invocation of fdtget itself will have
+already displayed the actual results in this mode.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ tests/fdtget-runtest.sh | 13 +++++++------
+ tests/fdtput-runtest.sh | 13 +++++++------
+ 2 files changed, 14 insertions(+), 12 deletions(-)
+
+diff --git a/tests/fdtget-runtest.sh b/tests/fdtget-runtest.sh
+index 75e7503..dac7f9a 100755
+--- a/tests/fdtget-runtest.sh
++++ b/tests/fdtget-runtest.sh
+@@ -13,11 +13,12 @@ shift
+ 
+ verbose_run_log_check "$LOG" $VALGRIND $DTGET "$@"
+ 
+-diff $EXPECT $LOG
+-ret="$?"
+-
+-if [ "$ret" -eq 0 ]; then
+-	PASS
++if cmp $EXPECT $LOG>/dev/null; then
++    PASS
+ else
+-	FAIL
++    if [ -z "$QUIET_TEST" ]; then
++	echo "EXPECTED :-:"
++	cat $EXPECT
++    fi
++    FAIL "Results differ from expected"
+ fi
+diff --git a/tests/fdtput-runtest.sh b/tests/fdtput-runtest.sh
+index dbd9c0d..527a968 100644
+--- a/tests/fdtput-runtest.sh
++++ b/tests/fdtput-runtest.sh
+@@ -28,11 +28,12 @@ verbose_run_check $VALGRIND "$DTPUT" "$dtb" "$node" "$property" $value $flags
+ # Now fdtget to read the value
+ verbose_run_log_check "$LOG" $VALGRIND "$DTGET" "$dtb" "$node" "$property" $flags
+ 
+-diff $EXPECT $LOG
+-ret="$?"
+-
+-if [ "$ret" -eq 0 ]; then
+-	PASS
++if cmp $EXPECT $LOG >/dev/null; then
++    PASS
+ else
+-	FAIL
++    if [ -z "$QUIET_TEST" ]; then
++	echo "EXPECTED :-:"
++	cat $EXPECT
++    fi
++    FAIL "Results differ from expected"
+ fi
+-- 
+1.8.1.2
+

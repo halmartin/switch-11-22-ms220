@@ -1,0 +1,54 @@
+--- a/ltmain.sh	2014-04-28 12:13:08.000000000 -0700
++++ b/ltmain.sh	2017-06-14 14:43:39.786585916 -0700
+@@ -2504,15 +2504,15 @@
+ 	    # Hardcode the library path.
+ 	    # Skip directories that are in the system default run-time
+ 	    # search path.
+-	    case " $sys_lib_dlsearch_path " in
+-	    *" $absdir "*) ;;
+-	    *)
+-	      case "$compile_rpath " in
+-	      *" $absdir "*) ;;
+-	      *) compile_rpath="$compile_rpath $absdir"
+-	      esac
+-	      ;;
+-	    esac
++	    #case " $sys_lib_dlsearch_path " in
++	    #*" $absdir "*) ;;
++	    #*)
++	    #  case "$compile_rpath " in
++	    #  *" $absdir "*) ;;
++	    #  *) compile_rpath="$compile_rpath $absdir"
++	    #  esac
++	    #  ;;
++	    #esac
+ 	    case " $sys_lib_dlsearch_path " in
+ 	    *" $libdir "*) ;;
+ 	    *)
+@@ -4801,7 +4801,7 @@
+       if test "$hardcode_action" = relink; then
+ 	# Fast installation is not supported
+ 	link_command="$compile_var$compile_command$compile_rpath"
+-	relink_command="$finalize_var$finalize_command$finalize_rpath"
++	relink_command="$finalize_var$finalize_command$finalize_c"
+ 
+ 	$echo "$modename: warning: this platform does not like uninstalled shared libraries" 1>&2
+ 	$echo "$modename: \`$output' will be relinked during installation" 1>&2
+@@ -5909,7 +5909,7 @@
+ 	test "X$dir" = "X$file/" && dir=
+ 	dir="$dir$objdir"
+ 
+-	if test -n "$relink_command"; then
++	if test "$fast_install" = no && test -n "$relink_command"; then
+ 	  # Determine the prefix the user has applied to our future dir.
+ 	  inst_prefix_dir=`$echo "$destdir" | $SED "s%$libdir\$%%"`
+ 
+@@ -5948,7 +5948,7 @@
+ 	  shift
+ 
+ 	  srcname="$realname"
+-	  test -n "$relink_command" && srcname="$realname"T
++	  test "$fast_install" = no && test -n "$relink_command" && srcname="$realname"T
+ 
+ 	  # Install the shared library and build the symlinks.
+ 	  $show "$install_prog $dir/$srcname $destdir/$realname"

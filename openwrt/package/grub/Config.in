@@ -1,0 +1,9 @@
+config BR2_PACKAGE_GRUB
+	prompt "grub.............................. The Grand Unified Bootloader"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+          bleh
+
+	  http://www.nongnu.org/grub/
+

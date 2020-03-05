@@ -1,0 +1,5 @@
+Package: hcidump
+Priority: optional
+Section: net
+Description: HCI packet capture/dump tool
+Depends: libmbluez, kmod-bluetooth

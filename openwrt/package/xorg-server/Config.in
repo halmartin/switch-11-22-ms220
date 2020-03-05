@@ -1,0 +1,9 @@
+config BR2_PACKAGE_XORG_SERVER
+	prompt "Xorg-server....................... The X Window System Server"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  The X Window System is the standard graphics server used
+	  on Unix systems and more.
+
+	  http://www.x.org

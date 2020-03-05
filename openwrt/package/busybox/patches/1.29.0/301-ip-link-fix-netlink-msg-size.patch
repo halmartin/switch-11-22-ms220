@@ -1,0 +1,25 @@
+From 97dcba9b151cf4c76124161b6afd00974a55bc18 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Mon, 9 Jul 2018 09:06:07 -0700
+Subject: [PATCH 26/26] 301
+
+---
+ networking/libiproute/iplink.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/networking/libiproute/iplink.c b/networking/libiproute/iplink.c
+index 9c164a7..1cedd9f 100644
+--- a/networking/libiproute/iplink.c
++++ b/networking/libiproute/iplink.c
+@@ -652,7 +652,7 @@ static int do_add_or_delete(char **argv, const unsigned rtm)
+ 	}
+ 	xrtnl_open(&rth);
+ 	ll_init_map(&rth);
+-	if (type_str) {
++	if (type_str && rtm == RTM_NEWLINK) {
+ 		struct rtattr *linkinfo = NLMSG_TAIL(&req.n);
+ 
+ 		addattr_l(&req.n, sizeof(req), IFLA_LINKINFO, NULL, 0);
+-- 
+2.17.0
+

@@ -1,0 +1,30 @@
+From 97c122eacc8636b26992cf6e080775f7c28660f9 Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Wed, 10 Apr 2013 14:29:08 -0400
+Subject: [PATCH 82/98] die: constify format string arg
+
+We only display this string, so there's no need for it to be writable.
+Constify away!
+
+Acked-by: David Gibson <David@gibson.dropbear.id.au>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ util.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/util.h b/util.h
+index 3c20b15..d856eb9 100644
+--- a/util.h
++++ b/util.h
+@@ -23,7 +23,7 @@
+  *                                                                   USA
+  */
+ 
+-static inline void __attribute__((noreturn)) die(char * str, ...)
++static inline void __attribute__((noreturn)) die(const char *str, ...)
+ {
+ 	va_list ap;
+ 
+-- 
+1.8.1.2
+

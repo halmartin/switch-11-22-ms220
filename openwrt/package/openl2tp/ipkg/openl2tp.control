@@ -1,0 +1,5 @@
+Package: openl2tp
+Section: net
+Priority: optional
+Description: openl2tp
+Depends: ppp, libreadline

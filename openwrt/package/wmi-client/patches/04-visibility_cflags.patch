@@ -1,0 +1,11 @@
+--- a/Samba/source/build/m4/check_cc.m4	2008-07-30 12:44:55.000000000 -0700
++++ b/Samba/source/build/m4/check_cc.m4	2011-07-22 15:36:47.911598801 -0700
+@@ -82,7 +82,7 @@
+ 		visibility_attribute=yes
+ 	],[
+ 		AC_MSG_RESULT(no)
+-	])
++	], AC_MSG_RESULT(no))
+ 	CFLAGS="$OLD_CFLAGS"
+ fi
+ AC_SUBST(visibility_attribute)

@@ -1,0 +1,25 @@
+config BR2_PACKAGE_UCLIBCXX
+	prompt "uClibc++.......................... C++ library for embedded systems"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  A standard C++ library for embedded systems
+
+choice
+	prompt "uClibc++ Version" if BR2_PACKAGE_UCLIBCXX
+	default BR2_PACKAGE_UCLIBCXX_VERSION_0_1_11
+	help
+	  Select the version of uClibc++ you wish to use.
+
+	config BR2_PACKAGE_UCLIBCXX_VERSION_0_1_11
+	       bool "uClibc++ 0.1.11"
+
+	config BR2_PACKAGE_UCLIBCXX_VERSION_0_2_2
+	       bool "uClibc++ 0.2.2"
+
+endchoice
+
+config BR2_PACKAGE_UCLIBC_VERSION
+       string
+       default "0.1.11"		if BR2_PACKAGE_UCLIBCXX_VERSION_0_1_11
+       default "0.2.2"		if BR2_PACKAGE_UCLIBCCC_VERSION_0_2_2

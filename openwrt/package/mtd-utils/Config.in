@@ -1,0 +1,7 @@
+config BR2_PACKAGE_MTD_UTILS
+	prompt "mtd-utils......................... Tools for reading/writing NAND flash"
+	tristate
+	help
+	  nanddump flash_eraseall flash_info flash_erase nandwrite utilities
+	  
+	  http://www.linux-mtd.infradead.org

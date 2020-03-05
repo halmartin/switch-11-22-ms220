@@ -1,0 +1,11 @@
+--- origopenl2tp/l2tp_main.c	2012-02-16 17:17:47.000000000 -0800
++++ newopenl2tp/l2tp_main.c	2012-03-05 16:00:26.000000000 -0800
+@@ -142,6 +142,8 @@
+ 	int fd;
+ 	char pidstr[10];
+ 
++	setlinebuf(stdout);
++
+ 	/* Parse arguments */
+ 	result = l2tp_parse_args(argc, argv);
+ 	if (result < 0) {

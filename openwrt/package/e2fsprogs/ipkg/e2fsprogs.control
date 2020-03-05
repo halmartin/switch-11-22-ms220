@@ -1,0 +1,5 @@
+Package: e2fsprogs
+Priority: optional
+Section: admin
+Depends: libuuid, libblkid
+Description: Ext2/3/4 filesystem utilities

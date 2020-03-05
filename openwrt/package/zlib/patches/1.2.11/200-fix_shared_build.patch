@@ -1,0 +1,13 @@
+diff --git a/Makefile.in b/Makefile.in
+index 5a77949..33fb1a2 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -285,6 +285,8 @@ placebo $(SHAREDLIBV): $(PIC_OBJS) libz.a
+ 	ln -s $@ $(SHAREDLIBM)
+ 	-@rmdir objs
+ 
++$(SHAREDLIB): $(SHAREDLIBV)
++
+ example$(EXE): example.o $(STATICLIB)
+ 	$(CC) $(CFLAGS) -o $@ example.o $(TEST_LDFLAGS)
+ 

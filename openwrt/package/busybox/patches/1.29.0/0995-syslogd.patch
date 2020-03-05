@@ -1,0 +1,200 @@
+From 507d7202605f8cabe37786f54949add5ed612768 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Tue, 3 Jul 2018 09:01:18 -0700
+Subject: [PATCH 07/26] 0995
+
+---
+ sysklogd/syslogd.c | 134 ++++++++++++++++++++++++---------------------
+ 1 file changed, 72 insertions(+), 62 deletions(-)
+
+diff --git a/sysklogd/syslogd.c b/sysklogd/syslogd.c
+index 4265f4f..6e45712 100644
+--- a/sysklogd/syslogd.c
++++ b/sysklogd/syslogd.c
+@@ -117,7 +117,7 @@
+ //usage:#define syslogd_trivial_usage
+ //usage:       "[OPTIONS]"
+ //usage:#define syslogd_full_usage "\n\n"
+-//usage:       "System logging utility\n"
++//usage:       "System logging utility (patched)\n"
+ //usage:	IF_NOT_FEATURE_SYSLOGD_CFG(
+ //usage:       "(this version of syslogd ignores /etc/syslog.conf)\n"
+ //usage:	)
+@@ -279,6 +279,8 @@ struct globals {
+ 	 * host (64), fac.prio (20) to the message */
+ 	/* (growth by: 15 + 64 + 20 + delims = ~110) */
+ 	char printbuf[MAX_READ*2 + 128];
++        /* an additional buffer for adding hostname for remote syslog */
++	char netbuf[MAX_READ*2 + 128];
+ };
+ 
+ static const struct init_globals init_data = {
+@@ -808,6 +810,24 @@ static void parse_fac_prio_20(int pri, char *res20)
+ 	snprintf(res20, 20, "<%d>", pri);
+ }
+ 
++#if ENABLE_FEATURE_REMOTE_LOG
++static int try_to_resolve_remote(remoteHost_t *rh)
++{
++  if (!rh->remoteAddr) {
++    unsigned now = monotonic_sec();
++    
++    /* Don't resolve name too often - DNS timeouts can be big */
++    if ((now - rh->last_dns_resolve) < DNS_WAIT_SEC)
++      return -1;
++    rh->last_dns_resolve = now;
++    rh->remoteAddr = host2sockaddr(rh->remoteHostname, 514);
++    if (!rh->remoteAddr)
++      return -1;
++  }
++  return xsocket(rh->remoteAddr->u.sa.sa_family, SOCK_DGRAM, 0);
++}
++#endif
++
+ /* len parameter is used only for "is there a timestamp?" check.
+  * NB: some callers cheat and supply len==0 when they know
+  * that there is no timestamp, short-circuiting the test. */
+@@ -841,8 +861,55 @@ static void timestamp_and_log(int pri, char *msg, int len)
+ 		char res[20];
+ 		parse_fac_prio_20(pri, res);
+ 		sprintf(G.printbuf, "%s %.64s %s %s\n", timestamp, G.hostname, res, msg);
++		sprintf(G.netbuf, "%s %.64s %s %s\n", timestamp, G.hostname, res, msg);
+ 	}
+-
++	ssize_t net_sz;
++	net_sz = MAX_READ*2 + 128;
++	
++	/* Drop trailing '\n' and NULs (typically there is one NUL) */
++	while (1) {
++	  if (G.netbuf[net_sz-1] != '\0' && G.netbuf[net_sz-1] != '\n')
++	    break;
++	  net_sz--;
++	}
++	
++#if ENABLE_FEATURE_REMOTE_LOG
++	llist_t *item;
++	/* Stock syslogd sends it '\n'-terminated
++	 * over network, mimic that */
++	G.netbuf[net_sz] = '\n';
++	
++	/* We are not modifying log messages in any way before send */
++	/* Remote site cannot trust _us_ anyway and need to do validation again */
++	for (item = G.remoteHosts; item != NULL; item = item->link) {
++	  remoteHost_t *rh = (remoteHost_t *)item->data;
++	  
++	  if (rh->remoteFD == -1) {
++	    rh->remoteFD = try_to_resolve_remote(rh);
++	    if (rh->remoteFD == -1)
++	      continue;
++	  }
++	  
++	  /* Send message to remote logger.
++	   * On some errors, close and set remoteFD to -1
++	   * so that DNS resolution is retried.
++	   */
++	  if (sendto(rh->remoteFD, G.netbuf, net_sz+1,
++		     MSG_DONTWAIT | MSG_NOSIGNAL,
++		     &(rh->remoteAddr->u.sa), rh->remoteAddr->len) == -1
++	      ) {
++	    switch (errno) {
++	    case ECONNRESET:
++	    case ENOTCONN: /* paranoia */
++	    case EPIPE:
++	      close(rh->remoteFD);
++	      rh->remoteFD = -1;
++	      free(rh->remoteAddr);
++	      rh->remoteAddr = NULL;
++	    }
++	  }
++	}
++#endif
+ 	/* Log message locally (to file or shared mem) */
+ #if ENABLE_FEATURE_SYSLOGD_CFG
+ 	{
+@@ -956,30 +1023,9 @@ static NOINLINE int create_socket(void)
+ 	return sock_fd;
+ }
+ 
+-#if ENABLE_FEATURE_REMOTE_LOG
+-static int try_to_resolve_remote(remoteHost_t *rh)
+-{
+-	if (!rh->remoteAddr) {
+-		unsigned now = monotonic_sec();
+-
+-		/* Don't resolve name too often - DNS timeouts can be big */
+-		if ((now - rh->last_dns_resolve) < DNS_WAIT_SEC)
+-			return -1;
+-		rh->last_dns_resolve = now;
+-		rh->remoteAddr = host2sockaddr(rh->remoteHostname, 514);
+-		if (!rh->remoteAddr)
+-			return -1;
+-	}
+-	return xsocket(rh->remoteAddr->u.sa.sa_family, SOCK_DGRAM, 0);
+-}
+-#endif
+-
+ static void do_syslogd(void) NORETURN;
+ static void do_syslogd(void)
+ {
+-#if ENABLE_FEATURE_REMOTE_LOG
+-	llist_t *item;
+-#endif
+ #if ENABLE_FEATURE_SYSLOGD_DUP
+ 	int last_sz = -1;
+ 	char *last_buf;
+@@ -1045,49 +1091,13 @@ static void do_syslogd(void)
+ 			if (memcmp(last_buf, recvbuf, sz) == 0)
+ 				continue;
+ 		last_sz = sz;
+-#endif
+-#if ENABLE_FEATURE_REMOTE_LOG
+-		/* Stock syslogd sends it '\n'-terminated
+-		 * over network, mimic that */
+-		recvbuf[sz] = '\n';
+-
+-		/* We are not modifying log messages in any way before send */
+-		/* Remote site cannot trust _us_ anyway and need to do validation again */
+-		for (item = G.remoteHosts; item != NULL; item = item->link) {
+-			remoteHost_t *rh = (remoteHost_t *)item->data;
+-
+-			if (rh->remoteFD == -1) {
+-				rh->remoteFD = try_to_resolve_remote(rh);
+-				if (rh->remoteFD == -1)
+-					continue;
+-			}
+-
+-			/* Send message to remote logger.
+-			 * On some errors, close and set remoteFD to -1
+-			 * so that DNS resolution is retried.
+-			 */
+-			if (sendto(rh->remoteFD, recvbuf, sz+1,
+-					MSG_DONTWAIT | MSG_NOSIGNAL,
+-					&(rh->remoteAddr->u.sa), rh->remoteAddr->len) == -1
+-			) {
+-				switch (errno) {
+-				case ECONNRESET:
+-				case ENOTCONN: /* paranoia */
+-				case EPIPE:
+-					close(rh->remoteFD);
+-					rh->remoteFD = -1;
+-					free(rh->remoteAddr);
+-					rh->remoteAddr = NULL;
+-				}
+-			}
+-		}
+ #endif
+ 		if (!ENABLE_FEATURE_REMOTE_LOG || (option_mask32 & OPT_locallog)) {
+-			recvbuf[sz] = '\0'; /* ensure it *is* NUL terminated */
+-			split_escape_and_log(recvbuf, sz);
++		  recvbuf[sz] = '\0'; /* ensure it *is* NUL terminated */
++		  split_escape_and_log(recvbuf, sz);
+ 		}
+ 	} /* while (!bb_got_signal) */
+-
++	
+ 	timestamp_and_log_internal("syslogd exiting");
+ 	remove_pidfile(CONFIG_PID_FILE_PATH "/syslogd.pid");
+ 	ipcsyslog_cleanup();
+-- 
+2.17.0
+

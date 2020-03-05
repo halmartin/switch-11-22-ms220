@@ -1,0 +1,5 @@
+Package: rsyslog
+Priority: optional
+Section: net
+Depends: liblogging libestr libfastjson libgnutls
+Description: Rsyslog

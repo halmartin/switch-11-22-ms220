@@ -1,0 +1,9 @@
+config BR2_PACKAGE_OPENL2TP
+        prompt "openl2tp.......................... L2TP daemon for use with IPsec"
+        tristate
+        default m if CONFIG_DEVEL
+        select BR2_PACKAGE_PPP
+        select BR2_PACKAGE_LIBREADLINE
+        select BR2_PACKAGE_LIBTIRPC if BR2_LIBC_MUSL
+        help
+          An L2TP daemon (requires kernel module PPPoL2TP)

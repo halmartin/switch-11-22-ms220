@@ -1,0 +1,5 @@
+Package: freeradius-mod-acct-unique
+Priority: optional
+Section: net
+Description: ACCT unique module for FreeRADIUS
+Depends: freeradius

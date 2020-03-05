@@ -1,0 +1,5 @@
+Package: kbproto
+Priority: optional
+Section: x11
+Depends:
+Description: Keyboard protocol extension

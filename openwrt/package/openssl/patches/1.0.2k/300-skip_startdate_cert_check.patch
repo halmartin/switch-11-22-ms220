@@ -1,0 +1,66 @@
+diff --git a/crypto/x509/x509_vfy.c b/crypto/x509/x509_vfy.c
+index 7009ae6..6bbe212 100644
+--- a/crypto/x509/x509_vfy.c
++++ b/crypto/x509/x509_vfy.c
+@@ -1517,21 +1517,27 @@ static int check_cert_time(X509_STORE_CTX *ctx, X509 *x)
+ 
+     i = X509_cmp_time(X509_get_notBefore(x), ptime);
+     if (i == 0) {
++	printf("  ** X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD\n");
+         ctx->error = X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD;
+         ctx->current_cert = x;
+         if (!ctx->verify_cb(0, ctx))
+             return 0;
+     }
+ 
++    /* XXX: Node system clocks are set to the year 2000 by default, so
++     * ignore the notBefore field of the server certificate and the CA cert.
+     if (i > 0) {
++        printf("  ** X509_V_ERR_CERT_NOT_YET_VALID\n");
+         ctx->error = X509_V_ERR_CERT_NOT_YET_VALID;
+         ctx->current_cert = x;
+         if (!ctx->verify_cb(0, ctx))
+             return 0;
+     }
++    */
+ 
+     i = X509_cmp_time(X509_get_notAfter(x), ptime);
+     if (i == 0) {
++	printf("  ** X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD\n");
+         ctx->error = X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD;
+         ctx->current_cert = x;
+         if (!ctx->verify_cb(0, ctx))
+@@ -1539,6 +1545,7 @@ static int check_cert_time(X509_STORE_CTX *ctx, X509 *x)
+     }
+ 
+     if (i < 0) {
++	printf("  ** X509_V_ERR_CERT_HAS_EXPIRED\n");
+         ctx->error = X509_V_ERR_CERT_HAS_EXPIRED;
+         ctx->current_cert = x;
+         if (!ctx->verify_cb(0, ctx))
+@@ -1566,6 +1573,7 @@ static int internal_verify(X509_STORE_CTX *ctx)
+         xs = xi;
+     else {
+         if (n <= 0) {
++	    printf("  ** X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE\n");
+             ctx->error = X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE;
+             ctx->current_cert = xi;
+             ok = cb(0, ctx);
+@@ -1590,12 +1598,14 @@ static int internal_verify(X509_STORE_CTX *ctx)
+             && (xs != xi
+                 || (ctx->param->flags & X509_V_FLAG_CHECK_SS_SIGNATURE))) {
+             if ((pkey = X509_get_pubkey(xi)) == NULL) {
++		printf("  ** X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY\n");
+                 ctx->error = X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY;
+                 ctx->current_cert = xi;
+                 ok = (*cb) (0, ctx);
+                 if (!ok)
+                     goto end;
+             } else if (X509_verify(xs, pkey) <= 0) {
++		printf("  ** X509_V_ERR_CERT_SIGNATURE_FAILURE\n");
+                 ctx->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
+                 ctx->current_cert = xs;
+                 ok = (*cb) (0, ctx);
+-- 
+1.7.9.5
+

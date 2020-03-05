@@ -1,0 +1,27 @@
+commit dcee34ec470aaaf131d20223e1468927c62b61dd
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Fri Dec 16 16:37:11 2016 -0800
+
+    1000-ppc-musl-use-secureplt-by-default
+    
+    musl only supports secureplt, so use it by default.
+    
+    This is from upstream GCC commit e5b0ce4f9cc.  The only difference is
+    that this patch doesn't include the ChangeLog change because of a
+    conflict.
+
+diff --git a/gcc/config.gcc b/gcc/config.gcc
+index 0592215..1308c69 100644
+--- a/gcc/config.gcc
++++ b/gcc/config.gcc
+@@ -2416,6 +2416,10 @@ powerpc*-*-linux*)
+ 	    powerpc*-*-linux*paired*)
+ 		tm_file="${tm_file} rs6000/750cl.h" ;;
+ 	esac
++	case ${target} in
++	    *-linux*-musl*)
++		enable_secureplt=yes ;;
++	esac
+ 	if test x${enable_secureplt} = xyes; then
+ 		tm_file="rs6000/secureplt.h ${tm_file}"
+ 	fi

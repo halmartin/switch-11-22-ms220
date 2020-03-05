@@ -1,0 +1,21 @@
+commit 7667f071772f2595e0f515a5eeacd890f55772df
+Author: Jignesh <jignesh@ubuntu>
+Date:   Thu Oct 23 16:38:00 2014 -0700
+
+    012-rlm_ldap_configure_fix.patch
+
+    Fix build broken in Ubuntu 14.04.
+
+diff --git a/src/modules/rlm_ldap/configure b/src/modules/rlm_ldap/configure
+index 8fc6c38..8bcb4b5 100755
+--- a/src/modules/rlm_ldap/configure
++++ b/src/modules/rlm_ldap/configure
+@@ -3101,7 +3101,7 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+ fi
+
+ if test "x$smart_lib" = "x"; then
+-  LIBS="-lldap $old_LIBS"
++  LIBS="-lldap -lssl -lsasl $old_LIBS"
+   cat >conftest.$ac_ext <<_ACEOF
+ /* confdefs.h.  */
+ _ACEOF

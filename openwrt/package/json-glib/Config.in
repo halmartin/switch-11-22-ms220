@@ -1,0 +1,8 @@
+config BR2_PACKAGE_JSON-GLIB
+	prompt "json-glib............................. a JSON library built using GLIB"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  SON-GLib is a library providing serialization and deserialization support for the JavaScript Object Notation (JSON) format described by RFC 4627.
+	  Depends: glib2
+

@@ -1,0 +1,94 @@
+From 56a91ff7426d3325593d7ab13f5e568b0324834d Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Mon, 2 Jul 2018 16:34:15 -0700
+Subject: [PATCH 03/26] 0921
+
+---
+ init/halt.c | 29 +++++++++++++++++++++++++----
+ 1 file changed, 25 insertions(+), 4 deletions(-)
+
+diff --git a/init/halt.c b/init/halt.c
+index e6dcb1c..81af33d 100644
+--- a/init/halt.c
++++ b/init/halt.c
+@@ -65,10 +65,11 @@
+ //kbuild:lib-$(CONFIG_REBOOT) += halt.o
+ 
+ //usage:#define halt_trivial_usage
+-//usage:       "[-d DELAY] [-n] [-f]" IF_FEATURE_WTMP(" [-w]")
++//usage:       "[-d DELAY] [-r REASON] [-n] [-f]" IF_FEATURE_WTMP(" [-w]")
+ //usage:#define halt_full_usage "\n\n"
+ //usage:       "Halt the system\n"
+ //usage:     "\n	-d SEC	Delay interval"
++//usage:     "\n	-r STR	Reason for reboot"
+ //usage:     "\n	-n	Do not sync"
+ //usage:     "\n	-f	Force (don't go through init)"
+ //usage:	IF_FEATURE_WTMP(
+@@ -76,23 +77,29 @@
+ //usage:	)
+ //usage:
+ //usage:#define poweroff_trivial_usage
+-//usage:       "[-d DELAY] [-n] [-f]"
++//usage:       "[-d DELAY] [-r REASON] [-n] [-f]"
+ //usage:#define poweroff_full_usage "\n\n"
+ //usage:       "Halt and shut off power\n"
+ //usage:     "\n	-d SEC	Delay interval"
++//usage:     "\n	-r STR	Reason for reboot"
+ //usage:     "\n	-n	Do not sync"
+ //usage:     "\n	-f	Force (don't go through init)"
+ //usage:
+ //usage:#define reboot_trivial_usage
+-//usage:       "[-d DELAY] [-n] [-f]"
++//usage:       "[-d DELAY] [-r REASON] [-n] [-f]"
+ //usage:#define reboot_full_usage "\n\n"
+ //usage:       "Reboot the system\n"
+ //usage:     "\n	-d SEC	Delay interval"
++//usage:     "\n	-r STR	Reason for reboot"
+ //usage:     "\n	-n	Do not sync"
+ //usage:     "\n	-f	Force (don't go through init)"
+ 
+ #include "libbb.h"
+ #include "reboot.h"
++#include <stdio.h>
++#if ENABLE_SYSLOGD
++#include <sys/syslog.h>
++#endif
+ 
+ #if ENABLE_FEATURE_WTMP
+ #include <sys/utsname.h>
+@@ -172,6 +179,9 @@ int halt_main(int argc UNUSED_PARAM, char **argv)
+ 	static const smallint signals[] = { SIGUSR1, SIGUSR2, SIGTERM };
+ 
+ 	int delay = 0;
++	const char *reason = NULL;
++	const char *wdog_file = "/storage/watchdog_last.status";
++	FILE *fp;
+ 	int which, flags, rc;
+ 
+ 	/* Figure out which applet we're running */
+@@ -192,10 +202,21 @@ int halt_main(int argc UNUSED_PARAM, char **argv)
+ 	 * in order to not break scripts.
+ 	 * -i (shut down network interfaces) is ignored.
+ 	 */
+-	flags = getopt32(argv, "d:+nfwi", &delay);
++	flags = getopt32(argv, "d:+nfwir:", &delay, &reason);
+ 
+ 	sleep(delay);
+ 
++#if ENABLE_SYSLOGD
++	openlog(applet_name, 0, LOG_DAEMON);
++	syslog(LOG_ALERT, "### reboot command [%s] ###", (reason ? reason : "sbin_reboot"));
++	closelog();
++#endif
++	/* Write the reboot reason only if there is not an existing watchdog report */
++	if (access(wdog_file, F_OK) && (fp = fopen(wdog_file, "w"))) {
++		fprintf(fp, "reason: %s\n", (reason ? reason : "sbin_reboot"));
++		fclose(fp);
++	}
++
+ 	write_wtmp();
+ 
+ 	if (flags & 8) /* -w */
+-- 
+2.17.0
+

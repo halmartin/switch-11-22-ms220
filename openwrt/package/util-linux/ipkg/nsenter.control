@@ -1,0 +1,5 @@
+Package: nsenter
+Priority: optional
+Section: admin
+Depends:
+Description: nsenter namespace utility

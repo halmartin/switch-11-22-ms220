@@ -1,0 +1,8 @@
+config BR2_PACKAGE_PATCH
+	prompt "patch................................ Patch"
+	tristate
+	default n
+	help
+         GNU Patch.  The Busybox patch is slow and broken. This is the real deal.
+
+

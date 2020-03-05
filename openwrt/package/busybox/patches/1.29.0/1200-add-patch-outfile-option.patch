@@ -1,0 +1,148 @@
+From 4886622101ace5d3f383c4b0856d83c69eda9707 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Fri, 6 Jul 2018 18:24:33 -0700
+Subject: [PATCH 15/26] 1200
+
+---
+ editors/patch.c | 55 +++++++++++++++++++++++++++----------------------
+ 1 file changed, 30 insertions(+), 25 deletions(-)
+
+diff --git a/editors/patch.c b/editors/patch.c
+index eca6bc5..5c9fb15 100644
+--- a/editors/patch.c
++++ b/editors/patch.c
+@@ -13,7 +13,6 @@
+  * -l treat all whitespace as a single space
+  * -d chdir first
+  * -D define wrap #ifdef and #ifndef around changes
+- * -o outfile output here instead of in place
+  * -r rejectfile write rejected hunks to this file
+  *
+  * -f force (no questions asked)
+@@ -38,6 +37,7 @@
+ //usage:     "\n	-R	Reverse patch"
+ //usage:     "\n	-N	Ignore already applied patches"
+ //usage:     "\n	-E	Remove output files if they become empty"
++//usage:     "\n	-o      outfile output here instead of in place"
+ //usage:	IF_LONG_OPTS(
+ //usage:     "\n	--dry-run	Don't actually change files"
+ //usage:	)
+@@ -114,7 +114,7 @@ struct globals {
+ } while (0)
+ 
+ 
+-#define FLAG_STR "Rup:i:NEfg"
++#define FLAG_STR "Rup:i:NEfgo"
+ /* FLAG_REVERSE must be == 1! Code uses this fact. */
+ #define FLAG_REVERSE  (1 << 0)
+ #define FLAG_u        (1 << 1)
+@@ -124,7 +124,8 @@ struct globals {
+ #define FLAG_RMEMPTY  (1 << 5)
+ #define FLAG_f_unused (1 << 6)
+ #define FLAG_g_unused (1 << 7)
+-#define FLAG_dry_run  ((1 << 8) * ENABLE_LONG_OPTS)
++#define FLAG_OUTFILE  (1 << 8) 
++#define FLAG_dry_run  ((1 << 9) * ENABLE_LONG_OPTS)
+ 
+ 
+ // Dispose of a line of input, either by writing it out or discarding it.
+@@ -150,24 +151,22 @@ static void do_line(void *data)
+ 
+ static void finish_oldfile(void)
+ {
+-	if (TT.tempname) {
+-		// Copy the rest of the data and replace the original with the copy.
+-		char *temp;
++	// Copy the rest of the data
+ 
+-		if (TT.filein != -1) {
+-			bb_copyfd_eof(TT.filein, TT.fileout);
+-			xclose(TT.filein);
+-		}
++	if (TT.filein != -1) {
++		bb_copyfd_eof(TT.filein, TT.fileout);
++		xclose(TT.filein);
+ 		xclose(TT.fileout);
++	}
+ 
+-		if (!ENABLE_LONG_OPTS || TT.tempname[0]) { /* not --dry-run? */
+-			temp = xstrdup(TT.tempname);
+-			temp[strlen(temp) - 6] = '\0';
+-			rename(TT.tempname, temp);
+-			free(temp);
+-			free(TT.tempname);
+-		}
+-
++	if (TT.tempname && (!ENABLE_LONG_OPTS || TT.tempname[0])) { /* not --dry-run? */
++		//replace the original with the copy
++		char *temp;
++		temp = xstrdup(TT.tempname);
++		temp[strlen(temp) - 6] = '\0';
++		rename(TT.tempname, temp);
++		free(temp);
++		free(TT.tempname);
+ 		TT.tempname = NULL;
+ 	}
+ 	TT.fileout = TT.filein = -1;
+@@ -191,11 +190,11 @@ static void fail_hunk(void)
+ 	// Abort the copy and delete the temporary file.
+ 	close(TT.filein);
+ 	close(TT.fileout);
+-	if (!ENABLE_LONG_OPTS || TT.tempname[0]) { /* not --dry-run? */
++	if (TT.tempname && (!ENABLE_LONG_OPTS || TT.tempname[0])) { /* not --dry-run? */
+ 		unlink(TT.tempname);
+ 		free(TT.tempname);
++		TT.tempname = NULL;
+ 	}
+-	TT.tempname = NULL;
+ 
+ 	TT.state = 0;
+ }
+@@ -362,7 +361,7 @@ int patch_main(int argc UNUSED_PARAM, char **argv)
+ 	int opts;
+ 	int reverse, state = 0;
+ 	char *oldname = NULL, *newname = NULL;
+-	char *opt_p, *opt_i;
++	char *opt_p, *opt_i, *opt_o;
+ 	long oldlen = oldlen; /* for compiler */
+ 	long newlen = newlen; /* for compiler */
+ 
+@@ -388,6 +387,7 @@ int patch_main(int argc UNUSED_PARAM, char **argv)
+ 		 */
+ 		"get\0"                   Required_argument "g" /*ignored*/
+ # endif
++		"outfile\0"               Required_argument "o"
+ 		"dry-run\0"               No_argument       "\xfd"
+ # if ENABLE_DESKTOP
+ 		"backup-if-mismatch\0"    No_argument       "\xfe" /*ignored*/
+@@ -399,9 +399,9 @@ int patch_main(int argc UNUSED_PARAM, char **argv)
+ 	INIT_TT();
+ 
+ #if ENABLE_LONG_OPTS
+-	opts = getopt32long(argv, FLAG_STR, patch_longopts, &opt_p, &opt_i);
++	opts = getopt32long(argv, FLAG_STR, patch_longopts, &opt_p, &opt_i, &opt_o);
+ #else
+-	opts = getopt32(argv, FLAG_STR, &opt_p, &opt_i);
++	opts = getopt32(argv, FLAG_STR, &opt_p, &opt_i, &opt_o);
+ #endif
+ 	//bb_error_msg_and_die("opts:%x", opts);
+ 
+@@ -581,8 +581,13 @@ int patch_main(int argc UNUSED_PARAM, char **argv)
+ 					}
+ 
+ 					if (!(opts & FLAG_dry_run)) {
+-						TT.tempname = xasprintf("%sXXXXXX", name);
+-						TT.fileout = xmkstemp(TT.tempname);
++						if (option_mask32 & FLAG_OUTFILE) {
++							TT.tempname = NULL;
++							TT.fileout = xopen(opt_o, O_CREAT|O_EXCL|O_RDWR);
++						} else {
++							TT.tempname = xasprintf("%sXXXXXX", name);
++							TT.fileout = xmkstemp(TT.tempname);
++						}
+ 						// Set permissions of output file
+ 						fstat(TT.filein, &statbuf);
+ 						fchmod(TT.fileout, statbuf.st_mode);
+-- 
+2.17.0
+

@@ -1,0 +1,13 @@
+diff --git a/configure b/configure
+index 6fd14af..1dae67e 100755
+--- a/configure
++++ b/configure
+@@ -5986,7 +5986,7 @@ echo "$as_me:$LINENO: checking abort safe" >&5
+ echo $ECHO_N "checking abort safe... $ECHO_C" >&6
+ if test "$cross_compiling" = yes; then
+    cat >>confdefs.h <<\_ACEOF
+-#define ABORT_OKAY 0
++#define ABORT_OKAY 1
+ _ACEOF
+  echo "$as_me:$LINENO: result: no" >&5
+ echo "${ECHO_T}no" >&6

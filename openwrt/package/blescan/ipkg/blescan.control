@@ -1,0 +1,5 @@
+Package: blescan
+Priority: optional
+Section: net
+Depends: libmbluez
+Description: A small utility to print BLE advertisements

@@ -1,0 +1,6 @@
+config BR2_PACKAGE_JSON-C
+	prompt "json-c............................ json-c"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+          json-c

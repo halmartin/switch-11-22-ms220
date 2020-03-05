@@ -1,0 +1,7 @@
+config BR2_PACKAGE_XKBCOMP
+	prompt "xkbcomp............................ X server keyboard compiler"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  X window server keyboard compiler. You probably only need this
+	  if you are building an X server.

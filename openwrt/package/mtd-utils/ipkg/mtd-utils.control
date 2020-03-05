@@ -1,0 +1,5 @@
+Package: mtd-utils
+Priority: optional
+Section: admin
+Depends:
+Description: flash reading/writing utilities

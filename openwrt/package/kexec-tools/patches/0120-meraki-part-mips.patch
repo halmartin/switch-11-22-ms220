@@ -1,0 +1,151 @@
+commit 666fef610b688097ba296e5374dbd402e25b2440
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Wed Feb 24 12:26:08 2016 -0800
+
+    Add meraki part support for elemental
+
+diff --git a/kexec/arch/mips/Makefile b/kexec/arch/mips/Makefile
+index 03bdb9a..93451c8 100644
+--- a/kexec/arch/mips/Makefile
++++ b/kexec/arch/mips/Makefile
+@@ -5,6 +5,7 @@ mips_KEXEC_SRCS =  kexec/arch/mips/kexec-mips.c
+ mips_KEXEC_SRCS += kexec/arch/mips/kexec-elf-mips.c
+ mips_KEXEC_SRCS += kexec/arch/mips/kexec-elf-rel-mips.c
+ mips_KEXEC_SRCS += kexec/arch/mips/crashdump-mips.c
++mips_KEXEC_SRCS += kexec/arch/mips/kexec-meraki-part-mips.c
+ 
+ mips_ADD_BUFFER =
+ mips_ADD_SEGMENT =
+diff --git a/kexec/arch/mips/kexec-meraki-part-mips.c b/kexec/arch/mips/kexec-meraki-part-mips.c
+new file mode 100644
+index 0000000..fc618d9
+--- /dev/null
++++ b/kexec/arch/mips/kexec-meraki-part-mips.c
+@@ -0,0 +1,99 @@
++/*
++ * kexec-meraki-part-mips.c - kexec loader for Meraki partition files
++ *
++ * Copyright (C) 2016 Cisco Systems, Inc.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; version 2 of the
++ * License.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ *
++ */
++
++
++#define _GNU_SOURCE
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++#include "../../kexec.h"
++#include "kexec-mips.h"
++#include <sha1.h>
++
++#define MERAKI_PART_MAGIC 0x8e73ed8a
++
++struct meraki_part_hdr {
++	uint32_t magic;
++	uint32_t hdr_len;
++	uint32_t data_len;
++	uint8_t sha1[SHA1_DIGEST_LENGTH];
++};
++
++int meraki_part_mips_probe(const char* buf, off_t len)
++{
++	struct meraki_part_hdr* hdr;
++	uint32_t hdr_len;
++	uint32_t data_len;
++	sha1_context sha1_ctx;
++	uint8_t sha1[SHA1_DIGEST_LENGTH];
++
++	if (len < sizeof(struct meraki_part_hdr)) {
++		dbgprintf("meraki_part_mips: File too small\n");
++		return -1;
++	}
++
++	hdr = (struct meraki_part_hdr*)buf;
++
++	if (hdr->magic != cpu_to_be32(MERAKI_PART_MAGIC)) {
++		dbgprintf("meraki_part_mips: Missing part magic number\n");
++		return -1;
++	}
++
++	hdr_len = be32_to_cpu(hdr->hdr_len);
++	data_len = be32_to_cpu(hdr->data_len);
++
++	if (hdr_len > len) {
++		dbgprintf("meraki_part_mips: Header too big.\n");
++		return -1;
++	}
++
++	if ((data_len + hdr_len) > len) {
++		dbgprintf("meraki_part_mips: data too big\n");
++		return -1;
++	}
++
++	sha1_starts(&sha1_ctx);
++	sha1_update(&sha1_ctx, (const uint8_t*)buf + hdr_len, data_len);
++	sha1_finish(&sha1_ctx, sha1);
++
++	if (memcmp(hdr->sha1, sha1, SHA1_DIGEST_LENGTH) != 0) {
++		dbgprintf("meraki_part_mips: SHA1 doesn't match\n");
++		return -1;
++	}
++
++	dbgprintf("meraki_part_mips: It's a part file!");
++	return 0;
++}
++
++void meraki_part_mips_usage(void)
++{
++	elf_mips_usage();
++}
++
++int meraki_part_mips_load(int argc, char **argv, const char *buf, off_t len,
++	struct kexec_info *info)
++{
++	struct meraki_part_hdr* hdr = (struct meraki_part_hdr*)buf;
++
++	return elf_mips_load(argc, argv, buf + be32_to_cpu(hdr->hdr_len),
++			     be32_to_cpu(hdr->data_len), info);
++}
+diff --git a/kexec/arch/mips/kexec-mips.c b/kexec/arch/mips/kexec-mips.c
+index fe0c945..4ca039a 100644
+--- a/kexec/arch/mips/kexec-mips.c
++++ b/kexec/arch/mips/kexec-mips.c
+@@ -69,6 +69,7 @@ int get_memory_ranges(struct memory_range **range, int *ranges,
+ 
+ struct file_type file_type[] = {
+ 	{"elf-mips", elf_mips_probe, elf_mips_load, elf_mips_usage},
++	{"meraki-part-mips", meraki_part_mips_probe, meraki_part_mips_load, meraki_part_mips_usage},
+ };
+ int file_types = sizeof(file_type) / sizeof(file_type[0]);
+ 
+diff --git a/kexec/arch/mips/kexec-mips.h b/kexec/arch/mips/kexec-mips.h
+index e67960b..a883a22 100644
+--- a/kexec/arch/mips/kexec-mips.h
++++ b/kexec/arch/mips/kexec-mips.h
+@@ -12,6 +12,11 @@ int elf_mips_load(int argc, char **argv, const char *buf, off_t len,
+ 	struct kexec_info *info);
+ void elf_mips_usage(void);
+ 
++int meraki_part_mips_probe(const char *buf, off_t len);
++int meraki_part_mips_load(int argc, char **argv, const char *buf, off_t len,
++	struct kexec_info *info);
++void meraki_part_mips_usage(void);
++
+ struct arch_options_t {
+ 	int      core_header_type;
+ };

@@ -1,0 +1,147 @@
+menu "util-linux"
+
+config BR2_COMPILE_UTIL_LINUX
+	tristate
+	default n
+	depends BR2_PACKAGE_FDISK || BR2_PACKAGE_SWAP_UTILS || \
+		BR2_PACKAGE_LIBFDISK || BR2_PACKAGE_LIBUUID || \
+		BR2_PACKAGE_LIBBLKID || BR2_PACKAGE_MOUNT || \
+		BR2_PACKAGE_LIBMOUNT || BR2_PACKAGE_LIBSMARTCOLS
+
+config BR2_PACKAGE_FDISK
+	prompt "fdisk............................. Partition table manipulation utility"
+	tristate
+	default m if CONFIG_DEVEL
+	select BR2_COMPILE_UTIL_LINUX
+	select BR2_PACKAGE_LIBFDISK
+	select BR2_PACKAGE_LIBUUID
+	select BR2_PACKAGE_LIBBLKID
+	help
+	  A partition table manipulation utility
+	  
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+
+config BR2_PACKAGE_MOUNT
+	prompt "mount............................. Filesystem mount utility"
+	tristate
+	default n
+	select BR2_COMPILE_UTIL_LINUX
+	select BR2_PACKAGE_LIBMOUNT
+	select BR2_PACKAGE_LIBUUID
+	select BR2_PACKAGE_LIBBLKID	   
+	help
+	  A filesystem mount utility
+	  
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+
+config BR2_PACKAGE_FINDFS
+	prompt "findfs............................ Filesystem find utility"
+	tristate
+	default n
+	select BR2_COMPILE_UTIL_LINUX
+	select BR2_PACKAGE_LIBUUID
+	select BR2_PACKAGE_LIBBLKID	   
+	help
+	  A filesystem find utility
+	  
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+
+config BR2_PACKAGE_LIBFDISK
+	prompt "libfdisk.......................... Partition table manipulation library"
+	tristate
+	default n
+	select BR2_COMPILE_UTIL_LINUX
+	select BR2_PACKAGE_LIBBLKID
+	select BR2_PACKAGE_LIBUUID
+	help
+	  A partition table manipulation library
+
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+
+config BR2_PACKAGE_LIBUUID
+	prompt "libuuid........................... UUID manipulation library"
+	tristate
+	default n
+	select BR2_COMPILE_UTIL_LINUX
+	help
+	  UUID manipulation library
+
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+
+config BR2_PACKAGE_LIBBLKID
+	prompt "libblkid.......................... blkid library"
+	tristate
+	default n
+	select BR2_COMPILE_UTIL_LINUX
+	select BR2_PACKAGE_LIBUUID
+	help
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+
+config BR2_PACKAGE_LIBMOUNT
+	prompt "libmount.......................... Filesystem mount library"
+	tristate
+	default n
+	select BR2_COMPILE_UTIL_LINUX
+	select BR2_PACKAGE_LIBBLKID
+        select BR2_PACKAGE_LIBUUID
+	help
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+
+config BR2_PACKAGE_LIBSMARTCOLS
+	prompt "libsmartcols...................... Column display library"
+	tristate
+	default n
+	select BR2_COMPILE_UTIL_LINUX
+        help
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+        
+config BR2_PACKAGE_LOSETUP
+	prompt "losetup........................... Loop devices setup and control utility"
+	tristate
+	default m if CONFIG_DEVEL
+	select BR2_COMPILE_UTIL_LINUX
+	select BR2_PACKAGE_KMOD_LOOP
+	select BR2_PACKAGE_LIBSMARTCOLS
+	help
+	  A loop devices setup and control utility
+	  
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+
+config BR2_PACKAGE_SWAP_UTILS
+	prompt "swap-utils........................ Swap space management utilities"
+	tristate
+	default m if CONFIG_DEVEL
+	select BR2_COMPILE_UTIL_LINUX
+	select BR2_PACKAGE_LIBMOUNT
+	select BR2_PACKAGE_LIBUUID
+	select BR2_PACKAGE_LIBBLKID
+	select BR2_PACKAGE_LIBSMARTCOLS
+	help
+	  A collection of tools to manage swap space :
+	    * mkswap
+	    * swapon
+	    * swapoff
+	  
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+
+config BR2_PACKAGE_UNSHARE
+	prompt "unshare........................... Unshare namespace utility"
+	tristate
+	default n
+	select BR2_COMPILE_UTIL_LINUX
+	help
+	  The linux unshare utility
+	  
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+
+config BR2_PACKAGE_NSENTER
+	prompt "nsenter........................... nsenter namespace utility"
+	tristate
+	default n
+	select BR2_COMPILE_UTIL_LINUX
+	help
+	  The linux nsenter utility
+	  
+	  http://www.kernel.org/pub/linux/utils/util-linux/
+
+endmenu

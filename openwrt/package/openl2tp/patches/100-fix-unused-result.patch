@@ -1,0 +1,102 @@
+diff -u -r a/l2tp_session.c b/l2tp_session.c
+--- a/l2tp_session.c	2012-05-09 11:26:23.651001995 -0700
++++ b/l2tp_session.c	2012-05-09 11:28:07.983004668 -0700
+@@ -1675,7 +1675,6 @@
+ 	struct l2tp_avp_desc avps[L2TP_AVP_TYPE_NUM_AVPS];
+ 	struct l2tp_avp_message_type msg_type;
+ 	struct l2tp_avp_session_id session_id;
+-	struct l2tp_avp_q931_cause_code q931_cause_code;
+ 	struct l2tp_packet *pkt;
+ 	int result;
+ 
+@@ -1698,8 +1697,6 @@
+ 
+ 	/* Now the optional AVPs */
+ 	if (session->q931_cause_code != NULL) {
+-		q931_cause_code.cause_code = session->q931_cause_code->cause_code;
+-		q931_cause_code.cause_msg = session->q931_cause_code->cause_msg;
+ 		avps[L2TP_AVP_TYPE_Q931_CAUSE_CODE].value = (void *) session->q931_cause_code;
+ 		avps[L2TP_AVP_TYPE_Q931_CAUSE_CODE].value_len = session->q931_cause_code_len;
+ 	}
+diff -u -r a/l2tp_statusfile.c b/l2tp_statusfile.c
+--- a/l2tp_statusfile.c	2012-05-09 11:29:15.623006399 -0700
++++ b/l2tp_statusfile.c	2012-05-09 11:29:47.447007213 -0700
+@@ -284,6 +284,7 @@
+ 	/* NODEFAULT */
+ 	}
+ 
++	(void)result;
+ 	return 0;
+ }
+ 
+diff -u -r a/l2tp_transport.c b/l2tp_transport.c
+--- a/l2tp_transport.c	2012-05-09 11:23:41.554997845 -0700
++++ b/l2tp_transport.c	2012-05-09 11:24:56.146999754 -0700
+@@ -790,7 +790,6 @@
+ {
+ 	int result;
+ 	struct msghdr msg;
+-	struct l2tp_peer *peer;
+ 	struct l2tp_tunnel *tunnel;
+ 	struct sockaddr_in const *peer_addr;
+ 
+@@ -827,7 +826,6 @@
+ 	 * The socket will be connected as soon as we know the peer's
+ 	 * port number, which we can derive from his first packet.
+ 	 */
+-	peer = xprt->peer;
+ 	peer_addr = l2tp_tunnel_get_peer_addr(tunnel);
+ 	if (!l2tp_tunnel_is_fd_connected(tunnel)) {
+ 		msg.msg_namelen = sizeof(*peer_addr);
+@@ -987,11 +985,13 @@
+ 	pkt->nr = xprt->nr;
+ 
+ 	peer_addr = l2tp_tunnel_get_peer_addr(xprt->tunnel);
++	(void)peer_addr;
+  	L2TP_DEBUG(L2TP_FUNC, "%s: tunl %hu: pkt=%p len=%d msgtype=%hu", __func__, xprt->tunnel_id, pkt, pkt->total_len, pkt->msg_type);
+ 	L2TP_DEBUG(L2TP_DATA, "%s: tunl %hu: fd=%d peer=%x/%hu", __func__, xprt->tunnel_id,
+ 		   l2tp_tunnel_get_fd(xprt->tunnel), ntohl(peer_addr->sin_addr.s_addr), ntohs(peer_addr->sin_port));
+ 
+ 	data = pkt->iov[0].iov_base;
++	(void)data;
+ 
+  	L2TP_DEBUG(L2TP_XPRT, "%s: tunl %hu: pkt=%p len=%d", __func__, xprt->tunnel_id, pkt, pkt->total_len);
+ 	L2TP_DEBUG(L2TP_DATA, "%s: data=%02x %02x %02x %02x %02x %02x %02x %02x", __func__,
+diff -u -r a/l2tp_tunnel.c b/l2tp_tunnel.c
+--- a/l2tp_tunnel.c	2012-05-09 11:19:14.190990999 -0700
++++ b/l2tp_tunnel.c	2012-05-09 11:22:38.754996237 -0700
+@@ -1946,7 +1946,6 @@
+ 	struct usl_list_head *tmp;
+ 	struct l2tp_peer *peer2;
+ 	struct l2tp_tunnel *tunnel2;
+-	struct l2tp_peer *peer;
+ 
+ 	/* Handle peer collision. Ref RFC2661 Sect 4.3.3, Tiebreaker AVP.
+ 	 *
+@@ -1969,7 +1968,6 @@
+ 	 *
+ 	 */
+ 
+-	peer = tunnel->my_peer;
+ 	usl_list_for_each(walk, tmp, &l2tp_tunnel_list) {
+ 		tunnel2 = usl_list_entry(walk, struct l2tp_tunnel, list);
+ 		peer2 = tunnel2->my_peer;
+diff -u -r a/usl/usl_timer.c b/usl/usl_timer.c
+--- a/usl/usl_timer.c	2012-05-09 11:15:24.494985118 -0700
++++ b/usl/usl_timer.c	2012-05-09 11:16:06.322986188 -0700
+@@ -97,6 +97,7 @@
+ 		usl_tick_pending = 1;
+ 		result = write(usl_tick_pipe[1], &msg, sizeof(msg));
+ 	}
++	(void)result;
+ }
+ 
+ /* Come here via a select() on the timer pipe fd.
+@@ -185,6 +186,7 @@
+ 	if (usl_timer_tick_hook != NULL) {
+ 		(*usl_timer_tick_hook)();
+ 	}
++	(void)result;
+ }
+ 
+ /* Create and start a new timer.

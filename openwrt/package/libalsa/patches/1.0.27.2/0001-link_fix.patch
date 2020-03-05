@@ -1,0 +1,39 @@
+From 42004af7b28eb839f10b526c15e7809127726dfe Mon Sep 17 00:00:00 2001
+From: aacharya <aacharya@meraki.net>
+Date: Tue, 18 Aug 2015 12:44:24 -0700
+Subject: [PATCH] link_fix
+
+---
+ src/Makefile.in            | 2 +-
+ src/pcm/scopes/Makefile.in | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/Makefile.in b/src/Makefile.in
+index e21fc0d..3fbcc00 100644
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -419,7 +419,7 @@ clean-libLTLIBRARIES:
+ 	  rm -f $${locs}; \
+ 	}
+ libasound.la: $(libasound_la_OBJECTS) $(libasound_la_DEPENDENCIES) $(EXTRA_libasound_la_DEPENDENCIES) 
+-	$(AM_V_CCLD)$(libasound_la_LINK) -rpath $(libdir) $(libasound_la_OBJECTS) $(libasound_la_LIBADD) $(LIBS)
++	$(AM_V_CCLD)$(libasound_la_LINK) -rpath $(DESTRIR)$(libdir) $(libasound_la_OBJECTS) $(libasound_la_LIBADD) $(LIBS)
+ 
+ mostlyclean-compile:
+ 	-rm -f *.$(OBJEXT)
+diff --git a/src/pcm/scopes/Makefile.in b/src/pcm/scopes/Makefile.in
+index 469dbb5..391f3d4 100644
+--- a/src/pcm/scopes/Makefile.in
++++ b/src/pcm/scopes/Makefile.in
+@@ -348,7 +348,7 @@ clean-pkglibLTLIBRARIES:
+ 	  rm -f $${locs}; \
+ 	}
+ scope-level.la: $(scope_level_la_OBJECTS) $(scope_level_la_DEPENDENCIES) $(EXTRA_scope_level_la_DEPENDENCIES) 
+-	$(AM_V_CCLD)$(scope_level_la_LINK) -rpath $(pkglibdir) $(scope_level_la_OBJECTS) $(scope_level_la_LIBADD) $(LIBS)
++	$(AM_V_CCLD)$(scope_level_la_LINK) -rpath $(DESTDIR)$(pkglibdir) $(scope_level_la_OBJECTS) $(scope_level_la_LIBADD) $(LIBS)
+ 
+ mostlyclean-compile:
+ 	-rm -f *.$(OBJEXT)
+-- 
+1.9.1
+

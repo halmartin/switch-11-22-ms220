@@ -1,0 +1,34 @@
+From 91cdeba7c22dfbbaea0ecca0be7ef465dc1e8991 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Mon, 9 Jul 2018 09:05:42 -0700
+Subject: [PATCH 25/26] 270
+
+---
+ libbb/printable_string.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/libbb/printable_string.c b/libbb/printable_string.c
+index 077d58d..e7399ae 100644
+--- a/libbb/printable_string.c
++++ b/libbb/printable_string.c
+@@ -28,8 +28,6 @@ const char* FAST_FUNC printable_string(uni_stat_t *stats, const char *str)
+ 		}
+ 		if (c < ' ')
+ 			break;
+-		if (c >= 0x7f)
+-			break;
+ 		s++;
+ 	}
+ 
+@@ -42,7 +40,7 @@ const char* FAST_FUNC printable_string(uni_stat_t *stats, const char *str)
+ 			unsigned char c = *d;
+ 			if (c == '\0')
+ 				break;
+-			if (c < ' ' || c >= 0x7f)
++			if (c < ' ')
+ 				*d = '?';
+ 			d++;
+ 		}
+-- 
+2.17.0
+

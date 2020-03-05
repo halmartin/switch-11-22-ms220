@@ -1,0 +1,4 @@
+Package: json-c
+Priority: optional
+Section: libs
+Description: Json-c

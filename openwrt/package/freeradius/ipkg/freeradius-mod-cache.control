@@ -1,0 +1,5 @@
+Package: freeradius-mod-cache
+Priority: optional
+Section: net
+Description: CACHE module for FreeRADIUS
+Depends: freeradius

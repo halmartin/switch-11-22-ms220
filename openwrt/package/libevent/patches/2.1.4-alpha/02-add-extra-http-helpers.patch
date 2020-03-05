@@ -1,0 +1,32 @@
+diff --git a/http.c b/http.c
+index 093dd06..8651c05 100644
+--- a/http.c
++++ b/http.c
+@@ -2374,6 +2374,12 @@ evhttp_connection_get_addr(struct evhttp_connection *evcon)
+ 	return (struct sockaddr *)evcon->conn_address;
+ }
+ 
++size_t
++evhttp_connection_get_buffered_output_len(struct evhttp_connection *evcon)
++{
++	return evbuffer_get_length(bufferevent_get_output(evcon->bufev));
++}
++
+ int
+ evhttp_connection_connect_(struct evhttp_connection *evcon)
+ {
+diff --git a/include/event2/http.h b/include/event2/http.h
+index 81f44b8..079e7d0 100644
+--- a/include/event2/http.h
++++ b/include/event2/http.h
+@@ -593,6 +593,9 @@ EVENT2_EXPORT_SYMBOL
+ void evhttp_request_set_error_cb(struct evhttp_request *,
+     void (*)(enum evhttp_request_error, void *));
+ 
++/** Get the length of the buffered output associated with this connection. */
++size_t evhttp_connection_get_buffered_output_len(struct evhttp_connection *evcon);
++
+ /**
+  * Set a callback to be called on request completion of evhttp_send_* function.
+  *
+-- 

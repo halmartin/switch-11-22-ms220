@@ -1,0 +1,10 @@
+config BR2_PACKAGE_SSCEP
+	prompt "sscep............................. SCEP client tool"
+	tristate
+	default n if CONFIG_DEVEL
+	select BR2_PACKAGE_LIBPCAP
+	help
+	  A Simple SCEP (Simple Certificate Enrollment Protocol) client
+	  
+	  http://github.com/certnanny/sscep
+

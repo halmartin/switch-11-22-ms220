@@ -1,0 +1,15 @@
+config BR2_PACKAGE_PCM
+	prompt "pcm............................... Processor Counter Monitor for monitoring performance and energy metrics"
+	tristate
+	default n if CONFIG_DEVEL
+	select BR2_PACKAGE_LIBPTHREAD
+	select BR2_PACKAGE_LIBSTDCXX
+	help
+	  Processor Counter Monitor (PCM) is an application programming interface
+	  (API) and a set of tools based on the API to monitor performance and
+	  energy metrics of Intel® Core™, Xeon®, Atom™ and Xeon Phi™ processors.
+	  PCM works on Linux, Windows, Mac OS X, FreeBSD and DragonFlyBSD operating
+	  systems.
+
+	  https://github.com/opcm/pcm
+

@@ -1,0 +1,12 @@
+diff --git a/return.h b/return.h
+index 6521c5c..edeb245 100644
+--- a/return.h
++++ b/return.h
+@@ -332,4 +332,7 @@ static	void	aix_c_get_ret_addr(int i, int *file)
+ #endif
+ #endif
+ 
++#undef GET_RET_ADDR
++#define GET_RET_ADDR(file)	file = (char *)__builtin_return_address(0);
++
+ #endif /* ! __RETURN_H__ */

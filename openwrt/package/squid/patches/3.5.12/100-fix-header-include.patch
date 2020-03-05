@@ -1,0 +1,423 @@
+diff -u -r squid-3.5.12.ORIG/compat/assert.h squid-3.5.12.NEW/compat/assert.h
+--- squid-3.5.12.ORIG/compat/assert.h	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/compat/assert.h	2015-06-30 16:07:24.280014505 -0700
+@@ -6,6 +6,7 @@
+  * Please see the COPYING and CONTRIBUTORS files for details.
+  */
+
++#if !HAVE_ASSERT_H
+ #ifndef SQUID_ASSERT_H
+ #define SQUID_ASSERT_H
+
+@@ -25,4 +26,5 @@
+ xassert(const char *, const char *, int);
+
+ #endif /* SQUID_ASSERT_H */
++#endif /* HAVE_ASSERT_H */
+
+Only in squid-3.5.12.NEW/compat: assert.h~
+diff -u -r squid-3.5.12.ORIG/compat/stdio.h squid-3.5.12.NEW/compat/stdio.h
+--- squid-3.5.12.ORIG/compat/stdio.h	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/compat/stdio.h	2015-06-30 16:05:01.940009414 -0700
+@@ -50,8 +50,10 @@
+ #include<cstdio>
+ #endif
+
++#ifndef HAVE_STDIO_H
+ #ifndef MAXPATHLEN
+ #define MAXPATHLEN SQUID_MAXPATHLEN
+ #endif
++#endif
+
+ #endif /* _SQUID_COMPAT_STDIO_H */
+diff -u -r squid-3.5.12.ORIG/include/cache_snmp.h squid-3.5.12.NEW/include/cache_snmp.h
+--- squid-3.5.12.ORIG/include/cache_snmp.h	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/include/cache_snmp.h	2015-06-30 16:05:01.912009413 -0700
+@@ -5,9 +5,11 @@
+
+ typedef int64_t snint;
+
++#ifndef HAVE_SYS_PARAM_H
+ #ifndef MIN
+ #define MIN(a,b) (a<b?a:b)
+ #endif
++#endif
+
+ #include "snmp.h"
+ #include "snmp_impl.h"
+diff -u -r squid-3.5.12.ORIG/include/MemPool.h squid-3.5.12.NEW/include/MemPool.h
+--- squid-3.5.12.ORIG/include/MemPool.h	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/include/MemPool.h	2015-06-30 16:05:01.908009413 -0700
+@@ -35,6 +35,10 @@
+ #include <memory.h>
+ #endif
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ #if !M_MMAP_MAX
+ #if USE_DLMALLOC
+ #define M_MMAP_MAX -4
+diff -u -r squid-3.5.12.ORIG/include/MemPool.h squid-3.5.12.NEW/include/MemPool.h
+--- squid-3.5.12.ORIG/src/base/RefCount.h	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/base/RefCount.h	2015-06-30 16:05:01.908009413 -0700
+@@ -11,6 +11,10 @@
+ #ifndef SQUID_REFCOUNT_H_
+ #define SQUID_REFCOUNT_H_
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ // reference counting requires the Lock API on base classes
+ #include "base/Lock.h"
+
+diff -u -r squid-3.5.12.ORIG/src/cbdata.h squid-3.5.12.NEW/src/cbdata.h
+--- squid-3.5.12.ORIG/src/cbdata.h	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/cbdata.h	2015-06-30 16:05:01.916009414 -0700
+@@ -34,6 +34,10 @@
+
+ #include "typedefs.h"
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ /**
+  \defgroup CBDATAAPI Callback Data Allocator API
+  \ingroup Components
+diff -u -r squid-3.5.12.ORIG/src/debug.cc squid-3.5.12.NEW/src/debug.cc
+--- squid-3.5.12.ORIG/src/debug.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/debug.cc	2015-06-30 16:05:01.928009414 -0700
+@@ -39,6 +39,10 @@
+ /* for shutting_down flag in xassert() */
+ #include "globals.h"
+
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ char *Debug::debugOptions = NULL;
+ int Debug::override_X = 0;
+ int Debug::log_stderr = -1;
+diff -u -r squid-3.5.12.ORIG/src/Debug.h squid-3.5.12.NEW/src/Debug.h
+--- squid-3.5.12.ORIG/src/Debug.h	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/Debug.h	2015-06-30 16:06:36.688012803 -0700
+@@ -12,9 +12,12 @@
+ #define SQUID_DEBUG_H
+
+ #include <iostream>
+-#undef assert
+ #include <sstream>
+ #include <iomanip>
++
++#if HAVE_ASSERT_H
++#include <assert.h>
++#else /* HAVE_ASSERT_H */
+ #if defined(assert)
+ #undef assert
+ #endif
+@@ -28,6 +31,7 @@
+ #else
+ #define assert(EX)  ((EX)?((void)0):xassert("EX", __FILE__, __LINE__))
+ #endif
++#endif /* HAVE_ASSERT_H */
+
+ /* context-based debugging, the actual type is subject to change */
+ typedef int Ctx;
+diff -u -r squid-3.5.12.ORIG/src/DescriptorSet.cc squid-3.5.12.NEW/src/DescriptorSet.cc
+--- squid-3.5.12.ORIG/src/DescriptorSet.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/DescriptorSet.cc	2015-06-30 16:05:01.920009414 -0700
+@@ -5,6 +5,10 @@
+ #include "globals.h" /* for Squid_MaxFD */
+ #include "DescriptorSet.h"
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ // pre-allocates descriptor store and index for Squid_MaxFD descriptors
+ DescriptorSet::DescriptorSet(): descriptors_(NULL), index_(NULL),
+         capacity_(0), size_(0)
+diff -u -r squid-3.5.12.ORIG/src/DiskIO/DiskDaemon/diskd.cc squid-3.5.12.NEW/src/DiskIO/DiskDaemon/diskd.cc
+--- squid-3.5.12.ORIG/src/DiskIO/DiskDaemon/diskd.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/DiskIO/DiskDaemon/diskd.cc	2015-06-30 16:05:01.936009414 -0700
+@@ -43,6 +43,9 @@
+ #if HAVE_IOSTREAM
+ #include <iostream>
+ #endif
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
+
+ void
+ xassert(const char *msg, const char *file, int line)
+diff -u -r squid-3.5.12.ORIG/src/errorpage.cc squid-3.5.12.NEW/src/errorpage.cc
+--- squid-3.5.12.ORIG/src/errorpage.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/errorpage.cc	2015-06-30 16:05:01.940009414 -0700
+@@ -60,6 +60,10 @@
+ #include "ssl/ErrorDetailManager.h"
+ #endif
+
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ /**
+  \defgroup ErrorPageInternal Error Page Internals
+  \ingroup ErrorPageAPI
+diff -u -r squid-3.5.12.ORIG/src/ETag.cc squid-3.5.12.NEW/src/ETag.cc
+--- squid-3.5.12.ORIG/src/ETag.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/ETag.cc	2015-06-30 16:05:01.924009414 -0700
+@@ -38,6 +38,10 @@
+ #include <cstring>
+ #endif
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ /*
+  * Note: ETag is not an http "field" like, for example HttpHdrRange. ETag is a
+  * field-value that maybe used in many http fields.
+diff -u -r squid-3.5.12.ORIG/src/fs/ufs/RebuildState.h squid-3.5.12.NEW/src/fs/ufs/RebuildState.h
+--- squid-3.5.12.ORIG/src/fs/ufs/RebuildState.h	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/fs/ufs/RebuildState.h	2015-06-30 16:05:01.916009414 -0700
+@@ -35,6 +35,10 @@
+ #include "UFSSwapLogParser.h"
+ #include "store_rebuild.h"
+
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ class StoreEntry;
+
+ namespace Fs
+diff -u -r squid-3.5.12.ORIG/src/main.cc squid-3.5.12.NEW/src/main.cc
+--- squid-3.5.12.ORIG/src/main.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/main.cc	2015-06-30 16:05:01.920009414 -0700
+@@ -130,6 +130,14 @@
+ #include <sys/wait.h>
+ #endif
+
++#if HAVE_ASSERT
++#include <assert.h>
++#endif
++
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ #if USE_WIN32_SERVICE
+ #include <process.h>
+
+diff -u -r squid-3.5.12.ORIG/src/mime.cc squid-3.5.12.NEW/src/mime.cc
+--- squid-3.5.12.ORIG/src/mime.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/mime.cc	2015-06-30 16:05:01.932009414 -0700
+@@ -52,6 +52,10 @@
+ #include <sys/stat.h>
+ #endif
+
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ #define GET_HDR_SZ 1024
+
+ /* forward declarations */
+diff -u -r squid-3.5.12.ORIG/src/String.cc squid-3.5.12.NEW/src/String.cc
+--- squid-3.5.12.ORIG/src/String.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/String.cc	2015-06-30 16:05:01.932009414 -0700
+@@ -42,6 +42,10 @@
+ #include <limits.h>
+ #endif
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ int
+ String::psize() const
+ {
+diff -u -r squid-3.5.12.ORIG/src/String.cci squid-3.5.12.NEW/src/String.cci
+--- squid-3.5.12.ORIG/src/String.cci	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/String.cci	2015-06-30 16:05:01.936009414 -0700
+@@ -40,6 +40,10 @@
+ #endif /* INT_MAX */
+ #endif /* HAVE_STDINT_H */
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ String::String() : size_(0), len_(0), buf_(NULL)
+ {
+ #if DEBUGSTRINGS
+diff -u -r squid-3.5.12.ORIG/src/tools.cc squid-3.5.12.NEW/src/tools.cc
+--- squid-3.5.12.ORIG/src/tools.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/tools.cc	2015-06-30 16:05:01.916009414 -0700
+@@ -90,7 +90,10 @@
+ /* Workaround for crappy glic header files */
+ SQUIDCEXTERN int backtrace(void *, int);
+ SQUIDCEXTERN void backtrace_symbols_fd(void *, int, int);
++
++#ifndef HAVE_UNISTD_H
+ SQUIDCEXTERN int setresuid(uid_t, uid_t, uid_t);
++#endif
+ #else /* _SQUID_LINUX_ */
+ /* needed on Opensolaris for backtrace_symbols_fd */
+ #if HAVE_EXECINFO_H
+diff -u -r squid-3.5.12.ORIG/src/unlinkd.cc squid-3.5.12.NEW/src/unlinkd.cc
+--- squid-3.5.12.ORIG/src/unlinkd.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/unlinkd.cc	2015-06-30 16:05:01.924009414 -0700
+@@ -44,6 +44,10 @@
+ #include "SwapDir.h"
+ #include "tools.h"
+
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ /* This code gets linked to Squid */
+
+ static int unlinkd_wfd = -1;
+diff -u -r squid-3.5.12.ORIG/src/YesNoNone.cc squid-3.5.12.NEW/src/YesNoNone.cc
+--- squid-3.5.12.ORIG/src/YesNoNone.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/src/YesNoNone.cc	2015-06-30 16:05:01.932009414 -0700
+@@ -30,6 +30,10 @@
+ #include "squid.h"
+ #include "YesNoNone.h"
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ YesNoNone::operator void*() const
+ {
+     assert(option != 0); // must call configure() first
+diff -u -r squid-3.5.12.ORIG/tools/cachemgr.cc squid-3.5.12.NEW/tools/cachemgr.cc
+--- squid-3.5.12.ORIG/tools/cachemgr.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/tools/cachemgr.cc	2015-06-30 16:05:01.944009415 -0700
+@@ -118,6 +118,9 @@
+ #include <fnmatch.h>
+ }
+ #endif
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
+
+ #ifndef DEFAULT_CACHEMGR_CONFIG
+ #define DEFAULT_CACHEMGR_CONFIG "/etc/squid/cachemgr.conf"
+diff -u -r squid-3.5.12.ORIG/tools/purge/purge.cc squid-3.5.12.NEW/tools/purge/purge.cc
+--- squid-3.5.12.ORIG/tools/purge/purge.cc	2013-05-20 04:48:55.000000000 -0700
++++ squid-3.5.12.NEW/tools/purge/purge.cc	2015-06-30 16:05:01.944009415 -0700
+@@ -126,6 +126,10 @@
+ #include "copyout.hh"
+ #include "conffile.hh"
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ #ifndef DEFAULTHOST
+ #define DEFAULTHOST "localhost"
+ #endif // DEFAULTHOST
+diff -u -r squid-3.5.12.ORIG/tools/test_tools.cc squid-3.5.12.NEW/tools/test_tools.cc
+--- squid-3.5.12.ORIG/tools/test_tools.cc	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/tools/test_tools.cc	2015-06-30 16:05:01.948009415 -0700
+@@ -5,6 +5,10 @@
+ #include "dlink.h"
+ #include <iostream>
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ void
+ xassert(const char *msg, const char *file, int line)
+ {
+diff -u -r squid-3.5.12.ORIG/src/fs/ufs/StoreFSufs.h squid-3.5.12.NEW/src/fs/ufs/StoreFSufs.h
+--- squid-3.5.12.ORIG/src/fs/ufs/StoreFSufs.h	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/src/fs/ufs/StoreFSufs.h	2015-06-30 16:05:01.948009415 -0700
+@@ -14,6 +14,10 @@
+  \ingroup FileSystems
+  */
+
++#ifdef HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ #include "StoreFileSystem.h"
+
+ class DiskIOModule;
+diff -u -r squid-3.5.12.ORIG/src/fs/ufs/StoreFSufs.h squid-3.5.12.NEW/src/fs/ufs/StoreFSufs.h
+--- squid-3.5.12.ORIG/src/ssl/gadgets.h	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/src/ssl/gadgets.h	2015-06-30 16:05:01.948009415 -0700
+@@ -20,6 +20,10 @@
+ #endif
+ #include <string>
+
++#ifdef HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ namespace Ssl
+ {
+ /**
+diff -u -r squid-3.5.12.ORIG/src/base/Lock.h squid-3.5.12.NEW/src/base/Lock.h
+--- squid-3.5.12.ORIG/src/base/Lock.h	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/src/base/Lock.h	2015-06-30 16:05:01.948009415 -0700
+@@ -9,6 +9,10 @@
+ #ifndef SQUID_SRC_BASE_LOCK_H
+ #define SQUID_SRC_BASE_LOCK_H
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ /**
+  * This class provides a tracking counter and presents
+  * lock(), unlock() and LockCount() accessors.
+diff -u -r squid-3.5.12.ORIG/src/DiskIO/DiskIOModule.h squid-3.5.12.NEW/src/DiskIO/DiskIOModule.h
+--- squid-3.5.12.ORIG/src/DiskIO/DiskIOModule.h	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/src/DiskIO/DiskIOModule.h	2015-06-30 16:05:01.948009415 -0700
+@@ -11,6 +11,10 @@
+
+ #include <vector>
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ /* forward decls */
+
+ class CacheManager;
+diff -u -r squid-3.5.12.ORIG/include/mempool.h squid-3.5.12.NEW/include/mempool.h
+--- squid-3.5.12.ORIG/include/mempool.h	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/include/MemPool.h	2015-06-30 16:05:01.948009415 -0700
+@@ -9,6 +9,10 @@
+ #ifndef _MEM_POOL_H_
+ #define _MEM_POOL_H_
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ /**
+  \defgroup MemPoolsAPI  Memory Management (Memory Pool Allocator)
+  \ingroup Components
+diff -u -r squid-3.5.12.ORIG/include/squid.h squid-3.5.12.NEW/include/squid.h
+--- squid-3.5.12.ORIG/include/squid.h	2013-05-20 05:24:44.000000000 -0700
++++ squid-3.5.12.NEW/include/squid.h	2015-06-30 16:05:01.948009415 -0700
+@@ -97,5 +97,9 @@
+ // temporary for the definition of LOCAL_ARRAY
+ #include "leakcheck.h"
+
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ #endif /* SQUID_CONFIG_H */
+

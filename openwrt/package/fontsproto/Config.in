@@ -1,0 +1,7 @@
+config BR2_PACKAGE_FONTSPROTO
+        prompt "fontsproto..........................Fontsproto extension headers"
+	tristate
+	default n
+	help
+	  Fontsproto extension headers. You probably only want this if you
+	  install an X server.

@@ -1,0 +1,11 @@
+diff -ru ruby-orig/ext/socket/extconf.rb ruby-1.8.4/ext/socket/extconf.rb
+--- ruby-orig/ext/socket/extconf.rb	2006-06-22 13:36:01.000000000 -0700
++++ ruby-1.8.4/ext/socket/extconf.rb	2005-07-19 12:04:46.000000000 -0700
+@@ -18,7 +18,7 @@
+   have_library("socket", "socket")
+ else
+   test_func = "socket"
++  have_library("nsl", "socket")
+-  have_library("nsl", "t_open")
+   have_library("socket", "socket")
+ end

@@ -1,0 +1,10 @@
+--- hping3-20051105/hping2.h	2010-10-18 02:31:10.130273287 -0700
++++ hping3-20051105.new/hping2.h	2010-10-18 02:16:59.324886637 -0700
+@@ -18,7 +18,6 @@
+ #include <sys/socket.h>
+ #include <netinet/in.h>
+ #include <limits.h>
+-#include "byteorder.h"
+ #include "systype.h"
+ #include "fixtypes.h"
+ 

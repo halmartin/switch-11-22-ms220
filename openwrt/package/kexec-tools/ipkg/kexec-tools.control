@@ -1,0 +1,4 @@
+Package: kexec-tools
+Priority: optional
+Section: misc
+Description: allows kexec

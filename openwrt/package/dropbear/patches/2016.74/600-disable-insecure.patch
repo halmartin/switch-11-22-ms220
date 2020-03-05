@@ -1,0 +1,40 @@
+From 3f68a8abf0586183f2de783e9f36d7aa615bc47b Mon Sep 17 00:00:00 2001
+From: Patrick Verkaik <pverkaik@meraki.com>
+Date: Fri, 13 Jan 2017 22:40:08 -0800
+Subject: [PATCH] dropbear: disable md5, sha1, and cbc
+
+---
+ options.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/options.h b/options.h
+index 4984890..f1c7090 100644
+--- a/options.h
++++ b/options.h
+@@ -100,7 +100,7 @@ much traffic. */
+ 
+ /* Enable CBC mode for ciphers. This has security issues though
+  * is the most compatible with older SSH implementations */
+-#define DROPBEAR_ENABLE_CBC_MODE
++#undef DROPBEAR_ENABLE_CBC_MODE // considered insecure
+ 
+ /* Enable "Counter Mode" for ciphers. This is more secure than normal
+  * CBC mode against certain attacks. It is recommended for security
+@@ -130,11 +130,11 @@ If you test it please contact the Dropbear author */
+  * These hashes are also used for public key fingerprints in logs.
+  * If you disable MD5, Dropbear will fall back to SHA1 fingerprints,
+  * which are not the standard form. */
+-#define DROPBEAR_SHA1_HMAC
+-#define DROPBEAR_SHA1_96_HMAC
++#undef DROPBEAR_SHA1_HMAC // considered insecure
++#undef DROPBEAR_SHA1_96_HMAC // considered insecure
+ #define DROPBEAR_SHA2_256_HMAC
+ #define DROPBEAR_SHA2_512_HMAC
+-#define DROPBEAR_MD5_HMAC
++#undef DROPBEAR_MD5_HMAC // considered insecure
+ 
+ /* You can also disable integrity. Don't bother disabling this if you're
+  * still using a cipher, it's relatively cheap. If you disable this it's dead
+-- 
+2.10.2
+

@@ -1,0 +1,5 @@
+Package: inputproto
+Priority: optional
+Section: x11
+Depends:
+Description: Input protocol extension

@@ -1,0 +1,4 @@
+Package: unzip
+Priority: optional
+Section: misc
+Description: Info-ZIP archive tool

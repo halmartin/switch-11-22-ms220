@@ -1,0 +1,113 @@
+--- a/src/comm/ConnOpener.h	2014-05-20 04:48:55.000000000 -0700
++++ b/src/comm/ConnOpener.h     2014-06-18 13:32:09.430822842 -0700
+@@ -27,6 +27,7 @@
+
+     virtual bool doneAll() const;
+
++    ConnOpener(Comm::ConnectionPointer &, Comm::ConnectionPointer &, AsyncCall::Pointer &handler, time_t connect_timeout);
+     ConnOpener(Comm::ConnectionPointer &, AsyncCall::Pointer &handler, time_t connect_timeout);
+     ~ConnOpener();
+
+@@ -61,10 +62,12 @@
+     char *host_;                         ///< domain name we are trying to connect to.
+     int temporaryFd_;                    ///< the FD being opened. Do NOT set conn_->fd until it is fully open.
+     Comm::ConnectionPointer conn_;       ///< single connection currently to be opened.
++    Comm::ConnectionPointer client_;       ///< single connection currently to be opened.
+     AsyncCall::Pointer callback_;        ///< handler to be called on connection completion.
+
+     int totalTries_;   ///< total number of connection attempts over all destinations so far.
+     int failRetries_;  ///< number of retries current destination has been tried.
++    int writeToClick_;  ///< number of retries current destination has been tried.
+
+     /// if we are not done by then, we will call back with COMM_TIMEOUT
+     time_t deadline_;
+
+--- a/src/comm/ConnOpener.cc	2014-10-21 18:09:05.015072204 -0700
++++ b/src/comm/ConnOpener.cc	2014-10-28 17:40:02.945818575 -0700
+@@ -26,10 +26,29 @@
+
+ #include <cerrno>
+
++#include <sstream>
++#include <string>
++
++#include <sys/socket.h>
++#include "../tools.h"
++
+ class CachePeer;
+
+ CBDATA_NAMESPACED_CLASS_INIT(Comm, ConnOpener);
+
++Comm::ConnOpener::ConnOpener(Comm::ConnectionPointer &c, Comm::ConnectionPointer &client, AsyncCall::Pointer &handler, time_t ctimeout) :
++        AsyncJob("Comm::ConnOpener"),
++        host_(NULL),
++        temporaryFd_(-1),
++        conn_(c),
++        client_(client),
++        callback_(handler),
++        totalTries_(0),
++        failRetries_(0),
++        writeToClick_(1),
++        deadline_(squid_curtime + static_cast<time_t>(ctimeout))
++{}
++
+ Comm::ConnOpener::ConnOpener(Comm::ConnectionPointer &c, AsyncCall::Pointer &handler, time_t ctimeout) :
+     AsyncJob("Comm::ConnOpener"),
+     host_(NULL),
+@@ -38,6 +57,7 @@
+     callback_(handler),
+     totalTries_(0),
+     failRetries_(0),
++    writeToClick_(0),
+     deadline_(squid_curtime + static_cast<time_t>(ctimeout))
+ {}
+
+@@ -280,6 +300,37 @@
+     fd_table[temporaryFd_].tosToServer = conn_->tos;
+     fd_table[temporaryFd_].nfmarkToServer = conn_->nfmark;
+
++    if (writeToClick_ && strcmp(Config.click_mapper_insert, "none") != 0) {
++        enter_suid();
++        int fd = open(Config.click_mapper_insert, O_TRUNC | O_WRONLY, 0644);
++        leave_suid();
++
++        struct sockaddr_in adr_inet;
++        int len_inet = sizeof(adr_inet);
++
++        if (fd < 0) {
++            debugs(50, DBG_IMPORTANT, "Failed to open SquidFlowMapper insert");
++        } else if (!getsockname(temporaryFd_, (struct sockaddr *)&adr_inet, (socklen_t *) &len_inet)) {
++            char buf[MAX_IPSTRLEN];
++            std::stringstream ss;
++            ss << "SADDR " << inet_ntoa(adr_inet.sin_addr) << ", SPORT " << (unsigned) ntohs(adr_inet.sin_port) << ", ";
++
++            conn_->remote.toHostStr(buf, sizeof(buf));
++            ss << "DADDR " <<  buf << ", DPORT " << conn_->remote.port() << ", ";
++
++            client_->remote.toHostStr(buf, sizeof(buf));
++            ss << "MSADDR " << buf << ", MSPORT " << client_->remote.port() << ", ";
++
++            client_->local.toHostStr(buf, sizeof(buf));
++            ss << "MDADDR " << buf << ", MDPORT " << client_->local.port() << std::endl;
++
++            std::string s = ss.str();
++
++            write(fd, s.c_str(), s.size());
++            close(fd);
++        }
++    }
++
+     typedef CommCbMemFunT<Comm::ConnOpener, CommCloseCbParams> abortDialer;
+     calls_.earlyAbort_ = JobCallback(5, 4, abortDialer, this, Comm::ConnOpener::earlyAbort);
+     comm_add_close_handler(temporaryFd_, calls_.earlyAbort_);
+--- a/src/FwdState.cc 	2016-01-02 21:38:00.797140589 -0800
++++ b/src/FwdState.cc   2016-01-02 21:45:05.821128327 -0800
+@@ -889,7 +889,7 @@
+     GetMarkingsToServer(request, *serverDestinations[0]);
+
+     calls.connector = commCbCall(17,3, "fwdConnectDoneWrapper", CommConnectCbPtrFun(fwdConnectDoneWrapper, this));
+-    Comm::ConnOpener *cs = new Comm::ConnOpener(serverDestinations[0], calls.connector, timeLeft());
++    Comm::ConnOpener *cs = new Comm::ConnOpener(serverDestinations[0], clientConn, calls.connector, timeLeft());
+     if (host)
+         cs->setHost(host);
+     AsyncJob::Start(cs);

@@ -1,0 +1,7 @@
+config BR2_PACKAGE_FIXESPROTO
+        prompt "fixesproto..........................X fixes extension protocol"
+	tristate
+	default n
+	help
+	  X fixes extension protocol. You probably only need this if you
+	  want to install an X server.

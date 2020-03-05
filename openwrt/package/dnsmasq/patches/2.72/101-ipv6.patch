@@ -1,0 +1,13 @@
+--- a/src/config.h
++++ b/src/config.h
+@@ -296,6 +296,7 @@ HAVE_SOCKADDR_SA_LEN
+ 
+ #if defined(INET6_ADDRSTRLEN) && defined(IPV6_V6ONLY)
+ #  define HAVE_IPV6
++#  define IPV6_V6ONLY  26
+ #  define ADDRSTRLEN INET6_ADDRSTRLEN
+ #else
+ #  if !defined(INET_ADDRSTRLEN)
+-- 
+2.1.0
+

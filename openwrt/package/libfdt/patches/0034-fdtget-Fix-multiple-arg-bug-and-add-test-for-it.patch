@@ -1,0 +1,70 @@
+From 097ec97c1a35685957210adb93692c3e210bc82c Mon Sep 17 00:00:00 2001
+From: Simon Glass <sjg@chromium.org>
+Date: Fri, 2 Mar 2012 17:12:07 -0800
+Subject: [PATCH 34/98] fdtget: Fix multiple arg bug and add test for it
+
+There is a rather unfortunate bug in fdtget in that if multiple argument
+sets are provided, it just repeats displaying the first set ones for
+each set.
+
+Fix this bug and add a test for it.
+
+Signed-off-by: Simon Glass <sjg@chromium.org>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ fdtget.c                | 6 +++---
+ tests/fdtget-runtest.sh | 2 +-
+ tests/run_tests.sh      | 3 +++
+ 3 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/fdtget.c b/fdtget.c
+index 2c384b6..9783e04 100644
+--- a/fdtget.c
++++ b/fdtget.c
+@@ -146,13 +146,13 @@ static int do_fdtget(struct display_info *disp, const char *filename,
+ 		return -1;
+ 
+ 	for (i = 0; i + 2 <= arg_count; i += 2) {
+-		node = fdt_path_offset(blob, arg[0]);
++		node = fdt_path_offset(blob, arg[i]);
+ 		if (node < 0) {
+-			report_error(arg[0], node);
++			report_error(arg[i], node);
+ 			return -1;
+ 		}
+ 
+-		if (show_data_for_item(blob, disp, node, arg[1]))
++		if (show_data_for_item(blob, disp, node, arg[i + 1]))
+ 			return -1;
+ 	}
+ 	return 0;
+diff --git a/tests/fdtget-runtest.sh b/tests/fdtget-runtest.sh
+index dac7f9a..982fbe1 100755
+--- a/tests/fdtget-runtest.sh
++++ b/tests/fdtget-runtest.sh
+@@ -8,7 +8,7 @@ rm -f $LOG $EXPECT
+ trap "rm -f $LOG $EXPECT" 0
+ 
+ expect="$1"
+-echo $expect >$EXPECT
++echo -e $expect >$EXPECT
+ shift
+ 
+ verbose_run_log_check "$LOG" $VALGRIND $DTGET "$@"
+diff --git a/tests/run_tests.sh b/tests/run_tests.sh
+index a561433..ac6fa17 100755
+--- a/tests/run_tests.sh
++++ b/tests/run_tests.sh
+@@ -475,6 +475,9 @@ fdtget_tests () {
+     run_fdtget_test "61 62 63 0 12 34 0 0 0 a 0 0 0 b 0 0 0 c" \
+ 	-thhx $dtb /randomnode mixed
+     run_wrap_error_test $DTGET -ts $dtb /randomnode doctor-who
++
++    # Test multiple arguments
++    run_fdtget_test "MyBoardName\nmemory" -ts $dtb / model /memory device_type
+ }
+ 
+ fdtput_tests () {
+-- 
+1.8.1.2
+

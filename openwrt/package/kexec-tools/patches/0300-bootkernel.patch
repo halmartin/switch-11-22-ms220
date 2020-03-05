@@ -1,0 +1,107 @@
+From 1d5ef5ce5404cf0a164a540b03ef1ef664ccf5a9 Mon Sep 17 00:00:00 2001
+From: aacharya <aacharya@meraki.net>
+Date: Tue, 3 Jul 2018 07:46:06 -0700
+Subject: [PATCH] support meraki bootkernel
+
+---
+ kexec/arch/arm/include/arch/options.h |  2 ++
+ kexec/arch/arm/kexec-zImage-arm.c     | 21 ++++++++++++++++++++-
+ 2 files changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/kexec/arch/arm/include/arch/options.h b/kexec/arch/arm/include/arch/options.h
+index 0fc1cd9..1294d8b 100644
+--- a/kexec/arch/arm/include/arch/options.h
++++ b/kexec/arch/arm/include/arch/options.h
+@@ -14,6 +14,7 @@
+ #define OPT_CONFIG	(OPT_ARCH_MAX+5)
+ #define OPT_LOADADDR	(OPT_ARCH_MAX+6)
+ #define OPT_IGN_RAMDISK	(OPT_ARCH_MAX+7)
++#define OPT_BOOTKERNEL	(OPT_ARCH_MAX+8)
+ 
+ /* Options relevant to the architecture (excluding loader-specific ones),
+  * in this case none:
+@@ -46,6 +47,7 @@
+ 	{ "ramdisk",		1, 0, OPT_RAMDISK },	\
+ 	{ "dtb",		1, 0, OPT_DTB }, 	\
+ 	{ "atags",		0, 0, OPT_ATAGS },	\
++	{ "bootkernel",		0, 0, OPT_BOOTKERNEL },	\
+ 	{ "image-size",		1, 0, OPT_IMAGE_SIZE }, \
+ 	{ "page-offset",	1, 0, OPT_PAGE_OFFSET }, \
+ 	{ "reuse-cmdline",	0, 0, OPT_REUSE_CMDLINE }, \
+diff --git a/kexec/arch/arm/kexec-zImage-arm.c b/kexec/arch/arm/kexec-zImage-arm.c
+index 728a8a2..036fbfb 100644
+--- a/kexec/arch/arm/kexec-zImage-arm.c
++++ b/kexec/arch/arm/kexec-zImage-arm.c
+@@ -131,6 +131,7 @@ void zImage_arm_usage(void)
+ 		"     --ramdisk=FILE        Use FILE as the kernel's initial ramdisk.\n"
+ 		"     --dtb=FILE            Use FILE as the fdt blob.\n"
+ 		"     --atags               Use ATAGs instead of device-tree.\n"
++		"     --bootkernel          Image is a Meraki Bootkernel.\n"
+ 		"     --page-offset=PAGE_OFFSET\n"
+ 		"                           Set PAGE_OFFSET of crash dump vmcore\n"
+ 		);
+@@ -458,6 +459,7 @@ int zImage_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 	const char *ramdisk_buf;
+ 	int opt;
+ 	int use_atags;
++	char is_bootkernel;
+ 	char *dtb_buf;
+ 	off_t dtb_length;
+ 	char *dtb_file;
+@@ -473,6 +475,7 @@ int zImage_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 		{ "ramdisk",		1, 0, OPT_RAMDISK },
+ 		{ "dtb",		1, 0, OPT_DTB },
+ 		{ "atags",		0, 0, OPT_ATAGS },
++		{ "bootkernel",		0, 0, OPT_BOOTKERNEL },
+ 		{ "image-size",		1, 0, OPT_IMAGE_SIZE },
+ 		{ "page-offset",	1, 0, OPT_PAGE_OFFSET },
+ 		{ 0, 			0, 0, 0 },
+@@ -488,6 +491,7 @@ int zImage_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 	ramdisk_buf = 0;
+ 	initrd_size = 0;
+ 	use_atags = 0;
++	is_bootkernel = 0;
+ 	dtb_file = NULL;
+ 	while((opt = getopt_long(argc, argv, short_options, options, 0)) != -1) {
+ 		switch(opt) {
+@@ -514,6 +518,9 @@ int zImage_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 		case OPT_PAGE_OFFSET:
+ 			user_page_offset = strtoull(optarg, &end, 0);
+ 			break;
++		case OPT_BOOTKERNEL:
++			is_bootkernel = 1;
++			break;
+ 		}
+ 	}
+ 
+@@ -570,6 +577,18 @@ int zImage_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 		}
+ 	}
+ 
++	if (is_bootkernel) {
++		uint32_t *header = (uint32_t *)buf;
++#define BOOTKERNEL_MAGIC 0x4d495053
++
++		if (*header != BOOTKERNEL_MAGIC) {
++			fprintf(stderr, "%s: bad bootkernel magic %x\n", __func__, *header);
++			return -1;
++		}
++
++		buf += 32;
++	}
++
+ 	/* Handle android images, 2048 is the minimum page size */
+ 	if (len > 2048 && !strncmp(buf, "ANDROID!", 8)) {
+ 		const struct android_image *aimg = (const void *)buf;
+@@ -682,7 +701,7 @@ int zImage_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 		                  command_line, command_line_len,
+ 		                  ramdisk_buf, initrd_size, initrd_base) == -1)
+ 			return -1;
+-	} else {
++	} else if (!is_bootkernel) {
+ 		/*
+ 		 * Read a user-specified DTB file.
+ 		 */
+-- 
+2.17.1
+

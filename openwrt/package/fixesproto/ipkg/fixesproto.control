@@ -1,0 +1,5 @@
+Package: fixesproto
+Priority: optional
+Section: x11
+Depends:
+Description: X fixes extension

@@ -1,0 +1,29 @@
+diff --git a/src/select/select.c b/src/select/select.c
+index 7b5f6dcf7a53..45d4cb7a3d0a 100644
+--- a/src/select/select.c
++++ b/src/select/select.c
+@@ -12,15 +12,16 @@ int select(int n, fd_set *restrict rfds, fd_set *restrict wfds, fd_set *restrict
+ #else
+ 	syscall_arg_t data[2] = { 0, _NSIG/8 };
+ 	struct timespec ts;
++	int result;
+ 	if (tv) {
+-		if (tv->tv_sec < 0 || tv->tv_usec < 0)
+-			return __syscall_ret(-EINVAL);
+-		time_t extra_secs = tv->tv_usec / 1000000;
+-		ts.tv_nsec = tv->tv_usec % 1000000 * 1000;
+-		const time_t max_time = (1ULL<<8*sizeof(time_t)-1)-1;
+-		ts.tv_sec = extra_secs > max_time - tv->tv_sec ?
+-			max_time : tv->tv_sec + extra_secs;
++		ts.tv_sec = tv->tv_sec;
++		ts.tv_nsec = tv->tv_usec * 1000;
+ 	}
+-	return syscall_cp(SYS_pselect6, n, rfds, wfds, efds, tv ? &ts : 0, data);
++	result = syscall_cp(SYS_pselect6, n, rfds, wfds, efds, tv ? &ts : 0, data);
++	if (tv) {
++		tv->tv_sec = ts.tv_sec;
++		tv->tv_usec = ts.tv_nsec / 1000;
++	}
++	return result;
+ #endif
+ }

@@ -1,0 +1,27 @@
+
+if BR2_LIBC_MUSL
+comment "musl options"
+
+choice
+	prompt "musl Version"
+	depends BR2_LIBC_MUSL
+	default BR2_MUSL_VERSION_1_1_19
+
+	help
+	  Select the version of musl you wish to use.
+
+
+	config BR2_MUSL_VERSION_1_1_18
+		bool "musl 1.1.18"
+	config BR2_MUSL_VERSION_1_1_19
+		bool "musl 1.1.19"
+
+endchoice
+
+config BR2_MUSL_VERSION
+	string
+	depends BR2_LIBC_MUSL
+	default "1.1.18" if BR2_MUSL_VERSION_1_1_18
+        default "1.1.19" if BR2_MUSL_VERSION_1_1_19
+
+endif

@@ -1,0 +1,5 @@
+Package: pixman
+Priority: optional
+Section: libs
+Depends:
+Description: X damage extension

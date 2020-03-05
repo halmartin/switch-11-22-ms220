@@ -1,0 +1,14 @@
+--- nuttcp-6.1.2-orig/nuttcp-6.1.2.c	2009-01-28 11:29:21.000000000 -0800
++++ nuttcp-6.1.2/nuttcp-6.1.2.c	2013-07-09 14:40:27.336603039 -0700
+@@ -3090,6 +3090,11 @@
+ 		if ((fd[stream_idx] = socket(domain, (udp && (stream_idx != 0))?SOCK_DGRAM:SOCK_STREAM, 0)) < 0)
+ 			err("socket");
+ 
++		if (udp && (stream_idx != 0)) {
++			int OneInt = 1;
++			setsockopt(fd[stream_idx], SOL_SOCKET, SO_NO_CHECK, &OneInt, sizeof(OneInt));
++		}
++
+ 		if (stream_idx == nstream) {
+ 			if (brief <= 0)
+ 				mes("socket");

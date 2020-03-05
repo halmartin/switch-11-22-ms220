@@ -1,0 +1,8 @@
+config BR2_PACKAGE_FONTCONFIG
+        prompt "fontconfig........................ Font configuration system"
+	tristate
+	default n
+	help
+	  Fontconfig is used for font configuration.
+
+

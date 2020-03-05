@@ -1,0 +1,16 @@
+--- a/src/redirect.cc
++++ b/src/redirect.cc
+@@ -241,10 +241,10 @@ constructHelperQuery(const char *name, helper *hlp, HLPCB *replyHandler, ClientH
+     if (requestExtrasFmt)
+         requestExtrasFmt->assemble(requestExtras, http->al, 0);
+ 
+-    sz = snprintf(buf, MAX_REDIRECTOR_REQUEST_STRLEN, "%s%s%s\n",
++    char myaddr[MAX_IPSTRLEN];
++    sz = snprintf(buf, MAX_REDIRECTOR_REQUEST_STRLEN, "url=%s myip=%s\n",
+                   r->orig_url.c_str(),
+-                  requestExtras.hasContent() ? " " : "",
+-                  requestExtras.hasContent() ? requestExtras.content() : "");
++                  http->request->client_addr.toStr(myaddr, MAX_IPSTRLEN));
+ 
+     if ((sz<=0) || (sz>=MAX_REDIRECTOR_REQUEST_STRLEN)) {
+         if (sz<=0) {

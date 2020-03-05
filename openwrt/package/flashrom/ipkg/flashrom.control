@@ -1,0 +1,5 @@
+Package: flashrom
+Priority: optional
+Section: sys
+Description: BIOS flashing utility
+Depends: pciutils

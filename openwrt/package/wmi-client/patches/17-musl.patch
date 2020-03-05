@@ -1,0 +1,58 @@
+commit 1ad0b7e032aed8c35cac9809710b298f27e2e321
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Sat Oct 15 10:21:09 2016 -0700
+
+    Support musl
+    
+    musl doesn't support {set,get,end}netgrent or innetgr, causing the
+    libreplace build to fail.  Nothing in this Samba subset actually uses
+    them, so let's just stub out the innetgr replacement.
+
+diff --git a/Samba/source/lib/replace/libreplace.m4 b/Samba/source/lib/replace/libreplace.m4
+index b63c0fd..dabc654 100644
+--- a/Samba/source/lib/replace/libreplace.m4
++++ b/Samba/source/lib/replace/libreplace.m4
+@@ -329,7 +329,7 @@ m4_include(win32.m4)
+ m4_include(timegm.m4)
+ m4_include(repdir.m4)
+ 
+-AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
++AC_CHECK_FUNCS([syslog memset memcpy],,
+ 			   [AC_MSG_ERROR([Required function not found])])
+ 
+ echo "LIBREPLACE_BROKEN_CHECKS: END"
+diff --git a/Samba/source/lib/replace/replace.c b/Samba/source/lib/replace/replace.c
+index 9e6c75b..4fbda39 100644
+--- a/Samba/source/lib/replace/replace.c
++++ b/Samba/source/lib/replace/replace.c
+@@ -155,28 +155,15 @@ time_t rep_mktime(struct tm *t)
+ 
+ 
+ #ifndef HAVE_INNETGR
+-#if defined(HAVE_SETNETGRENT) && defined(HAVE_GETNETGRENT) && defined(HAVE_ENDNETGRENT)
+ /*
+  * Search for a match in a netgroup. This replaces it on broken systems.
+  */
+ int rep_innetgr(const char *group, const char *host, const char *user, 
+ 				const char *dom)
+ {
+-	char *hst, *usr, *dm;
+-  
+-	setnetgrent(group);
+-	while (getnetgrent(&hst, &usr, &dm)) {
+-		if (((host == 0) || (hst == 0) || !strcmp(host, hst)) &&
+-		    ((user == 0) || (usr == 0) || !strcmp(user, usr)) &&
+-		    ((dom == 0) || (dm == 0) || !strcmp(dom, dm))) {
+-			endnetgrent();
+-			return (1);
+-		}
+-	}
+-	endnetgrent();
+-	return (0);
++	errno = ENOSYS;
++	return (-1);
+ }
+-#endif /* HAVE_SETNETGRENT HAVE_GETNETGRENT HAVE_ENDNETGRENT */
+ #endif /* HAVE_INNETGR */
+ 
+ 

@@ -1,0 +1,18 @@
+commit a34d611f1dba978c3c9385c3159a130052380a8b
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Thu Jun 2 22:50:21 2016 -0700
+
+    fix for musl
+
+diff --git a/fw_env.c b/fw_env.c
+index a46205d..adcf1f9 100644
+--- a/fw_env.c
++++ b/fw_env.c
+@@ -24,6 +24,7 @@
+  * MA 02111-1307 USA
+  */
+ 
++#define _GNU_SOURCE
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <stdio.h>

@@ -1,0 +1,583 @@
+From cbf1410eab4b7ce7be1b15f985ef71bfc1f5886d Mon Sep 17 00:00:00 2001
+From: David Gibson <david@gibson.dropbear.id.au>
+Date: Fri, 1 Jun 2012 14:12:37 +1000
+Subject: [PATCH 46/98] libfdt: Add helpers for 64-bit integer properties
+
+In device trees in the world, properties consisting of a single 64-bit
+integer are not as common as those consisting of a single 32-bit, cell
+sized integer, but they're common enough that they're worth including
+convenience functions for.
+
+This patch adds helper wrappers of fdt_setprop_inplace(), fdt_setprop() and
+fdt_appendprop() for handling 64-bit integer quantities in properties.  For
+better consistency with the names of these new *_u64() functions we also
+add *_u32() functions as alternative names for the existing *_cell()
+functions handling 32-bit integers.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ libfdt/libfdt.h                     | 193 +++++++++++++++++++++++++++++++-----
+ tests/appendprop.dts                |   1 +
+ tests/appendprop1.c                 |   1 +
+ tests/appendprop2.c                 |   1 +
+ tests/include1.dts                  |   1 +
+ tests/include5a.dts                 |   1 +
+ tests/rw_tree1.c                    |   3 +-
+ tests/setprop.c                     |  18 ++++
+ tests/setprop_inplace.c             |  15 +++
+ tests/sw_tree1.c                    |   3 +-
+ tests/test_tree1.dts                |   1 +
+ tests/test_tree1_merge.dts          |   1 +
+ tests/test_tree1_merge_labelled.dts |   1 +
+ tests/test_tree1_merge_path.dts     |   1 +
+ tests/testdata.h                    |   2 +
+ tests/tests.h                       |   5 +
+ tests/trees.S                       |   6 ++
+ 17 files changed, 229 insertions(+), 25 deletions(-)
+ create mode 100644 tests/include5a.dts
+
+diff --git a/libfdt/libfdt.h b/libfdt/libfdt.h
+index 060479e..35d78b8 100644
+--- a/libfdt/libfdt.h
++++ b/libfdt/libfdt.h
+@@ -852,17 +852,17 @@ int fdt_setprop_inplace(void *fdt, int nodeoffset, const char *name,
+ 			const void *val, int len);
+ 
+ /**
+- * fdt_setprop_inplace_cell - change the value of a single-cell property
++ * fdt_setprop_inplace_u32 - change the value of a 32-bit integer property
+  * @fdt: pointer to the device tree blob
+  * @nodeoffset: offset of the node whose property to change
+  * @name: name of the property to change
+- * @val: cell (32-bit integer) value to replace the property with
++ * @val: 32-bit integer value to replace the property with
+  *
+- * fdt_setprop_inplace_cell() replaces the value of a given property
+- * with the 32-bit integer cell value in val, converting val to
+- * big-endian if necessary.  This function cannot change the size of a
+- * property, and so will only work if the property already exists and
+- * has length 4.
++ * fdt_setprop_inplace_u32() replaces the value of a given property
++ * with the 32-bit integer value in val, converting val to big-endian
++ * if necessary.  This function cannot change the size of a property,
++ * and so will only work if the property already exists and has length
++ * 4.
+  *
+  * This function will alter only the bytes in the blob which contain
+  * the given property value, and will not alter or move any other part
+@@ -871,7 +871,7 @@ int fdt_setprop_inplace(void *fdt, int nodeoffset, const char *name,
+  * returns:
+  *	0, on success
+  *	-FDT_ERR_NOSPACE, if the property's length is not equal to 4
+-  *	-FDT_ERR_NOTFOUND, node does not have the named property
++ *	-FDT_ERR_NOTFOUND, node does not have the named property
+  *	-FDT_ERR_BADOFFSET, nodeoffset did not point to FDT_BEGIN_NODE tag
+  *	-FDT_ERR_BADMAGIC,
+  *	-FDT_ERR_BADVERSION,
+@@ -879,14 +879,60 @@ int fdt_setprop_inplace(void *fdt, int nodeoffset, const char *name,
+  *	-FDT_ERR_BADSTRUCTURE,
+  *	-FDT_ERR_TRUNCATED, standard meanings
+  */
+-static inline int fdt_setprop_inplace_cell(void *fdt, int nodeoffset,
+-					   const char *name, uint32_t val)
++static inline int fdt_setprop_inplace_u32(void *fdt, int nodeoffset,
++					  const char *name, uint32_t val)
+ {
+ 	val = cpu_to_fdt32(val);
+ 	return fdt_setprop_inplace(fdt, nodeoffset, name, &val, sizeof(val));
+ }
+ 
+ /**
++ * fdt_setprop_inplace_u64 - change the value of a 64-bit integer property
++ * @fdt: pointer to the device tree blob
++ * @nodeoffset: offset of the node whose property to change
++ * @name: name of the property to change
++ * @val: 64-bit integer value to replace the property with
++ *
++ * fdt_setprop_inplace_u64() replaces the value of a given property
++ * with the 64-bit integer value in val, converting val to big-endian
++ * if necessary.  This function cannot change the size of a property,
++ * and so will only work if the property already exists and has length
++ * 8.
++ *
++ * This function will alter only the bytes in the blob which contain
++ * the given property value, and will not alter or move any other part
++ * of the tree.
++ *
++ * returns:
++ *	0, on success
++ *	-FDT_ERR_NOSPACE, if the property's length is not equal to 8
++ *	-FDT_ERR_NOTFOUND, node does not have the named property
++ *	-FDT_ERR_BADOFFSET, nodeoffset did not point to FDT_BEGIN_NODE tag
++ *	-FDT_ERR_BADMAGIC,
++ *	-FDT_ERR_BADVERSION,
++ *	-FDT_ERR_BADSTATE,
++ *	-FDT_ERR_BADSTRUCTURE,
++ *	-FDT_ERR_TRUNCATED, standard meanings
++ */
++static inline int fdt_setprop_inplace_u64(void *fdt, int nodeoffset,
++					  const char *name, uint64_t val)
++{
++	val = cpu_to_fdt64(val);
++	return fdt_setprop_inplace(fdt, nodeoffset, name, &val, sizeof(val));
++}
++
++/**
++ * fdt_setprop_inplace_cell - change the value of a single-cell property
++ *
++ * This is an alternative name for fdt_setprop_inplace_u32()
++ */
++static inline int fdt_setprop_inplace_cell(void *fdt, int nodeoffset,
++					   const char *name, uint32_t val)
++{
++	return fdt_setprop_inplace_u32(fdt, nodeoffset, name, val);
++}
++
++/**
+  * fdt_nop_property - replace a property with nop tags
+  * @fdt: pointer to the device tree blob
+  * @nodeoffset: offset of the node whose property to nop
+@@ -945,11 +991,20 @@ int fdt_add_reservemap_entry(void *fdt, uint64_t addr, uint64_t size);
+ int fdt_finish_reservemap(void *fdt);
+ int fdt_begin_node(void *fdt, const char *name);
+ int fdt_property(void *fdt, const char *name, const void *val, int len);
+-static inline int fdt_property_cell(void *fdt, const char *name, uint32_t val)
++static inline int fdt_property_u32(void *fdt, const char *name, uint32_t val)
+ {
+ 	val = cpu_to_fdt32(val);
+ 	return fdt_property(fdt, name, &val, sizeof(val));
+ }
++static inline int fdt_property_u64(void *fdt, const char *name, uint64_t val)
++{
++	val = cpu_to_fdt64(val);
++	return fdt_property(fdt, name, &val, sizeof(val));
++}
++static inline int fdt_property_cell(void *fdt, const char *name, uint32_t val)
++{
++	return fdt_property_u32(fdt, name, val);
++}
+ #define fdt_property_string(fdt, name, str) \
+ 	fdt_property(fdt, name, str, strlen(str)+1)
+ int fdt_end_node(void *fdt);
+@@ -1068,14 +1123,14 @@ int fdt_setprop(void *fdt, int nodeoffset, const char *name,
+ 		const void *val, int len);
+ 
+ /**
+- * fdt_setprop_cell - set a property to a single cell value
++ * fdt_setprop_u32 - set a property to a 32-bit integer
+  * @fdt: pointer to the device tree blob
+  * @nodeoffset: offset of the node whose property to change
+  * @name: name of the property to change
+  * @val: 32-bit integer value for the property (native endian)
+  *
+- * fdt_setprop_cell() sets the value of the named property in the
+- * given node to the given cell value (converting to big-endian if
++ * fdt_setprop_u32() sets the value of the named property in the given
++ * node to the given 32-bit integer value (converting to big-endian if
+  * necessary), or creates a new property with that value if it does
+  * not already exist.
+  *
+@@ -1095,14 +1150,60 @@ int fdt_setprop(void *fdt, int nodeoffset, const char *name,
+  *	-FDT_ERR_BADLAYOUT,
+  *	-FDT_ERR_TRUNCATED, standard meanings
+  */
+-static inline int fdt_setprop_cell(void *fdt, int nodeoffset, const char *name,
+-				   uint32_t val)
++static inline int fdt_setprop_u32(void *fdt, int nodeoffset, const char *name,
++				  uint32_t val)
+ {
+ 	val = cpu_to_fdt32(val);
+ 	return fdt_setprop(fdt, nodeoffset, name, &val, sizeof(val));
+ }
+ 
+ /**
++ * fdt_setprop_u64 - set a property to a 64-bit integer
++ * @fdt: pointer to the device tree blob
++ * @nodeoffset: offset of the node whose property to change
++ * @name: name of the property to change
++ * @val: 64-bit integer value for the property (native endian)
++ *
++ * fdt_setprop_u64() sets the value of the named property in the given
++ * node to the given 64-bit integer value (converting to big-endian if
++ * necessary), or creates a new property with that value if it does
++ * not already exist.
++ *
++ * This function may insert or delete data from the blob, and will
++ * therefore change the offsets of some existing nodes.
++ *
++ * returns:
++ *	0, on success
++ *	-FDT_ERR_NOSPACE, there is insufficient free space in the blob to
++ *		contain the new property value
++ *	-FDT_ERR_BADOFFSET, nodeoffset did not point to FDT_BEGIN_NODE tag
++ *	-FDT_ERR_BADLAYOUT,
++ *	-FDT_ERR_BADMAGIC,
++ *	-FDT_ERR_BADVERSION,
++ *	-FDT_ERR_BADSTATE,
++ *	-FDT_ERR_BADSTRUCTURE,
++ *	-FDT_ERR_BADLAYOUT,
++ *	-FDT_ERR_TRUNCATED, standard meanings
++ */
++static inline int fdt_setprop_u64(void *fdt, int nodeoffset, const char *name,
++				  uint64_t val)
++{
++	val = cpu_to_fdt64(val);
++	return fdt_setprop(fdt, nodeoffset, name, &val, sizeof(val));
++}
++
++/**
++ * fdt_setprop_cell - set a property to a single cell value
++ *
++ * This is an alternative name for fdt_setprop_u32()
++ */
++static inline int fdt_setprop_cell(void *fdt, int nodeoffset, const char *name,
++				   uint32_t val)
++{
++	return fdt_setprop_u32(fdt, nodeoffset, name, val);
++}
++
++/**
+  * fdt_setprop_string - set a property to a string value
+  * @fdt: pointer to the device tree blob
+  * @nodeoffset: offset of the node whose property to change
+@@ -1164,16 +1265,16 @@ int fdt_appendprop(void *fdt, int nodeoffset, const char *name,
+ 		   const void *val, int len);
+ 
+ /**
+- * fdt_appendprop_cell - append a single cell value to a property
++ * fdt_appendprop_u32 - append a 32-bit integer value to a property
+  * @fdt: pointer to the device tree blob
+  * @nodeoffset: offset of the node whose property to change
+  * @name: name of the property to change
+  * @val: 32-bit integer value to append to the property (native endian)
+  *
+- * fdt_appendprop_cell() appends the given cell value (converting to
+- * big-endian if necessary) to the value of the named property in the
+- * given node, or creates a new property with that value if it does
+- * not already exist.
++ * fdt_appendprop_u32() appends the given 32-bit integer value
++ * (converting to big-endian if necessary) to the value of the named
++ * property in the given node, or creates a new property with that
++ * value if it does not already exist.
+  *
+  * This function may insert data into the blob, and will therefore
+  * change the offsets of some existing nodes.
+@@ -1191,14 +1292,60 @@ int fdt_appendprop(void *fdt, int nodeoffset, const char *name,
+  *	-FDT_ERR_BADLAYOUT,
+  *	-FDT_ERR_TRUNCATED, standard meanings
+  */
+-static inline int fdt_appendprop_cell(void *fdt, int nodeoffset,
+-				      const char *name, uint32_t val)
++static inline int fdt_appendprop_u32(void *fdt, int nodeoffset,
++				     const char *name, uint32_t val)
+ {
+ 	val = cpu_to_fdt32(val);
+ 	return fdt_appendprop(fdt, nodeoffset, name, &val, sizeof(val));
+ }
+ 
+ /**
++ * fdt_appendprop_u64 - append a 64-bit integer value to a property
++ * @fdt: pointer to the device tree blob
++ * @nodeoffset: offset of the node whose property to change
++ * @name: name of the property to change
++ * @val: 64-bit integer value to append to the property (native endian)
++ *
++ * fdt_appendprop_u64() appends the given 64-bit integer value
++ * (converting to big-endian if necessary) to the value of the named
++ * property in the given node, or creates a new property with that
++ * value if it does not already exist.
++ *
++ * This function may insert data into the blob, and will therefore
++ * change the offsets of some existing nodes.
++ *
++ * returns:
++ *	0, on success
++ *	-FDT_ERR_NOSPACE, there is insufficient free space in the blob to
++ *		contain the new property value
++ *	-FDT_ERR_BADOFFSET, nodeoffset did not point to FDT_BEGIN_NODE tag
++ *	-FDT_ERR_BADLAYOUT,
++ *	-FDT_ERR_BADMAGIC,
++ *	-FDT_ERR_BADVERSION,
++ *	-FDT_ERR_BADSTATE,
++ *	-FDT_ERR_BADSTRUCTURE,
++ *	-FDT_ERR_BADLAYOUT,
++ *	-FDT_ERR_TRUNCATED, standard meanings
++ */
++static inline int fdt_appendprop_u64(void *fdt, int nodeoffset,
++				     const char *name, uint64_t val)
++{
++	val = cpu_to_fdt64(val);
++	return fdt_appendprop(fdt, nodeoffset, name, &val, sizeof(val));
++}
++
++/**
++ * fdt_appendprop_cell - append a single cell value to a property
++ *
++ * This is an alternative name for fdt_appendprop_u32()
++ */
++static inline int fdt_appendprop_cell(void *fdt, int nodeoffset,
++				      const char *name, uint32_t val)
++{
++	return fdt_appendprop_u32(fdt, nodeoffset, name, val);
++}
++
++/**
+  * fdt_appendprop_string - append a string to a property
+  * @fdt: pointer to the device tree blob
+  * @nodeoffset: offset of the node whose property to change
+diff --git a/tests/appendprop.dts b/tests/appendprop.dts
+index 6e3a3eb..f4bc730 100644
+--- a/tests/appendprop.dts
++++ b/tests/appendprop.dts
+@@ -2,6 +2,7 @@
+ 
+ / {
+ 	prop-str = "hello world", "nastystring: \a\b\t\n\v\f\r\\\"";
++	prop-int64 = /bits/ 64 <0xdeadbeef01abcdef 0xdeadbeef01abcdef>;
+ 	prop-int = <0xdeadbeef 123456789>;
+ 	prop-bytes = [00010203040001020304];
+ };
+diff --git a/tests/appendprop1.c b/tests/appendprop1.c
+index 180d296..d716f7a 100644
+--- a/tests/appendprop1.c
++++ b/tests/appendprop1.c
+@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
+ 
+ 	CHECK(fdt_appendprop(fdt, 0, "prop-bytes", bytes, sizeof(bytes)));
+ 	CHECK(fdt_appendprop_cell(fdt, 0, "prop-int", TEST_VALUE_1));
++	CHECK(fdt_appendprop_u64(fdt, 0, "prop-int64", TEST_VALUE64_1));
+ 	CHECK(fdt_appendprop_string(fdt, 0, "prop-str", TEST_STRING_1));
+ 
+ 	CHECK(fdt_pack(fdt));
+diff --git a/tests/appendprop2.c b/tests/appendprop2.c
+index d651a89..7eb243d 100644
+--- a/tests/appendprop2.c
++++ b/tests/appendprop2.c
+@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
+ 
+ 	CHECK(fdt_appendprop(fdt, 0, "prop-bytes", bytes, sizeof(bytes)));
+ 	CHECK(fdt_appendprop_cell(fdt, 0, "prop-int", TEST_VALUE_2));
++	CHECK(fdt_appendprop_u64(fdt, 0, "prop-int64", TEST_VALUE64_1));
+ 	CHECK(fdt_appendprop_string(fdt, 0, "prop-str", TEST_STRING_2));
+ 
+ 	CHECK(fdt_pack(fdt));
+diff --git a/tests/include1.dts b/tests/include1.dts
+index 5d59d83..893aaff 100644
+--- a/tests/include1.dts
++++ b/tests/include1.dts
+@@ -6,6 +6,7 @@
+ / {
+ 	/include/ "include4.dts"
+ 	/include/ "include5.dts" = <0xdeadbeef>;
++	prop-int64 /include/ "include5a.dts";
+ 	prop-str = /include/ "include6.dts";
+ 
+ 	/include/ "include7.dts"
+diff --git a/tests/include5a.dts b/tests/include5a.dts
+new file mode 100644
+index 0000000..39ddba4
+--- /dev/null
++++ b/tests/include5a.dts
+@@ -0,0 +1 @@
++= /bits/ 64 <0xdeadbeef01abcdef>
+\ No newline at end of file
+diff --git a/tests/rw_tree1.c b/tests/rw_tree1.c
+index f0bce88..f4965ec 100644
+--- a/tests/rw_tree1.c
++++ b/tests/rw_tree1.c
+@@ -73,7 +73,8 @@ int main(int argc, char *argv[])
+ 	CHECK(fdt_add_mem_rsv(fdt, TEST_ADDR_2, TEST_SIZE_2));
+ 
+ 	CHECK(fdt_setprop_string(fdt, 0, "compatible", "test_tree1"));
+-	CHECK(fdt_setprop_cell(fdt, 0, "prop-int", TEST_VALUE_1));
++	CHECK(fdt_setprop_u32(fdt, 0, "prop-int", TEST_VALUE_1));
++	CHECK(fdt_setprop_u64(fdt, 0, "prop-int64", TEST_VALUE64_1));
+ 	CHECK(fdt_setprop_string(fdt, 0, "prop-str", TEST_STRING_1));
+ 
+ 	OFF_CHECK(offset, fdt_add_subnode(fdt, 0, "subnode@1"));
+diff --git a/tests/setprop.c b/tests/setprop.c
+index 386b87b..9f2bc88 100644
+--- a/tests/setprop.c
++++ b/tests/setprop.c
+@@ -74,5 +74,23 @@ int main(int argc, char *argv[])
+ 
+ 	check_getprop(fdt, 0, "prop-str", 0, NULL);
+ 
++	err = fdt_setprop_u32(fdt, 0, "prop-u32", TEST_VALUE_2);
++	if (err)
++		FAIL("Failed to set \"prop-u32\" to 0x%08x: %s",
++		     TEST_VALUE_2, fdt_strerror(err));
++	check_getprop_cell(fdt, 0, "prop-u32", TEST_VALUE_2);
++
++	err = fdt_setprop_cell(fdt, 0, "prop-cell", TEST_VALUE_2);
++	if (err)
++		FAIL("Failed to set \"prop-cell\" to 0x%08x: %s",
++		     TEST_VALUE_2, fdt_strerror(err));
++	check_getprop_cell(fdt, 0, "prop-cell", TEST_VALUE_2);
++
++	err = fdt_setprop_u64(fdt, 0, "prop-u64", TEST_VALUE64_1);
++	if (err)
++		FAIL("Failed to set \"prop-u64\" to 0x%016llx: %s",
++		     TEST_VALUE64_1, fdt_strerror(err));
++	check_getprop_64(fdt, 0, "prop-u64", TEST_VALUE64_1);
++	
+ 	PASS();
+ }
+diff --git a/tests/setprop_inplace.c b/tests/setprop_inplace.c
+index aa0cd96..30a1cf3 100644
+--- a/tests/setprop_inplace.c
++++ b/tests/setprop_inplace.c
+@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
+ {
+ 	void *fdt;
+ 	const uint32_t *intp;
++	const uint64_t *int64p;
+ 	const char *strp;
+ 	char *xstr;
+ 	int xlen, i;
+@@ -55,6 +56,20 @@ int main(int argc, char *argv[])
+ 	strp = check_getprop(fdt, 0, "prop-str", strlen(TEST_STRING_1)+1,
+ 			     TEST_STRING_1);
+ 
++
++	int64p = check_getprop_64(fdt, 0, "prop-int64", TEST_VALUE64_1);
++
++	verbose_printf("Old int64 value was 0x%016llx\n", *int64p);
++	err = fdt_setprop_inplace_u64(fdt, 0, "prop-int64", ~TEST_VALUE64_1);
++	if (err)
++		FAIL("Failed to set \"prop-int64\" to 0x016%llx: %s",
++		     ~TEST_VALUE64_1, fdt_strerror(err));
++	int64p = check_getprop_64(fdt, 0, "prop-int64", ~TEST_VALUE64_1);
++	verbose_printf("New int64 value is 0x%016llx\n", *int64p);
++
++	strp = check_getprop(fdt, 0, "prop-str", strlen(TEST_STRING_1)+1,
++			     TEST_STRING_1);
++
+ 	verbose_printf("Old string value was \"%s\"\n", strp);
+ 	xstr = strdup(strp);
+ 	xlen = strlen(xstr);
+diff --git a/tests/sw_tree1.c b/tests/sw_tree1.c
+index f2c430a..5c71414 100644
+--- a/tests/sw_tree1.c
++++ b/tests/sw_tree1.c
+@@ -55,7 +55,8 @@ int main(int argc, char *argv[])
+ 
+ 	CHECK(fdt_begin_node(fdt, ""));
+ 	CHECK(fdt_property_string(fdt, "compatible", "test_tree1"));
+-	CHECK(fdt_property_cell(fdt, "prop-int", TEST_VALUE_1));
++	CHECK(fdt_property_u32(fdt, "prop-int", TEST_VALUE_1));
++	CHECK(fdt_property_u64(fdt, "prop-int64", TEST_VALUE64_1));
+ 	CHECK(fdt_property_string(fdt, "prop-str", TEST_STRING_1));
+ 
+ 	CHECK(fdt_begin_node(fdt, "subnode@1"));
+diff --git a/tests/test_tree1.dts b/tests/test_tree1.dts
+index 4f0ce45..cf530ce 100644
+--- a/tests/test_tree1.dts
++++ b/tests/test_tree1.dts
+@@ -6,6 +6,7 @@
+ / {
+ 	compatible = "test_tree1";
+ 	prop-int = <0xdeadbeef>;
++	prop-int64 = /bits/ 64 <0xdeadbeef01abcdef>;
+ 	prop-str = "hello world";
+ 
+ 	subnode@1 {
+diff --git a/tests/test_tree1_merge.dts b/tests/test_tree1_merge.dts
+index fc191fd..ded08d8 100644
+--- a/tests/test_tree1_merge.dts
++++ b/tests/test_tree1_merge.dts
+@@ -30,6 +30,7 @@
+ 
+ / {
+ 	prop-int = <0xdeadbeef>;
++	prop-int64 = /bits/ 64 <0xdeadbeef01abcdef>;
+ 	subnode@1 {
+ 		prop-int = [deadbeef];
+ 	};
+diff --git a/tests/test_tree1_merge_labelled.dts b/tests/test_tree1_merge_labelled.dts
+index 46a6840..29953b0 100644
+--- a/tests/test_tree1_merge_labelled.dts
++++ b/tests/test_tree1_merge_labelled.dts
+@@ -6,6 +6,7 @@
+ / {
+ 	compatible = "test_tree1";
+ 	prop-int = <0xdeadbeef>;
++	prop-int64 = /bits/ 64 <0xdeadbeef01abcdef>;
+ 	prop-str = "hello world";
+ 
+ 	subnode@1 {
+diff --git a/tests/test_tree1_merge_path.dts b/tests/test_tree1_merge_path.dts
+index d68713b..168d066 100644
+--- a/tests/test_tree1_merge_path.dts
++++ b/tests/test_tree1_merge_path.dts
+@@ -6,6 +6,7 @@
+ / {
+ 	compatible = "test_tree1";
+ 	prop-int = <0xdeadbeef>;
++	prop-int64 = /bits/ 64 <0xdeadbeef01abcdef>;
+ 	prop-str = "hello world";
+ 
+ 	subnode@1 {
+diff --git a/tests/testdata.h b/tests/testdata.h
+index d4c6759..ce715e4 100644
+--- a/tests/testdata.h
++++ b/tests/testdata.h
+@@ -12,6 +12,8 @@
+ #define TEST_VALUE_1	0xdeadbeef
+ #define TEST_VALUE_2	123456789
+ 
++#define TEST_VALUE64_1	ASM_CONST_LL(0xdeadbeef01abcdef)
++
+ #define PHANDLE_1	0x2000
+ #define PHANDLE_2	0x2001
+ 
+diff --git a/tests/tests.h b/tests/tests.h
+index a51556d..56a843c 100644
+--- a/tests/tests.h
++++ b/tests/tests.h
+@@ -111,6 +111,11 @@ const void *check_getprop(void *fdt, int nodeoffset, const char *name,
+ 		uint32_t x = cpu_to_fdt32(val);			     \
+ 		check_getprop(fdt, nodeoffset, name, sizeof(x), &x); \
+ 	})
++#define check_getprop_64(fdt, nodeoffset, name, val) \
++	({ \
++		uint64_t x = cpu_to_fdt64(val);			     \
++		check_getprop(fdt, nodeoffset, name, sizeof(x), &x); \
++	})
+ #define check_getprop_string(fdt, nodeoffset, name, s) \
+ 	check_getprop((fdt), (nodeoffset), (name), strlen(s)+1, (s))
+ int nodename_eq(const char *s1, const char *s2);
+diff --git a/tests/trees.S b/tests/trees.S
+index 66adf3f..cae0187 100644
+--- a/tests/trees.S
++++ b/tests/trees.S
+@@ -52,6 +52,10 @@ tree##_rsvmap_end:		;
+ 	PROPHDR(tree, name, 4) \
+ 	FDTLONG(val)		;
+ 
++#define PROP_INT64(tree, name, val) \
++	PROPHDR(tree, name, 8) \
++	FDTQUAD(val)		;
++
+ #define PROP_STR(tree, name, str) \
+ 	PROPHDR(tree, name, 55f - 54f) \
+ 54:	\
+@@ -86,6 +90,7 @@ test_tree1_struct:
+ 	BEGIN_NODE("")
+ 	PROP_STR(test_tree1, compatible, "test_tree1")
+ 	PROP_INT(test_tree1, prop_int, TEST_VALUE_1)
++	PROP_INT64(test_tree1, prop_int64, TEST_VALUE64_1)
+ 	PROP_STR(test_tree1, prop_str, TEST_STRING_1)
+ 
+ 	BEGIN_NODE("subnode@1")
+@@ -124,6 +129,7 @@ test_tree1_struct_end:
+ test_tree1_strings:
+ 	STRING(test_tree1, compatible, "compatible")
+ 	STRING(test_tree1, prop_int, "prop-int")
++	STRING(test_tree1, prop_int64, "prop-int64")
+ 	STRING(test_tree1, prop_str, "prop-str")
+ 	STRING(test_tree1, linux_phandle, "linux,phandle")
+ 	STRING(test_tree1, phandle, "phandle")
+-- 
+1.8.1.2
+

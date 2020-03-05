@@ -1,0 +1,85 @@
+From d5568162cb30ce72c1a8714d9f63013e40c8b217 Mon Sep 17 00:00:00 2001
+From: vsai <vishalsai.daswani@meraki.net>
+Date: Fri, 30 Oct 2015 15:49:32 -0700
+Subject: [PATCH] dhcp: add to meraki event from within dhcp
+
+---
+ server/dhcp.c | 52 +++++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 39 insertions(+), 13 deletions(-)
+
+diff --git a/server/dhcp.c b/server/dhcp.c
+index bddb87c..86b9785 100644
+--- a/server/dhcp.c
++++ b/server/dhcp.c
+@@ -299,18 +299,22 @@ void dhcpdiscover (packet, ms_nulltp)
+ 	/* %Audit% This is log output. %2004.06.17,Safe%
+ 	 * If we truncate we hope the user can get a hint from the log.
+ 	 */
+-	snprintf (msgbuf, sizeof msgbuf, "DHCPDISCOVER from %s %s%s%svia %s",
+-		 (packet -> raw -> htype
+-		  ? print_hw_addr (packet -> raw -> htype,
+-				   packet -> raw -> hlen,
+-				   packet -> raw -> chaddr)
+-		  : (lease
+-		     ? print_hex_1(lease->uid_len, lease->uid, 60)
+-		     : "<no identifier>")),
+-		  s ? "(" : "", s ? s : "", s ? ") " : "",
+-		  packet -> raw -> giaddr.s_addr
+-		  ? inet_ntoa (packet -> raw -> giaddr)
+-		  : packet -> interface -> name);
++	char mac[1024];
++	char interface[1024];
++	snprintf(mac, sizeof mac, "%s %s%s%s",
++	         (packet -> raw -> htype
++	          ? print_hw_addr (packet -> raw -> htype,
++	                           packet -> raw -> hlen,
++	                           packet -> raw -> chaddr)
++	          : (lease
++	             ? print_hex_1(lease->uid_len, lease->uid, 60)
++	             : "<no identifier>")),
++	         s ? "(" : "", s ? s : "", s ? ") ": "");
++	snprintf(interface, sizeof interface, "%s",
++	            (packet -> raw -> giaddr.s_addr) ? inet_ntoa (packet -> raw -> giaddr) : packet -> interface -> name);
++
++	snprintf (msgbuf, sizeof msgbuf, "DHCPDISCOVER from %svia %s",
++	          mac, interface);
+ 
+ 	/* Sourceless packets don't make sense here. */
+ 	if (!packet -> shared_network) {
+@@ -352,10 +356,32 @@ void dhcpdiscover (packet, ms_nulltp)
+ 			if (peer_has_leases)
+ 				log_error ("%s: peer holds all free leases",
+ 					   msgbuf);
+-			else
++			else {
+ 				log_error ("%s: network %s: no free leases",
+ 					   msgbuf,
+ 					   packet -> shared_network -> name);
++				char vlan_info[1024];
++				if (strcmp(interface, "hostlan")) {
++				    int vlan_num;
++				    int n = sscanf(interface, "hostlan.%d", &vlan_num);
++				    if (n == 1)
++				        snprintf(vlan_info, sizeof vlan_info, " vlan='%d'", vlan_num);
++				    else
++				        snprintf(vlan_info, sizeof vlan_info, interface);
++				} else
++				    snprintf(vlan_info, sizeof vlan_info, "");
++
++				FILE* fp = fopen("/click/event_log/add_event", "w");
++				if (!fp) {
++				    log_error("error opening event_log/add_event!");
++				    return;
++				}
++				fprintf(fp, "dhcp_no_leases \"network=\'%s\'%s\" \"DHCP: no free DHCP leases to give %s on network %s\" %s",
++				    packet -> shared_network -> name, vlan_info,
++				    mac, packet -> shared_network -> name, mac);
++				if (0 != fclose(fp))
++				    log_error("error closing/writing event_log/add_event");
++			}
+ 			return;
+ 		}
+ 	}
+-- 
+1.9.1
+

@@ -1,0 +1,29 @@
+--- curl-7.14.0-old/lib/hostip6.c	2005-04-22 13:41:13.000000000 -0700
++++ curl-7.14.0/lib/hostip6.c	2009-06-26 13:49:29.000000000 -0700
+@@ -206,7 +206,6 @@
+   curl_socket_t s;
+   int pf;
+   struct SessionHandle *data = conn->data;
+-  int ai_flags;
+ 
+   *waitp=0; /* don't wait, we have the response now */
+ 
+@@ -241,18 +240,9 @@
+     }
+   }
+ 
+-  if((1 == Curl_inet_pton(AF_INET, hostname, addrbuf)) ||
+-     (1 == Curl_inet_pton(AF_INET6, hostname, addrbuf))) {
+-    /* the given address is numerical only, prevent a reverse lookup */
+-    ai_flags = AI_NUMERICHOST;
+-  }
+-  else
+-    ai_flags = AI_CANONNAME;
+-
+   memset(&hints, 0, sizeof(hints));
+   hints.ai_family = pf;
+   hints.ai_socktype = SOCK_STREAM;
+-  hints.ai_flags = ai_flags;
+   snprintf(sbuf, sizeof(sbuf), "%d", port);
+   error = getaddrinfo(hostname, sbuf, &hints, &res);
+   if (error) {

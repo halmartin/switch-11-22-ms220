@@ -1,0 +1,59 @@
+From 0be7ef56dbc5296e9458fcc49434300a44ddee2d Mon Sep 17 00:00:00 2001
+From: Anuj Patel <anujp@meraki.com>
+Date: Wed, 31 Oct 2018 14:41:17 -0700
+Subject: [PATCH 2/2] Make pattern matching work with timestamping
+
+Pattern matching was not working when timestamping was enabled. This was
+happening because "line" in the code was referring to a global buffer of the
+log data. When timestamping was enabled we would push an additional 26 bytes
+of timestamp data to the front of the buffer and increment the lineptr pointer
+in main by 26 bytes. However we don't use the lineptr when calling logmatch.
+Instead we use the global "line" variable which points to the beginning of the
+buffer with a timestmap.
+
+This fixes the problem by passing the lineptr and linelen values from main
+directly into logmatch rather than relying on globals.
+---
+ runit/svlogd.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/runit/svlogd.c b/runit/svlogd.c
+index 7cae81c..93f3c90 100644
+--- a/runit/svlogd.c
++++ b/runit/svlogd.c
+@@ -1001,7 +1001,7 @@ static void sig_hangup_handler(int sig_no UNUSED_PARAM)
+ 	reopenasap = 1;
+ }
+ 
+-static void logmatch(struct logdir *ld)
++static void logmatch(struct logdir *ld, char* lineptr, int lineptr_len)
+ {
+ 	char *s;
+ 
+@@ -1012,12 +1012,12 @@ static void logmatch(struct logdir *ld)
+ 		switch (s[0]) {
+ 		case '+':
+ 		case '-':
+-			if (pmatch(s+1, line, linelen))
++			if (pmatch(s+1, lineptr, lineptr_len))
+ 				ld->match = s[0];
+ 			break;
+ 		case 'e':
+ 		case 'E':
+-			if (pmatch(s+1, line, linelen))
++			if (pmatch(s+1, lineptr, lineptr_len))
+ 				ld->matcherr = s[0];
+ 			break;
+ 		}
+@@ -1172,7 +1172,7 @@ int svlogd_main(int argc, char **argv)
+ 			if (ld->fddir == -1)
+ 				continue;
+ 			if (ld->inst)
+-				logmatch(ld);
++				logmatch(ld, lineptr, linelen);
+ 			if (ld->matcherr == 'e') {
+ 				/* runit-1.8.0 compat: if timestamping, do it on stderr too */
+ 				////full_write(STDERR_FILENO, printptr, printlen);
+-- 
+2.18.0
+

@@ -1,0 +1,4 @@
+Package: liblzma
+Priority: optional
+Section: libs
+Description: a library for xz and lzma compressed files

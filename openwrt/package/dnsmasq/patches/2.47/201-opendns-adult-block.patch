@@ -1,0 +1,130 @@
+diff -ur dnsmasq-2.47-new/src/dnsmasq.h dnsmasq-2.47-new2/src/dnsmasq.h
+--- dnsmasq-2.47-new/src/dnsmasq.h	2009-02-01 07:59:35.000000000 -0800
++++ dnsmasq-2.47-new2/src/dnsmasq.h	2009-02-08 14:10:29.000000000 -0800
+@@ -671,6 +671,7 @@
+   /* TFTP stuff */
+   struct tftp_transfer *tftp_trans;
+ 
++  int opendns_block_content;
+ } *daemon;
+ 
+ /* cache.c */
+@@ -710,6 +711,7 @@
+ unsigned int questions_crc(HEADER *header, size_t plen, char *buff);
+ size_t resize_packet(HEADER *header, size_t plen, 
+ 		  unsigned char *pheader, size_t hlen);
++void add_opendns_block_rr(struct daemon *daemon, HEADER *header, size_t *qlen);
+ 
+ /* util.c */
+ void rand_init(void);
+diff -ur dnsmasq-2.47-new/src/forward.c dnsmasq-2.47-new2/src/forward.c
+--- dnsmasq-2.47-new/src/forward.c	2009-02-01 07:59:48.000000000 -0800
++++ dnsmasq-2.47-new2/src/forward.c	2009-02-08 14:11:02.000000000 -0800
+@@ -270,6 +270,9 @@
+ 	}
+     }
+ 
++  if (daemon->opendns_block_content)
++    add_opendns_block_rr(daemon, header, &plen);
++
+   /* check for send errors here (no route to host) 
+      if we fail to send to all nameservers, send back an error
+      packet straight away (helps modem users when offline)  */
+diff -ur dnsmasq-2.47-new/src/option.c dnsmasq-2.47-new2/src/option.c
+--- dnsmasq-2.47-new/src/option.c	2009-02-01 08:01:10.000000000 -0800
++++ dnsmasq-2.47-new2/src/option.c	2009-02-08 14:20:49.000000000 -0800
+@@ -98,6 +98,7 @@
+ #define LOPT_MINPORT   288
+ #define LOPT_DHCP_FQDN 289
+ #define LOPT_CNAME     290
++#define LOPT_ODNS_BC   291
+ 
+ #ifdef HAVE_GETOPT_LONG
+ static const struct option opts[] =  
+@@ -204,6 +205,7 @@
+     {"min-port", 1, 0, LOPT_MINPORT },
+     {"dhcp-fqdn", 0, 0, LOPT_DHCP_FQDN },
+     {"cname", 1, 0, LOPT_CNAME },
++    {"opendns-block-content", 1, 0, LOPT_ODNS_BC},
+     { NULL, 0, 0, 0 }
+   };
+ 
+@@ -317,6 +319,7 @@
+   { LOPT_MINPORT, ARG_ONE, "<port>", gettext_noop("Specify lowest port available for DNS query transmission."), NULL },
+   { LOPT_DHCP_FQDN, OPT_DHCP_FQDN, NULL, gettext_noop("Use only fully qualified domain names for DHCP clients."), NULL },
+   { LOPT_CNAME, ARG_DUP, "<alias>,<target>", gettext_noop("Specify alias name for LOCAL DNS name."), NULL },
++  { LOPT_ODNS_BC, ARG_ONE, "<mask>", gettext_noop("Use OpenDNS CLIENTID option to block adult content. (Defaults to 0 (filter nothing).)"), NULL },
+   { 0, 0, NULL, NULL, NULL }
+ }; 
+ 
+@@ -2254,6 +2257,13 @@
+ 	break;
+       }
+       
++    case LOPT_ODNS_BC:  /* --opendns-block-content */
++      {
++	int v = strtol(arg, NULL, 0);
++	daemon->opendns_block_content = v & 0x7f;
++      }
++      break;
++
+     case 'W':  /* --srv-host */
+       {
+ 	int port = 1, priority = 0, weight = 0;
+@@ -2574,6 +2584,7 @@
+   daemon->tftp_max = TFTP_MAX_CONNECTIONS;
+   daemon->edns_pktsz = EDNS_PKTSZ;
+   daemon->log_fac = -1;
++  daemon->opendns_block_content = 0;
+   add_txt("version.bind", "dnsmasq-" VERSION );
+   add_txt("authors.bind", "Simon Kelley");
+   add_txt("copyright.bind", COPYRIGHT);
+diff -ur dnsmasq-2.47-new/src/rfc1035.c dnsmasq-2.47-new2/src/rfc1035.c
+--- dnsmasq-2.47-new/src/rfc1035.c	2009-02-01 08:01:23.000000000 -0800
++++ dnsmasq-2.47-new2/src/rfc1035.c	2009-02-08 14:27:22.000000000 -0800
+@@ -1597,7 +1597,45 @@
+   return ansp - (unsigned char *)header;
+ }
+ 
++void
++add_opendns_block_rr(struct daemon *daemon, HEADER *header, size_t *qlen)
++{
++  char client_id[] = {
++    0x00,                       /* empty name ('\0') */
++    0x00, 0x29,                 /* type */
++    0x04, 0x00,                 /* class */
++    0x00, 0x00, 0x00, 0x00,     /* ttl */
++    0x00, 0x0C,                 /* data length (below) */
++    0x00, 0x04, 0x00, 0x08,     /* magic */
++    0x4f, 0x70, 0x65, 0x6e,     /* 'Open' */
++    0x44, 0x4e, 0x53            /* 'DNS' */
++  };
+ 
++  if (find_pseudoheader(header, *qlen, NULL, NULL, NULL)
++      || *qlen + sizeof(client_id) + 1 > (unsigned)daemon->packet_buff_sz)
++    {
++      const char *msg = "existing EDNS0 header or no space in buffer; cannot append OpenDNS CLIENTID";
++      fprintf(stderr, "%s", msg);
++      syslog(LOG_WARNING, "%s", msg);
++      return;
++    }
+ 
++  char *rr = (char *)header + *qlen;
++  memcpy(rr, client_id, sizeof(client_id));
+ 
++  char *mask = rr + sizeof(client_id);
++  *mask = daemon->opendns_block_content;
++  /*
++    Currently defined bit values for *mask, from OpenDNS:
++    #define CATEGORY_lingerie  (1 << 0)
++    #define CATEGORY_mature    (1 << 1)
++    #define CATEGORY_nudity    (1 << 2)
++    #define CATEGORY_porn      (1 << 3)
++    #define CATEGORY_proxy     (1 << 4)
++    #define CATEGORY_sexuality (1 << 5)
++    #define CATEGORY_tasteless (1 << 6)
++  */
+ 
++  header->arcount = htons(ntohs(header->arcount) + 1);
++  *qlen += sizeof(client_id) + 1;
++}

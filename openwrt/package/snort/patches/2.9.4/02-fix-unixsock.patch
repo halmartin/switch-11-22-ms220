@@ -1,0 +1,40 @@
+--- a/src/output-plugins/spo_alert_unixsock.c	2012-07-31 07:47:43.000000000 -0700
++++ b/src/output-plugins/spo_alert_unixsock.c	2012-09-10 11:52:58.321160758 -0700
+@@ -207,6 +207,10 @@
+             {
+                 alertpkt.dlthdr=(char *)p->eh-(char *)p->pkt;
+             }
++            else
++            {
++                alertpkt.val|=NO_DLTHDR;
++            }
+ 
+             /* we don't log any headers besides eth yet */
+             if (IPH_IS_VALID(p) && p->pkt && IS_IP4(p))
+@@ -242,8 +246,14 @@
+                         break;
+                 }
+             }
++            else
++            {
++                alertpkt.val|=NO_NETHDR;
++                alertpkt.val|=NO_TRANSHDR;
++            }
+ 
+             if (p->data && p->pkt) alertpkt.data=p->data - p->pkt;
++            else alertpkt.val|=NO_DATA;
+         }
+     }
+ 
+--- a/src/output-plugins/spo_alert_unixsock.h	2012-01-12 14:11:41.000000000 -0800
++++ b/src/output-plugins/spo_alert_unixsock.h	2012-09-10 11:52:58.321160758 -0700
+@@ -49,6 +49,9 @@
+ #define NOPACKET_STRUCT 0x1
+     /* no transport headers in packet */
+ #define NO_TRANSHDR    0x2
++#define NO_NETHDR      0x4
++#define NO_DLTHDR      0x8
++#define NO_DATA        0xF
+     uint8_t pkt[65535];
+     Event event;
+ } Alertpkt;

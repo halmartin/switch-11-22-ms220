@@ -1,0 +1,4 @@
+Package: memtester
+Priority: optional
+Section: misc
+Description: A memory tester

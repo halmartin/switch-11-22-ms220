@@ -1,0 +1,6 @@
+Package: renderproto
+Priority: optional
+Section: x11
+Depends:
+Description: X rendering extension protocol
+

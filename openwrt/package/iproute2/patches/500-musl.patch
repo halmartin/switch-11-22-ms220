@@ -1,0 +1,558 @@
+commit 9a1ce70b34639bf60aa2bf6242bbf7f9b2fb713d
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Wed Jun 1 01:13:35 2016 -0700
+
+    Fixes for musl
+
+diff --git a/include/iptables.h b/include/iptables.h
+index dd844c1..747f0f1 100644
+--- a/include/iptables.h
++++ b/include/iptables.h
+@@ -20,7 +20,7 @@ struct ipt_get_revision
+ {
+ 	char name[IPT_FUNCTION_MAXNAMELEN-1];
+ 
+-	u_int8_t revision;
++	uint8_t revision;
+ };
+ #endif /* IPT_SO_GET_REVISION_MATCH   Old kernel source */
+ 
+@@ -39,7 +39,7 @@ struct iptables_match
+ 	ipt_chainlabel name;
+ 
+ 	/* Revision of match (0 by default). */
+-	u_int8_t revision;
++	uint8_t revision;
+ 
+ 	const char *version;
+ 
+@@ -92,7 +92,7 @@ struct iptables_target
+ 	ipt_chainlabel name;
+ 
+ 	/* Revision of target (0 by default). */
+-	u_int8_t revision;
++	uint8_t revision;
+ 
+ 	const char *version;
+ 
+@@ -151,7 +151,7 @@ extern char *mask_to_dotted(const struct in_addr *mask);
+ 
+ extern void parse_hostnetworkmask(const char *name, struct in_addr **addrpp,
+                       struct in_addr *maskp, unsigned int *naddrs);
+-extern u_int16_t parse_protocol(const char *s);
++extern uint16_t parse_protocol(const char *s);
+ 
+ extern int do_command(int argc, char *argv[], char **table,
+ 		      iptc_handle_t *handle);
+diff --git a/include/iptables_common.h b/include/iptables_common.h
+index 9099667..47a3282 100644
+--- a/include/iptables_common.h
++++ b/include/iptables_common.h
+@@ -43,9 +43,9 @@ extern char *lib_dir;
+   extern void init_extensions(void);
+ #endif
+ 
+-#define __be32	u_int32_t
+-#define __le32	u_int32_t
+-#define __be16	u_int16_t
+-#define __le16	u_int16_t
++#define __be32	uint32_t
++#define __le32	uint32_t
++#define __be16	uint16_t
++#define __le16	uint16_t
+ 
+ #endif /*_IPTABLES_COMMON_H*/
+diff --git a/include/libiptc/ipt_kernel_headers.h b/include/libiptc/ipt_kernel_headers.h
+index 7e87828..1045845 100644
+--- a/include/libiptc/ipt_kernel_headers.h
++++ b/include/libiptc/ipt_kernel_headers.h
+@@ -5,22 +5,11 @@
+ 
+ #include <limits.h>
+ 
+-#if defined(__GLIBC__) && __GLIBC__ == 2
+ #include <netinet/ip.h>
+ #include <netinet/in.h>
+ #include <netinet/ip_icmp.h>
+ #include <netinet/tcp.h>
+ #include <netinet/udp.h>
+ #include <sys/types.h>
+-#else /* libc5 */
+-#include <sys/socket.h>
+-#include <linux/ip.h>
+-#include <linux/in.h>
+-#include <linux/if.h>
+-#include <linux/icmp.h>
+-#include <linux/tcp.h>
+-#include <linux/udp.h>
+-#include <linux/types.h>
+-#include <linux/in6.h>
+-#endif
++
+ #endif
+diff --git a/include/netinet/tcp.h b/include/netinet/tcp.h
+index 3f890a1..0265c3d 100644
+--- a/include/netinet/tcp.h
++++ b/include/netinet/tcp.h
+@@ -55,70 +55,70 @@
+ # include <sys/types.h>
+ 
+ # ifdef __FAVOR_BSD
+-typedef	u_int32_t tcp_seq;
++typedef	uint32_t tcp_seq;
+ /*
+  * TCP header.
+  * Per RFC 793, September, 1981.
+  */
+ struct tcphdr
+   {
+-    u_int16_t th_sport;		/* source port */
+-    u_int16_t th_dport;		/* destination port */
++    uint16_t th_sport;		/* source port */
++    uint16_t th_dport;		/* destination port */
+     tcp_seq th_seq;		/* sequence number */
+     tcp_seq th_ack;		/* acknowledgement number */
+ #  if __BYTE_ORDER == __LITTLE_ENDIAN
+-    u_int8_t th_x2:4;		/* (unused) */
+-    u_int8_t th_off:4;		/* data offset */
++    uint8_t th_x2:4;		/* (unused) */
++    uint8_t th_off:4;		/* data offset */
+ #  endif
+ #  if __BYTE_ORDER == __BIG_ENDIAN
+-    u_int8_t th_off:4;		/* data offset */
+-    u_int8_t th_x2:4;		/* (unused) */
++    uint8_t th_off:4;		/* data offset */
++    uint8_t th_x2:4;		/* (unused) */
+ #  endif
+-    u_int8_t th_flags;
++    uint8_t th_flags;
+ #  define TH_FIN	0x01
+ #  define TH_SYN	0x02
+ #  define TH_RST	0x04
+ #  define TH_PUSH	0x08
+ #  define TH_ACK	0x10
+ #  define TH_URG	0x20
+-    u_int16_t th_win;		/* window */
+-    u_int16_t th_sum;		/* checksum */
+-    u_int16_t th_urp;		/* urgent pointer */
++    uint16_t th_win;		/* window */
++    uint16_t th_sum;		/* checksum */
++    uint16_t th_urp;		/* urgent pointer */
+ };
+ 
+ # else /* !__FAVOR_BSD */
+ struct tcphdr
+   {
+-    u_int16_t source;
+-    u_int16_t dest;
+-    u_int32_t seq;
+-    u_int32_t ack_seq;
++    uint16_t source;
++    uint16_t dest;
++    uint32_t seq;
++    uint32_t ack_seq;
+ #  if __BYTE_ORDER == __LITTLE_ENDIAN
+-    u_int16_t res1:4;
+-    u_int16_t doff:4;
+-    u_int16_t fin:1;
+-    u_int16_t syn:1;
+-    u_int16_t rst:1;
+-    u_int16_t psh:1;
+-    u_int16_t ack:1;
+-    u_int16_t urg:1;
+-    u_int16_t res2:2;
++    uint16_t res1:4;
++    uint16_t doff:4;
++    uint16_t fin:1;
++    uint16_t syn:1;
++    uint16_t rst:1;
++    uint16_t psh:1;
++    uint16_t ack:1;
++    uint16_t urg:1;
++    uint16_t res2:2;
+ #  elif __BYTE_ORDER == __BIG_ENDIAN
+-    u_int16_t doff:4;
+-    u_int16_t res1:4;
+-    u_int16_t res2:2;
+-    u_int16_t urg:1;
+-    u_int16_t ack:1;
+-    u_int16_t psh:1;
+-    u_int16_t rst:1;
+-    u_int16_t syn:1;
+-    u_int16_t fin:1;
++    uint16_t doff:4;
++    uint16_t res1:4;
++    uint16_t res2:2;
++    uint16_t urg:1;
++    uint16_t ack:1;
++    uint16_t psh:1;
++    uint16_t rst:1;
++    uint16_t syn:1;
++    uint16_t fin:1;
+ #  else
+ #   error "Adjust your <bits/endian.h> defines"
+ #  endif
+-    u_int16_t window;
+-    u_int16_t check;
+-    u_int16_t urg_ptr;
++    uint16_t window;
++    uint16_t check;
++    uint16_t urg_ptr;
+ };
+ # endif /* __FAVOR_BSD */
+ 
+@@ -186,43 +186,43 @@ enum tcp_ca_state
+ 
+ struct tcp_info
+ {
+-  u_int8_t	tcpi_state;
+-  u_int8_t	tcpi_ca_state;
+-  u_int8_t	tcpi_retransmits;
+-  u_int8_t	tcpi_probes;
+-  u_int8_t	tcpi_backoff;
+-  u_int8_t	tcpi_options;
+-  u_int8_t	tcpi_snd_wscale : 4, tcpi_rcv_wscale : 4;
+-
+-  u_int32_t	tcpi_rto;
+-  u_int32_t	tcpi_ato;
+-  u_int32_t	tcpi_snd_mss;
+-  u_int32_t	tcpi_rcv_mss;
+-
+-  u_int32_t	tcpi_unacked;
+-  u_int32_t	tcpi_sacked;
+-  u_int32_t	tcpi_lost;
+-  u_int32_t	tcpi_retrans;
+-  u_int32_t	tcpi_fackets;
++  uint8_t	tcpi_state;
++  uint8_t	tcpi_ca_state;
++  uint8_t	tcpi_retransmits;
++  uint8_t	tcpi_probes;
++  uint8_t	tcpi_backoff;
++  uint8_t	tcpi_options;
++  uint8_t	tcpi_snd_wscale : 4, tcpi_rcv_wscale : 4;
++
++  uint32_t	tcpi_rto;
++  uint32_t	tcpi_ato;
++  uint32_t	tcpi_snd_mss;
++  uint32_t	tcpi_rcv_mss;
++
++  uint32_t	tcpi_unacked;
++  uint32_t	tcpi_sacked;
++  uint32_t	tcpi_lost;
++  uint32_t	tcpi_retrans;
++  uint32_t	tcpi_fackets;
+ 
+   /* Times. */
+-  u_int32_t	tcpi_last_data_sent;
+-  u_int32_t	tcpi_last_ack_sent;	/* Not remembered, sorry.  */
+-  u_int32_t	tcpi_last_data_recv;
+-  u_int32_t	tcpi_last_ack_recv;
++  uint32_t	tcpi_last_data_sent;
++  uint32_t	tcpi_last_ack_sent;	/* Not remembered, sorry.  */
++  uint32_t	tcpi_last_data_recv;
++  uint32_t	tcpi_last_ack_recv;
+ 
+   /* Metrics. */
+-  u_int32_t	tcpi_pmtu;
+-  u_int32_t	tcpi_rcv_ssthresh;
+-  u_int32_t	tcpi_rtt;
+-  u_int32_t	tcpi_rttvar;
+-  u_int32_t	tcpi_snd_ssthresh;
+-  u_int32_t	tcpi_snd_cwnd;
+-  u_int32_t	tcpi_advmss;
+-  u_int32_t	tcpi_reordering;
+-  u_int32_t	tcpi_rcv_rtt;
+-  u_int32_t	tcpi_rcv_space;
+-  u_int32_t	tcpi_total_retrans;
++  uint32_t	tcpi_pmtu;
++  uint32_t	tcpi_rcv_ssthresh;
++  uint32_t	tcpi_rtt;
++  uint32_t	tcpi_rttvar;
++  uint32_t	tcpi_snd_ssthresh;
++  uint32_t	tcpi_snd_cwnd;
++  uint32_t	tcpi_advmss;
++  uint32_t	tcpi_reordering;
++  uint32_t	tcpi_rcv_rtt;
++  uint32_t	tcpi_rcv_space;
++  uint32_t	tcpi_total_retrans;
+ 
+ };
+ 
+diff --git a/include/utils.h b/include/utils.h
+index 496db68..70025e6 100644
+--- a/include/utils.h
++++ b/include/utils.h
+@@ -4,6 +4,7 @@
+ #include <asm/types.h>
+ #include <resolv.h>
+ #include <stdlib.h>
++#include <stdio.h>
+ 
+ #include "libnetlink.h"
+ #include "ll_map.h"
+@@ -66,8 +67,8 @@ struct dn_naddr
+ #define IPX_NODE_LEN 6
+ 
+ struct ipx_addr {
+-	u_int32_t ipx_net;
+-	u_int8_t  ipx_node[IPX_NODE_LEN];
++	uint32_t ipx_net;
++	uint8_t  ipx_node[IPX_NODE_LEN];
+ };
+ 
+ extern __u32 get_addr32(const char *name);
+diff --git a/lib/dnet_ntop.c b/lib/dnet_ntop.c
+index 507a7eb..96db666 100644
+--- a/lib/dnet_ntop.c
++++ b/lib/dnet_ntop.c
+@@ -5,20 +5,20 @@
+ 
+ #include "utils.h"
+ 
+-static __inline__ u_int16_t dn_ntohs(u_int16_t addr)
++static __inline__ uint16_t dn_ntohs(uint16_t addr)
+ {
+ 	union {
+-		u_int8_t byte[2];
+-		u_int16_t word;
++		uint8_t byte[2];
++		uint16_t word;
+ 	} u;
+ 
+ 	u.word = addr;
+-	return ((u_int16_t)u.byte[0]) | (((u_int16_t)u.byte[1]) << 8);
++	return ((uint16_t)u.byte[0]) | (((uint16_t)u.byte[1]) << 8);
+ }
+ 
+-static __inline__ int do_digit(char *str, u_int16_t *addr, u_int16_t scale, size_t *pos, size_t len, int *started)
++static __inline__ int do_digit(char *str, uint16_t *addr, uint16_t scale, size_t *pos, size_t len, int *started)
+ {
+-	u_int16_t tmp = *addr / scale;
++	uint16_t tmp = *addr / scale;
+ 
+ 	if (*pos == len)
+ 		return 1;
+@@ -36,7 +36,7 @@ static __inline__ int do_digit(char *str, u_int16_t *addr, u_int16_t scale, size
+ 
+ static const char *dnet_ntop1(const struct dn_naddr *dna, char *str, size_t len)
+ {
+-	u_int16_t addr, area;
++	uint16_t addr, area;
+ 	size_t pos = 0;
+ 	int started = 0;
+ 
+diff --git a/lib/dnet_pton.c b/lib/dnet_pton.c
+index 7385756..f66fd97 100644
+--- a/lib/dnet_pton.c
++++ b/lib/dnet_pton.c
+@@ -5,19 +5,19 @@
+ 
+ #include "utils.h"
+ 
+-static __inline__ u_int16_t dn_htons(u_int16_t addr)
++static __inline__ uint16_t dn_htons(uint16_t addr)
+ {
+         union {
+-                u_int8_t byte[2];
+-                u_int16_t word;
++                uint8_t byte[2];
++                uint16_t word;
+         } u;
+ 
+         u.word = addr;
+-        return ((u_int16_t)u.byte[0]) | (((u_int16_t)u.byte[1]) << 8);
++        return ((uint16_t)u.byte[0]) | (((uint16_t)u.byte[1]) << 8);
+ }
+ 
+ 
+-static int dnet_num(const char *src, u_int16_t * dst)
++static int dnet_num(const char *src, uint16_t * dst)
+ {
+ 	int rv = 0;
+ 	int tmp;
+@@ -38,9 +38,9 @@ static int dnet_num(const char *src, u_int16_t * dst)
+ 
+ static int dnet_pton1(const char *src, struct dn_naddr *dna)
+ {
+-	u_int16_t addr;
+-	u_int16_t area = 0;
+-	u_int16_t node = 0;
++	uint16_t addr;
++	uint16_t area = 0;
++	uint16_t node = 0;
+ 	int pos;
+ 
+ 	pos = dnet_num(src, &area);
+diff --git a/lib/ipx_ntop.c b/lib/ipx_ntop.c
+index 7b6d728..b360c75 100644
+--- a/lib/ipx_ntop.c
++++ b/lib/ipx_ntop.c
+@@ -4,9 +4,9 @@
+ 
+ #include "utils.h"
+ 
+-static __inline__ int do_digit(char *str, u_int32_t addr, u_int32_t scale, size_t *pos, size_t len)
++static __inline__ int do_digit(char *str, uint32_t addr, uint32_t scale, size_t *pos, size_t len)
+ {
+-	u_int32_t tmp = addr >> (scale * 4);
++	uint32_t tmp = addr >> (scale * 4);
+ 
+ 	if (*pos == len)
+ 		return 1;
+diff --git a/lib/ipx_pton.c b/lib/ipx_pton.c
+index 1a52b7f..ce69a1e 100644
+--- a/lib/ipx_pton.c
++++ b/lib/ipx_pton.c
+@@ -5,7 +5,7 @@
+ 
+ #include "utils.h"
+ 
+-static u_int32_t hexget(char c)
++static uint32_t hexget(char c)
+ {
+ 	if (c >= 'A' && c <= 'F')
+ 		return c - 'A' + 10;
+@@ -17,10 +17,10 @@ static u_int32_t hexget(char c)
+ 	return 0xf0;
+ }
+ 
+-static int ipx_getnet(u_int32_t *net, const char *str)
++static int ipx_getnet(uint32_t *net, const char *str)
+ {
+ 	int i;
+-	u_int32_t tmp;
++	uint32_t tmp;
+ 
+ 	for(i = 0; *str && (i < 8); i++) {
+ 
+@@ -42,19 +42,19 @@ static int ipx_getnet(u_int32_t *net, const char *str)
+ 	return -1;
+ }
+ 
+-static int ipx_getnode(u_int8_t *node, const char *str)
++static int ipx_getnode(uint8_t *node, const char *str)
+ {
+ 	int i;
+-	u_int32_t tmp;
++	uint32_t tmp;
+ 
+ 	for(i = 0; i < 6; i++) {
+ 		if ((tmp = hexget(*str++)) & 0xf0)
+ 			return -1;
+-		node[i] = (u_int8_t)tmp;
++		node[i] = (uint8_t)tmp;
+ 		node[i] <<= 4;
+ 		if ((tmp = hexget(*str++)) & 0xf0)
+ 			return -1;
+-		node[i] |= (u_int8_t)tmp;
++		node[i] |= (uint8_t)tmp;
+ 		if (*str == ':')
+ 			str++;
+ 	}
+diff --git a/lib/utils.c b/lib/utils.c
+index d80f79b..3569694 100644
+--- a/lib/utils.c
++++ b/lib/utils.c
+@@ -26,7 +26,12 @@
+ #include <time.h>
+ #include <sys/time.h>
+ #include <errno.h>
++#include <limits.h>
+ 
++#ifndef HZ
++#include <sys/param.h>
++#include <linux/param.h>
++#endif
+ 
+ #include "utils.h"
+ 
+diff --git a/tc/m_ematch.c b/tc/m_ematch.c
+index 4c3acf8..e045134 100644
+--- a/tc/m_ematch.c
++++ b/tc/m_ematch.c
+@@ -21,6 +21,7 @@
+ #include <dlfcn.h>
+ #include <stdarg.h>
+ #include <errno.h>
++#include <limits.h>
+ 
+ #include "utils.h"
+ #include "tc_util.h"
+diff --git a/tc/m_ematch.h b/tc/m_ematch.h
+index 5036e9b..81456aa 100644
+--- a/tc/m_ematch.h
++++ b/tc/m_ematch.h
+@@ -4,6 +4,7 @@
+ #include <ctype.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <limits.h>
+ 
+ #include "utils.h"
+ #include "tc_util.h"
+diff --git a/tc/m_ipt.c b/tc/m_ipt.c
+index b8655f8..63fd72c 100644
+--- a/tc/m_ipt.c
++++ b/tc/m_ipt.c
+@@ -12,7 +12,9 @@
+ 
+ #include <syslog.h>
+ #include <sys/socket.h>
++#if defined(__UCLIBC__) || defined(__GLIBC__)
+ #include <netinet/in.h>
++#endif
+ #include <arpa/inet.h>
+ #include <linux/if.h>
+ #include <iptables.h>
+@@ -346,7 +348,7 @@ struct in_addr *dotted_to_addr(const char *dotted)
+ 	return &addr;
+ }
+ 
+-static void set_revision(char *name, u_int8_t revision)
++static void set_revision(char *name, uint8_t revision)
+ {
+ 	/* Old kernel sources don't have ".revision" field,
+ 	*  but we stole a byte from name. */
+diff --git a/tc/m_xt_old.c b/tc/m_xt_old.c
+index 7ed7ecc..32a30cb 100644
+--- a/tc/m_xt_old.c
++++ b/tc/m_xt_old.c
+@@ -157,7 +157,7 @@ void exit_error(enum exittype status, const char *msg, ...)
+ }
+ 
+ /*XXX: TC_CONFIG_XT_H */
+-static void set_revision(char *name, u_int8_t revision)
++static void set_revision(char *name, uint8_t revision)
+ {
+ 	/* Old kernel sources don't have ".revision" field,
+ 	*  but we stole a byte from name. */
+diff --git a/tc/tc_stab.c b/tc/tc_stab.c
+index 47b4e5e..59f525a 100644
+--- a/tc/tc_stab.c
++++ b/tc/tc_stab.c
+@@ -27,6 +27,10 @@
+ #include "tc_core.h"
+ #include "tc_common.h"
+ 
++#ifndef MIN
++#define	MIN(a,b) (((a)<(b))?(a):(b))
++#endif
++
+ static void stab_help(void)
+ {
+ 	fprintf(stderr,
+diff --git a/tc/tc_util.c b/tc/tc_util.c
+index 36e3c7d..aa64ae7 100644
+--- a/tc/tc_util.c
++++ b/tc/tc_util.c
+@@ -28,6 +28,10 @@
+ #define LIBDIR "/usr/lib/"
+ #endif
+ 
++#ifndef MIN
++#define	MIN(a,b) (((a)<(b))?(a):(b))
++#endif
++
+ const char *get_tc_lib(void)
+ {
+ 	const char *lib_dir;

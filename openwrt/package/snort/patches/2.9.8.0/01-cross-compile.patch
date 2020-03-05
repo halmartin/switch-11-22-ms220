@@ -1,0 +1,89 @@
+--- a/configure
++++ b/configure
+@@ -14517,13 +14517,12 @@ fi
+ 
+ 
+ # In case INADDR_NONE is not defined (like on Solaris)
+-have_inaddr_none="no"
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for INADDR_NONE" >&5
+ $as_echo_n "checking for INADDR_NONE... " >&6; }
+ if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+@@ -14974,7 +14973,7 @@ $as_echo_n "checking for pcap_lex_destroy... " >&6; }
+ if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+@@ -15835,7 +15834,7 @@ $as_echo_n "checking for daq real addresses... " >&6; }
+ if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+@@ -15896,7 +15895,7 @@ $as_echo_n "checking for daq address space ID... " >&6; }
+ if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+@@ -15937,7 +15936,7 @@ $as_echo_n "checking for daq flow ID... " >&6; }
+ if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+@@ -15978,7 +15977,7 @@ $as_echo_n "checking for daq extended flow modifiers... " >&6; }
+ if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+@@ -16022,7 +16021,7 @@ $as_echo_n "checking for daq query flow... " >&6; }
+ if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+@@ -16066,7 +16065,7 @@ $as_echo_n "checking for DAQ_VERDICT_RETRY... " >&6; }
+ if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+@@ -16130,7 +16129,7 @@ $as_echo_n "checking for sparc %time register... " >&6; }
+     if test "$cross_compiling" = yes; then :
+   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+ $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
++$as_echo $? "cannot run test program while cross compiling
+ See \`config.log' for more details" "$LINENO" 5; }
+ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext

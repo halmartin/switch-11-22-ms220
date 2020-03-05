@@ -1,0 +1,68 @@
+# Choose binutils version.
+
+if CONFIG_DEVEL
+	comment "Binutils Options"
+endif
+
+choice
+	prompt "Binutils Version" if CONFIG_DEVEL
+	default BR2_BINUTILS_VERSION_2_19
+	help
+	  Select the version of binutils you wish to use.
+
+	config BR2_BINUTILS_VERSION_2_15_94_0_2
+		bool "binutils 2.15.94.0.2"
+
+	config BR2_BINUTILS_VERSION_2_16_1
+		bool "binutils 2.16.1"
+
+	config BR2_BINUTILS_VERSION_2_16_90_0_3
+		bool "binutils 2.16.90.0.3"
+
+	config BR2_BINUTILS_VERSION_2_16_91_0_1
+		bool "binutils 2.16.91.0.1"
+
+	config BR2_BINUTILS_VERSION_2_16_91_0_2
+		bool "binutils 2.16.91.0.2"
+
+	config BR2_BINUTILS_VERSION_2_16_91_0_6
+		bool "binutils 2.16.91.0.6"
+
+	config BR2_BINUTILS_VERSION_2_19
+		bool "binutils 2.19"
+
+	config BR2_BINUTILS_VERSION_2_20_1
+		bool "binutils 2.20.1"
+
+        config BR2_BINUTILS_VERSION_2_21_1
+               bool "binutils 2.21.1"
+
+        config BR2_BINUTILS_VERSION_2_24
+               bool "binutils 2.24"
+
+        config BR2_BINUTILS_VERSION_2_25
+                bool "binutils 2.25"
+
+        config BR2_BINUTILS_VERSION_2_27
+                bool "binutils 2.27"
+
+        config BR2_BINUTILS_VERSION_2_29_1
+                bool "binutils 2.29.1"
+
+endchoice
+
+config BR2_BINUTILS_VERSION
+	string
+	default "2.15.94.0.2"     if BR2_BINUTILS_VERSION_2_15_94_0_2
+	default "2.16.1"          if BR2_BINUTILS_VERSION_2_16_1
+	default "2.16.90.0.3"     if BR2_BINUTILS_VERSION_2_16_90_0_3
+	default "2.16.91.0.1"     if BR2_BINUTILS_VERSION_2_16_91_0_1
+	default "2.16.91.0.2"     if BR2_BINUTILS_VERSION_2_16_91_0_2
+	default "2.16.91.0.6"     if BR2_BINUTILS_VERSION_2_16_91_0_6
+	default "2.19"            if BR2_BINUTILS_VERSION_2_19 || !CONFIG_DEVEL
+	default "2.20.1"	  if BR2_BINUTILS_VERSION_2_20_1
+	default "2.21.1"	  if BR2_BINUTILS_VERSION_2_21_1
+	default "2.24"		  if BR2_BINUTILS_VERSION_2_24
+        default "2.25"            if BR2_BINUTILS_VERSION_2_25
+        default "2.27"            if BR2_BINUTILS_VERSION_2_27
+        default "2.29.1"          if BR2_BINUTILS_VERSION_2_29_1

@@ -1,0 +1,25 @@
+From b16f6612fae62e86bd6c7160d9e526a167320ba8 Mon Sep 17 00:00:00 2001
+From: Abhinav Acharya <abhinav.acharya@meraki.net>
+Date: Mon, 15 Jun 2015 12:48:02 -0700
+Subject: [PATCH] xiogetaddrinfo: service type can be NULL
+
+---
+ xio-ip.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xio-ip.c b/xio-ip.c
+index 0c9141d..984346a 100644
+--- a/xio-ip.c
++++ b/xio-ip.c
+@@ -239,7 +239,7 @@ int xiogetaddrinfo(const char *node, const char *service,
+ 
+       if ((error_num = Getaddrinfo(node, service, &hints, &res)) != 0) {
+ 	 Error7("getaddrinfo(\"%s\", \"%s\", {%d,%d,%d,%d}, {}): %s",
+-		node, service, hints.ai_flags, hints.ai_family,
++		node, service?service:"", hints.ai_flags, hints.ai_family,
+ 		hints.ai_socktype, hints.ai_protocol,
+ 		(error_num == EAI_SYSTEM)?
+ 		strerror(errno):gai_strerror(error_num));
+-- 
+1.9.1
+

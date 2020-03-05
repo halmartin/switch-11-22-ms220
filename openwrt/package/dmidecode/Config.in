@@ -1,0 +1,9 @@
+config BR2_PACKAGE_DMIDECODE
+	prompt "dmidecode......................... A client-side bios dmi decoder"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  A client-side bios dmi decoder.
+
+	  http://www.nongnu.org/dmidecode/
+

@@ -1,0 +1,5 @@
+Package: libsoup
+Priority: optional
+Section: libs
+Description: HTTP client/server library
+Depends: glib2, intltool, libxml2

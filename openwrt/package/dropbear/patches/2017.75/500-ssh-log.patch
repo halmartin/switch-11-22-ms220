@@ -1,0 +1,137 @@
+diff --git a/svr-authpubkey.c b/svr-authpubkey.c
+index a011480..7c16e31 100644
+--- a/svr-authpubkey.c
++++ b/svr-authpubkey.c
+@@ -71,11 +71,12 @@
+ #define MAX_AUTHKEYS_LINE 4200 /* max length of a line in authkeys */
+ 
+ static int checkpubkey(char* algo, unsigned int algolen,
+-		unsigned char* keyblob, unsigned int keybloblen);
++		unsigned char* keyblob, unsigned int keybloblen, unsigned char** email);
+ static int checkpubkeyperms(void);
+ static void send_msg_userauth_pk_ok(char* algo, unsigned int algolen,
+ 		unsigned char* keyblob, unsigned int keybloblen);
+ static int checkfileperm(char * filename);
++static void meraki_event_log(unsigned char* email);
+ 
+ /* process a pubkey auth request, sending success or failure message as
+  * appropriate */
+@@ -91,6 +92,7 @@ void svr_auth_pubkey() {
+ 	sign_key * key = NULL;
+ 	char* fp = NULL;
+ 	enum signkey_type type = -1;
++	unsigned char* email = NULL;
+ 
+ 	TRACE(("enter pubkeyauth"))
+ 
+@@ -103,7 +105,7 @@ void svr_auth_pubkey() {
+ 	keyblob = buf_getptr(ses.payload, keybloblen);
+ 
+ 	/* check if the key is valid */
+-	if (checkpubkey(algo, algolen, keyblob, keybloblen) == DROPBEAR_FAILURE) {
++	if (checkpubkey(algo, algolen, keyblob, keybloblen, &email) == DROPBEAR_FAILURE) {
+ 		send_msg_userauth_failure(0, 0);
+ 		goto out;
+ 	}
+@@ -147,6 +149,7 @@ void svr_auth_pubkey() {
+ 				"Pubkey auth succeeded for '%s' with key %s from %s",
+ 				ses.authstate.pw_name, fp, svr_ses.addrstring);
+ 		send_msg_userauth_success();
++		meraki_event_log(email);
+ 	} else {
+ 		dropbear_log(LOG_WARNING,
+ 				"Pubkey auth bad signature for '%s' with key %s from %s",
+@@ -167,6 +170,9 @@ out:
+ 		sign_key_free(key);
+ 		key = NULL;
+ 	}
++	if (email) {
++		m_free(email);
++	}
+ 	TRACE(("leave pubkeyauth"))
+ }
+ 
+@@ -192,13 +198,14 @@ static void send_msg_userauth_pk_ok(char* algo, unsigned int algolen,
+  * acceptable key for authentication */
+ /* Returns DROPBEAR_SUCCESS if key is ok for auth, DROPBEAR_FAILURE otherwise */
+ static int checkpubkey(char* algo, unsigned int algolen,
+-		unsigned char* keyblob, unsigned int keybloblen) {
++		unsigned char* keyblob, unsigned int keybloblen, unsigned char** email) {
+ 
+ 	FILE * authfile = NULL;
+ 	char * filename = NULL;
+ 	int ret = DROPBEAR_FAILURE;
+ 	buffer * line = NULL;
+-	unsigned int len, pos;
++	unsigned int key_len, key_pos;
++	unsigned int email_len, email_pos;
+ 	buffer * options_buf = NULL;
+ 	int line_num;
+ 	uid_t origuid;
+@@ -336,13 +343,33 @@ static int checkpubkey(char* algo, unsigned int algolen,
+ 			continue;
+ 		}
+ 
+-		/* truncate the line at the space after the base64 data */
+-		pos = line->pos;
+-		for (len = 0; line->pos < line->len; len++) {
++		/* find the length of the key */
++		key_pos = line->pos;
++		for (key_len = 0; line->pos < line->len; key_len++) {
+ 			if (buf_getbyte(line) == ' ') break;
+ 		}	
+-		buf_setpos(line, pos);
+-		buf_setlen(line, line->pos + len);
++
++		/* find the email at the end of the comment */
++		email_len = 0;
++		email_pos = line->pos;
++		while (line->pos < line->len) {
++			if (buf_getbyte(line) == ' ') {
++				email_len = 0;
++				email_pos = line->pos;
++			} else {
++				email_len++;
++			}
++		}
++
++		/* get a string of the email */
++		buf_setpos(line, email_pos);
++		*email = m_malloc(email_len + 1);
++		strncpy(*email, buf_getptr(line, email_len), email_len);
++		(*email)[email_len] = '\0';
++
++		/* truncate the line at the space after the base64 data */
++		buf_setpos(line, key_pos);
++		buf_setlen(line, line->pos + key_len);
+ 
+ 		TRACE(("checkpubkey: line pos = %d len = %d", line->pos, line->len))
+ 
+@@ -359,6 +386,8 @@ static int checkpubkey(char* algo, unsigned int algolen,
+ 
+ 		if (ret == DROPBEAR_SUCCESS) {
+ 			break;
++		} else {
++			m_free(*email);
+ 		}
+ 
+ 		/* We continue to the next line otherwise */
+@@ -455,4 +484,18 @@ static int checkfileperm(char * filename) {
+ 	return DROPBEAR_SUCCESS;
+ }
+ 
++/* Send the email associated with the SSH key to the event log */
++static void meraki_event_log(unsigned char* email) {
++	FILE* f = fopen("/click/event_log/add_event", "w");
++	if (!f) {
++		dropbear_log(LOG_ERR, "error opening event_log/add_event!");
++		return;
++	}
++
++	fprintf(f, "ssh_login \"email='%s'\" \"\"", email);
++
++	if (0 != fclose(f))
++		dropbear_log(LOG_ERR, "error closing/writing event_log/add_event!");
++}
++
+ #endif

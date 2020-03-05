@@ -1,0 +1,6 @@
+config BR2_PACKAGE_LIBFFTW
+	prompt "libfftw3.......................... FFT library"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  Developpment library from fftw3

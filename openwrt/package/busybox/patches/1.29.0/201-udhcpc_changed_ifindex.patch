@@ -1,0 +1,29 @@
+From 0fd2b4555b16c61306869040ef3c084c05bbdcb9 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Fri, 6 Jul 2018 18:36:18 -0700
+Subject: [PATCH 17/26] 201
+
+---
+ networking/udhcp/dhcpc.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/networking/udhcp/dhcpc.c b/networking/udhcp/dhcpc.c
+index 044e944..6be4e25 100644
+--- a/networking/udhcp/dhcpc.c
++++ b/networking/udhcp/dhcpc.c
+@@ -1407,6 +1407,12 @@ int udhcpc_main(int argc UNUSED_PARAM, char **argv)
+ 		/* silence "uninitialized!" warning */
+ 		unsigned timestamp_before_wait = timestamp_before_wait;
+ 
++		/* When running on a bridge, the ifindex may have changed (e.g. if
++		 * member interfaces were added/removed or if the status of the
++		 * bridge changed).
++		 * Workaround: refresh it here before processing the next packet */
++		udhcp_read_interface(client_config.interface, &client_config.ifindex, NULL, client_config.client_mac);
++
+ 		//bb_error_msg("sockfd:%d, listen_mode:%d", sockfd, listen_mode);
+ 
+ 		/* Was opening raw or udp socket here
+-- 
+2.17.0
+

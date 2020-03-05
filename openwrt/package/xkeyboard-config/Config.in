@@ -1,0 +1,7 @@
+config BR2_PACKAGE_XKEYBOARD_CONFIG
+	prompt "X keyboard configurator............. X server keyboard configurator"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  X window server keyboard configurator. You probably only need this
+	  if you are building an X server.

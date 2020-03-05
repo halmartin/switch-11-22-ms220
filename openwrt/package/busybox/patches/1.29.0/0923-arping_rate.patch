@@ -1,0 +1,69 @@
+From 8b2647b9d8c478c6e53764f4541f6d28c2b4d9b9 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Mon, 2 Jul 2018 16:48:03 -0700
+Subject: [PATCH 04/26] 0923
+
+---
+ networking/arping.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/networking/arping.c b/networking/arping.c
+index 788fded..32a4a3c 100644
+--- a/networking/arping.c
++++ b/networking/arping.c
+@@ -31,6 +31,7 @@
+ //NB: in iputils-s20160308, iface is mandatory, no default
+ //usage:     "\n	-I IFACE	Interface to use (default eth0)"
+ //usage:     "\n	-s SRC_IP	Sender IP address"
++//usage:     "\n	-r SECONDS	Seconds between sending requests"
+ //usage:     "\n	DST_IP		Target IP address"
+ 
+ #include <arpa/inet.h>
+@@ -56,10 +57,10 @@ enum {
+ };
+ #define GETOPT32(str_timeout, device, source) \
+ 	getopt32(argv, "^" \
+-		"UDAqfbc:+w:I:s:" \
++		"UDAqfbc:+w:I:s:r:" \
+ 		/* DAD also sets quit_on_reply, */ \
+ 		/* advert also sets unsolicited: */ \
+-		"\0" "=1:Df:AU", \
++		"\0" "=1:Df:AU:r+", \
+ 		&count, &str_timeout, &device, &source \
+ 	);
+ 
+@@ -79,6 +80,7 @@ struct globals {
+ 	unsigned received;
+ 	unsigned brd_recv;
+ 	unsigned req_recv;
++	unsigned rate;
+ 
+ 	/* should be in main(), but are here to reduce stack use: */
+ 	struct ifreq ifr;
+@@ -99,12 +101,14 @@ struct globals {
+ #define received   (G.received  )
+ #define brd_recv   (G.brd_recv  )
+ #define req_recv   (G.req_recv  )
++#define rate       (G.rate      ) 
+ //#define G (*(struct globals*)bb_common_bufsiz1)
+ #define G (*ptr_to_globals)
+ #define INIT_G() do { \
+ 	/*setup_common_bufsiz();*/ \
+ 	SET_PTR_TO_GLOBALS(xzalloc(sizeof(G))); \
+ 	count = -1; \
++	rate = 1; \
+ } while (0)
+ 
+ #define sock_fd 3
+@@ -184,7 +188,7 @@ static void catcher(void)
+ 		if (count == 0 && (option_mask32 & UNSOLICITED))
+ 			finish();
+ 	}
+-	alarm(1);
++	alarm(rate);
+ }
+ 
+ static void recv_pack(unsigned char *buf, int len, struct sockaddr_ll *FROM)
+-- 
+2.17.0
+

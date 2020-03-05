@@ -1,0 +1,63 @@
+commit 2af9c6211dacbd4cfead4fff2f678529e5230d5f
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Wed Dec 10 18:44:49 2014 -0800
+
+    Create Makefile target for statically-linked kexec
+    
+    Typing "make static" will now generate a statically-linked kexec binary
+    at build_static/sbin/kexec-static.
+
+diff --git a/Makefile.in b/Makefile.in
+index 54c206f..853c66d 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -82,7 +82,9 @@ VPATH		= .:$(srcdir)
+ 
+ # install paths
+ BUILD_PREFIX:=build
++BUILD_PREFIX_STATIC:=$(BUILD_PREFIX)_static
+ SBINDIR=$(BUILD_PREFIX)/sbin
++SBINDIR_STATIC=$(BUILD_PREFIX_STATIC)/sbin
+ BINDIR=$(BUILD_PREFIX)/bin
+ LIBEXECDIR=$(BUILD_PREFIX)/libexec
+ DATADIR=$(BUILD_PREFIX)/share
+@@ -194,6 +196,8 @@ configure: configure.ac
+ 
+ tarball: $(TARBALL.gz)
+ 
++static: $(KEXEC_STATIC)
++
+ $(TARBALL): $(SRCS) $(GENERATED_SRCS)
+ 	$(RM) -f $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+ 	$(LN) -s $(srcdir) $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+@@ -324,4 +328,4 @@ install: $(TARGETS)
+ 	done
+ 
+ .PHONY: echo install all targets clean dist-clean distclean \
+-	maintainer-clean maintainerclean tarball rpm
++	maintainer-clean maintainerclean tarball rpm static
+diff --git a/kexec/Makefile b/kexec/Makefile
+index a758b4a..770c1cc 100644
+--- a/kexec/Makefile
++++ b/kexec/Makefile
+@@ -91,6 +91,7 @@ clean += $(KEXEC_OBJS) $(KEXEC_DEPS) $(KEXEC_GENERATED_SRCS) \
+ 	 $(KEXEC) $(KEXEC_MANPAGE)
+ 
+ KEXEC = $(SBINDIR)/kexec
++KEXEC_STATIC = $(SBINDIR_STATIC)/kexec-static
+ KEXEC_MANPAGE = $(MANDIR)/man8/kexec.8
+ 
+ -include $(KEXEC_DEPS)
+@@ -101,6 +102,12 @@ $(KEXEC): $(KEXEC_OBJS) $(UTIL_LIB)
+ 
+ $(KEXEC): CPPFLAGS+=-I$(srcdir)/kexec/arch/$(ARCH)/include
+ 
++$(KEXEC_STATIC): $(KEXEC_OBJS) $(UTIL_LIB)
++	@$(MKDIR) -p $(@D)
++	$(LINK.o) -static -o $@ $^ $(CFLAGS) $(LIBS)
++
++$(KEXEC_STATIC): CPPFLAGS+=-I$(srcdir)/kexec/arch/$(ARCH)/include
++
+ kexec/fs2dt.o: CPPFLAGS+=$($(ARCH)_FS2DT_INCLUDE)
+ 
+ $(KEXEC_MANPAGE): kexec/kexec.8

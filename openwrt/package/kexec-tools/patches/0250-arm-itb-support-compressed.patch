@@ -1,0 +1,134 @@
+commit ed015470ce8bc4441908f18cef892fefb064d61c
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Wed Jul 11 20:21:34 2018 -0700
+
+    Allow actual compressed ARM zImage files
+    
+    Correct do_zImage_file_load so that it can properly handle compressed
+    zImage files (currently it only handles uncompressed images).
+
+diff --git a/kexec/arch/arm/kexec-zImage-arm.c b/kexec/arch/arm/kexec-zImage-arm.c
+index 98b0f41..d621af6 100644
+--- a/kexec/arch/arm/kexec-zImage-arm.c
++++ b/kexec/arch/arm/kexec-zImage-arm.c
+@@ -370,21 +370,89 @@ int do_zImage_arm_load(struct kexec_info *info,
+ 	char *dtb_buf_cpy;
+ 	off_t dtb_len_cpy;
+ 
++	if (kernel_len > sizeof(struct zimage_header)) {
++		const struct zimage_header *hdr;
++		off_t size;
++
++		hdr = (const struct zimage_header *)kernel;
++
++		dbgprintf("zImage header: 0x%08x 0x%08x 0x%08x\n",
++			  hdr->magic, hdr->start, hdr->end);
++
++		if (hdr->magic == ZIMAGE_MAGIC) {
++			size = le32_to_cpu(hdr->end) - le32_to_cpu(hdr->start);
++
++			dbgprintf("zImage size 0x%llx, file size 0x%llx\n",
++				  (unsigned long long)size,
++				  (unsigned long long)kernel_len);
++
++			if (size > kernel_len) {
++				fprintf(stderr,
++					"zImage is truncated - file 0x%llx vs header 0x%llx\n",
++					(unsigned long long)kernel_len,
++					(unsigned long long)size);
++				return -1;
++			}
++			if (size < kernel_len)
++				kernel_len = size;
++		}
++
++		/* Do we have an extension table? */
++		if (hdr->magic2 == ZIMAGE_MAGIC2 && !kexec_arm_image_size) {
++			uint32_t offset = hdr->extension_tag_offset;
++			uint32_t max = kernel_len - sizeof(struct tag_header);
++			struct zimage_tag *tag;
++
++			dbgprintf("zImage has tags\n");
++
++			for (offset = hdr->extension_tag_offset;
++			     (tag = (void *)(kernel + offset)) != NULL &&
++			     offset < max && byte_size(tag) &&
++				offset + byte_size(tag) < kernel_len;
++			     offset += byte_size(tag)) {
++				dbgprintf("  offset 0x%08x tag 0x%08x size %u\n",
++					  offset, tag->hdr.tag, byte_size(tag));
++				if (tag->hdr.tag == ZIMAGE_TAG_KRNL_SIZE) {
++					uint32_t *p = (void *)kernel +
++						tag->u.krnl_size.size_ptr;
++
++					kexec_arm_image_size =
++						get_unaligned(p) +
++						tag->u.krnl_size.bss_size;
++				}
++			}
++
++			dbgprintf("kernel image size: 0x%08x\n",
++				  kexec_arm_image_size);
++		}
++	}
++
++	/*
++	 * If the user didn't specify the size of the image, assume the
++	 * maximum kernel compression ratio is 4.  Note that we must
++	 * include space for the compressed image here as well.
++	 */
++	if (!kexec_arm_image_size)
++		kexec_arm_image_size = kernel_len * 5;
++
+ 	if (kernel_load) {
+ 		base = kernel_load;
+ 		extra_size = 0x0;
+ 	} else {
+-	base = locate_hole(info, kernel_len + extra_size, 0, 0,
+-			   ULONG_MAX, INT_MAX);
++		base = locate_hole(info, kexec_arm_image_size + extra_size, 0, 0,
++				   ULONG_MAX, INT_MAX);
+ 	}
+ 
+ 	if (base == ULONG_MAX)
+ 		return -1;
+ 
+-	if (initrd_load)
++	if (initrd_load) {
+ 		initrd_base = initrd_load;
+-	else
+-	initrd_base = base + _ALIGN(kernel_len * 4, getpagesize());
++	} else {
++		initrd_base = locate_hole(info, initrd_size, getpagesize(),
++					  base + _ALIGN(kexec_arm_image_size, getpagesize()),
++					  ULONG_MAX, INT_MAX);
++	}
+ 
+ 	/*
+ 	 * Read a user-specified DTB file.
+@@ -436,18 +504,18 @@ int do_zImage_arm_load(struct kexec_info *info,
+ 	if (dtb_load) {
+ 		dtb_offset = dtb_load;
+ 	} else {
+-	/* Stick the dtb at the end of the initrd and page
+-	 * align it.
+-	 */
+-	dtb_offset = initrd_base + initrd_len + getpagesize();
+-	dtb_offset = _ALIGN_DOWN(dtb_offset, getpagesize());
++		/* Stick the dtb at the end of the initrd and page
++		 * align it.
++		 */
++		dtb_offset = initrd_base + initrd_len + getpagesize();
++		dtb_offset = _ALIGN_DOWN(dtb_offset, getpagesize());
+ 	}
+ 
+ 	add_segment(info, dtb_buf_cpy, dtb_len_cpy,
+-				dtb_offset, dtb_len_cpy);
++		    dtb_offset, dtb_len_cpy);
+ 
+ 	add_segment(info, kernel, kernel_len,
+-				base + extra_size, kernel_len);
++		    base + extra_size, kernel_len);
+ 
+ 	info->entry = (void*)base + extra_size;
+ 

@@ -1,0 +1,16 @@
+diff -u dropbear-2012.55-orig/options.h dropbear-2012.55/options.h
+--- dropbear-2012.55-orig/options.h	2012-02-23 05:47:06.000000000 -0800
++++ dropbear-2012.55/options.h	2012-02-28 14:08:02.068143815 -0800
+@@ -49,10 +49,10 @@
+ several kB in binary size however will make the symmetrical ciphers and hashes
+ slower, perhaps by 50%. Recommended for small systems that aren't doing
+ much traffic. */
+-/*#define DROPBEAR_SMALL_CODE*/
++#define DROPBEAR_SMALL_CODE
+ 
+ /* Enable X11 Forwarding - server only */
+-#define ENABLE_X11FWD
++/* #define ENABLE_X11FWD*/
+ 
+ /* Enable TCP Fowarding */
+ /* 'Local' is "-L" style (client listening port forwarded via server)

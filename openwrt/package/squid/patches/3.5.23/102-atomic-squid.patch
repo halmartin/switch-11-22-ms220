@@ -1,0 +1,11 @@
+--- a/src/ipc/AtomicWord.h
++++ b/src/ipc/AtomicWord.h
+@@ -18,7 +18,7 @@ namespace Atomic
+ /// Whether atomic operations support is available
+ bool Enabled();
+ 
+-#if HAVE_ATOMIC_OPS
++#if 0 //HAVE_ATOMIC_OPS
+ 
+ /// Supplies atomic operations for an integral Value in memory shared by kids.
+ /// Used to implement non-blocking shared locks, queues, tables, and pools.

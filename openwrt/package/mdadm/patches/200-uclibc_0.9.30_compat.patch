@@ -1,0 +1,28 @@
+--- a/mdadm.h
++++ b/mdadm.h
+@@ -33,6 +33,25 @@ extern __off64_t lseek64 __P ((int __fd,
+ # endif
+ #endif
+ 
++#ifdef UCLIBC
++# include <features.h>
++# if __UCLIBC_MINOR__ <= 9 && __UCLIBC_SUBLEVEL__ <= 31
++#include <limits.h>
++char *strdup(const char *s);
++char *realpath(const char *path, char *resolved_path);
++static inline char *canonicalize_file_name(const char *path)
++{
++	char resolved[PATH_MAX] = { 0 };
++
++	if (!realpath(path, resolved))
++		return NULL;
++
++	return strdup(resolved);
++}
++
++# endif /* __UCLIBC_MINOR__ <= 9 && __UCLIBC_SUBLEVEL__ <= 31 */
++#endif /* UCLIBC */
++
+ #include	<sys/types.h>
+ #include	<sys/stat.h>
+ #include	<stdlib.h>

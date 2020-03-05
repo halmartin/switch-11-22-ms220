@@ -1,0 +1,5 @@
+Package: libfftw3
+Priority: optional
+Section: libs
+Depends: libpthread
+Description: Fast Fourier Transform library

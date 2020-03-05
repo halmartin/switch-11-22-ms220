@@ -1,0 +1,169 @@
+diff --git a/include/curl/curl.h b/include/curl/curl.h
+--- a/include/curl/curl.h
++++ b/include/curl/curl.h
+@@ -1569,6 +1569,9 @@ typedef enum {
+    * Only supported by the c-ares DNS backend */
+   CINIT(DNS_LOCAL_IP6, OBJECTPOINT, 223),
+
++  /* The hostname used to check the server certificate */
++  CINIT(AUTH_HOSTNAME, OBJECTPOINT, 234),
++
+   CURLOPT_LASTENTRY /* the last unused */
+ } CURLoption;
+
+diff --git a/lib/sslgen.c b/lib/sslgen.c
+--- a/lib/sslgen.c
++++ b/lib/sslgen.c
+@@ -142,6 +142,12 @@ Curl_clone_ssl_config(struct ssl_config_data *source,
+   else
+     dest->CApath = NULL;
+
++  if(source->Cauth_hostname) {
++      dest->Cauth_hostname = strdup(source->Cauth_hostname);
++      if(!dest->Cauth_hostname)
++          return FALSE;
++  }
++
+   if(source->cipher_list) {
+     dest->cipher_list = strdup(source->cipher_list);
+     if(!dest->cipher_list)
+@@ -173,6 +179,7 @@ void Curl_free_ssl_config(struct ssl_config_data* sslc)
+ {
+   Curl_safefree(sslc->CAfile);
+   Curl_safefree(sslc->CApath);
++  Curl_safefree(sslc->Cauth_hostname);
+   Curl_safefree(sslc->cipher_list);
+   Curl_safefree(sslc->egdsocket);
+   Curl_safefree(sslc->random_file);
+diff --git a/lib/ssluse.c b/lib/ssluse.c
+--- a/lib/ssluse.c
++++ b/lib/ssluse.c
+@@ -1266,9 +1266,12 @@ static CURLcode verifyhost(struct connectdata *conn,
+             "SSL: unable to obtain common name from peer certificate");
+       res = CURLE_PEER_FAILED_VERIFICATION;
+     }
+-    else if(!Curl_cert_hostcheck((const char *)peer_CN, conn->host.name)) {
++    else if(!Curl_cert_hostcheck((const char *)peer_CN, conn->host.name) &&
++        (conn->ssl_config.Cauth_hostname == NULL ||
++         !Curl_cert_hostcheck((const char *)peer_CN, conn->ssl_config.Cauth_hostname))) {
+       failf(data, "SSL: certificate subject name '%s' does not match "
+-            "target host name '%s'", peer_CN, conn->host.dispname);
++            "target host name '%s' (force: '%s')", peer_CN, conn->host.dispname,
++            (conn->ssl_config.Cauth_hostname ? conn->ssl_config.Cauth_hostname : ""));
+       res = CURLE_PEER_FAILED_VERIFICATION;
+     }
+     else {
+diff --git a/lib/url.c b/lib/url.c
+--- a/lib/url.c
++++ b/lib/url.c
+@@ -1963,6 +1963,14 @@ CURLcode Curl_setopt(struct SessionHandle *data, CURLoption option,
+     result = setstropt(&data->set.str[STRING_SSL_ISSUERCERT],
+                        va_arg(param, char *));
+     break;
++  case CURLOPT_AUTH_HOSTNAME:
++    /*
++       +     * Set the hostname used to authorize the certificate's hostname from the
++       +     * SSL connection.
++       +     */
++    result = setstropt(&data->set.str[STRING_SSL_CAUTH_HOSTNAME],
++                       va_arg(param, char *));
++    break;
+   case CURLOPT_TELNETOPTIONS:
+     /*
+      * Set a linked list of telnet options
+@@ -5381,6 +5389,7 @@ static CURLcode create_conn(struct SessionHandle *data,
+   data->set.ssl.CApath = data->set.str[STRING_SSL_CAPATH];
+   data->set.ssl.CAfile = data->set.str[STRING_SSL_CAFILE];
+   data->set.ssl.CRLfile = data->set.str[STRING_SSL_CRLFILE];
++  data->set.ssl.Cauth_hostname = data->set.str[STRING_SSL_CAUTH_HOSTNAME];
+   data->set.ssl.issuercert = data->set.str[STRING_SSL_ISSUERCERT];
+   data->set.ssl.random_file = data->set.str[STRING_SSL_RANDOM_FILE];
+   data->set.ssl.egdsocket = data->set.str[STRING_SSL_EGDSOCKET];
+diff --git a/lib/urldata.h b/lib/urldata.h
+--- a/lib/urldata.h
++++ b/lib/urldata.h
+@@ -366,6 +366,7 @@ struct ssl_config_data {
+   char *CAfile;          /* certificate to verify peer against */
+   const char *CRLfile;   /* CRL to check certificate revocation */
+   const char *issuercert;/* optional issuer certificate filename */
++  char *Cauth_hostname;  /* hostname to verify certificate against*/
+   char *random_file;     /* path to file containing "random" data */
+   char *egdsocket;       /* path to file containing the EGD daemon socket */
+   char *cipher_list;     /* list of ciphers to use */
+@@ -1343,6 +1344,7 @@ enum dupstring {
+   STRING_USERAGENT,       /* User-Agent string */
+   STRING_SSL_CRLFILE,     /* crl file to check certificate */
+   STRING_SSL_ISSUERCERT,  /* issuer cert file to check certificate */
++  STRING_SSL_CAUTH_HOSTNAME, /* hostname to verify certificate against */
+   STRING_USERNAME,        /* <username>, if used */
+   STRING_PASSWORD,        /* <password>, if used */
+   STRING_OPTIONS,         /* <options>, if used */
+diff --git a/src/tool_cfgable.c b/src/tool_cfgable.c
+--- a/src/tool_cfgable.c
++++ b/src/tool_cfgable.c
+@@ -88,6 +88,7 @@ void free_config_fields(struct Configurable *config)
+   Curl_safefree(config->cert);
+   Curl_safefree(config->cert_type);
+   Curl_safefree(config->cacert);
++  Curl_safefree(config->cert_auth_hostname);
+   Curl_safefree(config->capath);
+   Curl_safefree(config->crlfile);
+   Curl_safefree(config->key);
+diff --git a/src/tool_cfgable.h b/src/tool_cfgable.h
+--- a/src/tool_cfgable.h
++++ b/src/tool_cfgable.h
+@@ -112,6 +112,7 @@ struct Configurable {
+   char *cert_type;
+   char *cacert;
+   char *capath;
++  char *cert_auth_hostname;
+   char *crlfile;
+   char *key;
+   char *key_type;
+diff --git a/src/tool_getparam.c b/src/tool_getparam.c
+--- a/src/tool_getparam.c
++++ b/src/tool_getparam.c
+@@ -215,6 +215,7 @@ static const struct LongShort aliases[]= {
+   {"El", "tlspassword",              TRUE},
+   {"Em", "tlsauthtype",              TRUE},
+   {"En", "ssl-allow-beast",          FALSE},
++  {"Eo", "use-auth-hostname",        TRUE},
+   {"f",  "fail",                     FALSE},
+   {"F",  "form",                     TRUE},
+   {"Fs", "form-string",              TRUE},
+@@ -1351,6 +1352,9 @@ ParameterError getparameter(char *flag,    /* f or -long-flag */
+         if(curlinfo->features & CURL_VERSION_SSL)
+           config->ssl_allow_beast = toggle;
+         break;
++      case 'o': /* use-auth-hostname */
++        GetStr(&config->cert_auth_hostname, nextarg);
++        break;
+       default: /* certificate file */
+       {
+         char *certname, *passphrase;
+diff --git a/src/tool_help.c b/src/tool_help.c
+--- a/src/tool_help.c
++++ b/src/tool_help.c
+@@ -143,6 +143,7 @@ static const char *const helptext[] = {
+   "     --ntlm          Use HTTP NTLM authentication (H)",
+   "     --oauth2-bearer BEARER XOAUTH2 Bearer Token (IMAP, POP3, SMTP)",
+   " -o, --output FILE   Write output to <file> instead of stdout",
++  "     --use-auth-hostname <hostname> Force the URL to be interpreted as this host name",
+   "     --pass PASS     Pass phrase for the private key (SSL/SSH)",
+   "     --post301       "
+   "Do not switch to GET after following a 301 redirect (H)",
+diff --git a/src/tool_operate.c b/src/tool_operate.c
+--- a/src/tool_operate.c
++++ b/src/tool_operate.c
+@@ -1155,6 +1155,8 @@ int operate(struct Configurable *config, int argc, argv_item_t argv[])
+           my_setopt_str(curl, CURLOPT_CAPATH, config->capath);
+         if(config->crlfile)
+           my_setopt_str(curl, CURLOPT_CRLFILE, config->crlfile);
++        if(config->cert_auth_hostname)
++          my_setopt_str(curl, CURLOPT_AUTH_HOSTNAME, config->cert_auth_hostname);
+
+         if(curlinfo->features & CURL_VERSION_SSL) {
+           if(config->insecure_ok) {
+--
+1.7.9.5
+

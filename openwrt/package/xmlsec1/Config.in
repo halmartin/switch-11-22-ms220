@@ -1,0 +1,11 @@
+config BR2_PACKAGE_XMLSEC1
+       prompt "xmlsec1..............................XML security library based on libxml2"
+       tristate
+       select BR2_PACKAGE_LIBXML2
+       select BR2_PACKAGE_LIBOPENSSL
+       default m if CONFIG_DEVEL
+       help
+         An XML security library supporting major XML security standards: signature, encryption, canonical, exclusive canonical
+
+         https://www.aleksey.com/xmlsec/
+

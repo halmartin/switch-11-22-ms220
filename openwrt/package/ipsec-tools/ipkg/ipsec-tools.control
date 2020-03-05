@@ -1,0 +1,5 @@
+Package: ipsec-tools
+Priority: optional
+Section: net
+Depends: libopenssl openldap libradiusbsd libpam
+Description: IPsec management tools

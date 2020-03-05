@@ -1,0 +1,25 @@
+From cffd3918734be310c2ca8b7d9da711b706827171 Mon Sep 17 00:00:00 2001
+From: aacharya <aacharya@meraki.net>
+Date: Tue, 18 Aug 2015 12:46:12 -0700
+Subject: [PATCH] libtool_gcc_fix
+
+---
+ libtool | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libtool b/libtool
+index 9649ce3..677e09e 100755
+--- a/libtool
++++ b/libtool
+@@ -344,7 +344,7 @@ old_archive_from_new_cmds=""
+ old_archive_from_expsyms_cmds=""
+ 
+ # Commands used to build a shared archive.
+-archive_cmds="\$CC -shared \$pic_flag \$libobjs \$deplibs \$compiler_flags \${wl}-soname \$wl\$soname -o \$lib"
++archive_cmds="\$TARGET_CC -shared \$pic_flag \$libobjs \$deplibs \$compiler_flags \${wl}-soname \$wl\$soname -o \$lib"
+ archive_expsym_cmds="echo \\\"{ global:\\\" > \$output_objdir/\$libname.ver~
+ 	    cat \$export_symbols | sed -e \\\"s/\\\\(.*\\\\)/\\\\1;/\\\" >> \$output_objdir/\$libname.ver~
+ 	    echo \\\"local: *; };\\\" >> \$output_objdir/\$libname.ver~
+-- 
+1.9.1
+

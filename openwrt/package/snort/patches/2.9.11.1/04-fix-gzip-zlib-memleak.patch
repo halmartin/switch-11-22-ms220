@@ -1,0 +1,135 @@
+diff --git a/src/preprocessors/HttpInspect/server/hi_server.c b/src/preprocessors/HttpInspect/server/hi_server.c
+index 902824e..dc71ecc 100644
+--- a/src/preprocessors/HttpInspect/server/hi_server.c
++++ b/src/preprocessors/HttpInspect/server/hi_server.c
+@@ -1014,30 +1014,32 @@ static void SetGzipBuffers(HttpSessionData *hsd, HI_SESSION *session)
+ int uncompress_gzip ( u_char *dest, int destLen, const u_char *source,
+         int sourceLen, HttpSessionData *sd, int *total_bytes_read, int compr_fmt)
+ {
+-    z_stream stream;
++    z_streamp streamp;
+     int err;
+     int iRet = HI_SUCCESS;
++    int bytes_read_so_far;
+ 
+-   stream = sd->decomp_state->d_stream;
++   streamp = &sd->decomp_state->d_stream;
+ 
+    /* Are we starting a new packet or continuing on the current one? */
+    if (sd->decomp_state->stage == HTTP_DECOMP_START)
+    {
+-       stream.next_in = (Bytef*)source;
+-       stream.avail_in = (uInt)sourceLen;
+-       if ((uLong)stream.avail_in != (uLong)sourceLen)
++       streamp->next_in = (Bytef*)source;
++       streamp->avail_in = (uInt)sourceLen;
++       if ((uLong)streamp->avail_in != (uLong)sourceLen)
+        {
+-           sd->decomp_state->d_stream = stream;
+            sd->decomp_state->stage = HTTP_DECOMP_FIN;
+            return HI_FATAL_ERR;
+        }
++       bytes_read_so_far = 0;
++   } else {
++       bytes_read_so_far = streamp->total_out;
+    }
+ 
+-   stream.next_out = dest;
+-   stream.avail_out = (uInt)destLen;
+-   if ((uLong)stream.avail_out != (uLong)destLen)
++   streamp->next_out = dest;
++   streamp->avail_out = (uInt)destLen;
++   if ((uLong)streamp->avail_out != (uLong)destLen)
+    {
+-       sd->decomp_state->d_stream = stream;
+        return HI_FATAL_ERR;
+    }
+ 
+@@ -1045,25 +1047,24 @@ int uncompress_gzip ( u_char *dest, int destLen, const u_char *source,
+    if(!sd->decomp_state->inflate_init)
+    {
+        sd->decomp_state->inflate_init = 1;
+-       stream.zalloc = (alloc_func)0;
+-       stream.zfree = (free_func)0;
++       streamp->zalloc = (alloc_func)0;
++       streamp->zfree = (free_func)0;
+        if(compr_fmt & HTTP_RESP_COMPRESS_TYPE__DEFLATE)
+-           err = inflateInit(&stream);
++           err = inflateInit(streamp);
+        else
+-           err = inflateInit2(&stream, GZIP_WBITS);
++           err = inflateInit2(streamp, GZIP_WBITS);
+        if (err != Z_OK)
+        {
+-           sd->decomp_state->d_stream = stream;
+            return HI_FATAL_ERR;
+        }
+    }
+    else if (sd->decomp_state->stage != HTTP_DECOMP_MID)
+    {
+-       stream.total_in = 0;
+-       stream.total_out =0;
++       streamp->total_in = 0;
++       streamp->total_out =0;
+    }
+ 
+-   err = inflate(&stream, Z_SYNC_FLUSH);
++   err = inflate(streamp, Z_SYNC_FLUSH);
+    if ((!sd->decomp_state->deflate_initialized)
+            && (err == Z_DATA_ERROR)
+            && (compr_fmt & HTTP_RESP_COMPRESS_TYPE__DEFLATE))
+@@ -1071,19 +1072,19 @@ int uncompress_gzip ( u_char *dest, int destLen, const u_char *source,
+        /* Might not have zlib header - add one */
+        static char zlib_header[2] = { 0x78, 0x01 };
+ 
+-       inflateReset(&stream);
+-       stream.next_in = (Bytef *)zlib_header;
+-       stream.avail_in = sizeof(zlib_header);
++       inflateReset(streamp);
++       streamp->next_in = (Bytef *)zlib_header;
++       streamp->avail_in = sizeof(zlib_header);
+ 
+        sd->decomp_state->deflate_initialized = true;
+ 
+-       err = inflate(&stream, Z_SYNC_FLUSH);
++       err = inflate(streamp, Z_SYNC_FLUSH);
+        if (err == Z_OK)
+        {
+-           stream.next_in = (Bytef*)source;
+-           stream.avail_in = (uInt)sourceLen;
++           streamp->next_in = (Bytef*)source;
++           streamp->avail_in = (uInt)sourceLen;
+ 
+-           err = inflate(&stream, Z_SYNC_FLUSH);
++           err = inflate(streamp, Z_SYNC_FLUSH);
+        }
+    }
+ 
+@@ -1091,23 +1092,18 @@ int uncompress_gzip ( u_char *dest, int destLen, const u_char *source,
+    {
+ 
+        /* If some of the compressed data is decompressed we need to provide that for detection */
+-       if (( stream.total_out > 0) && (err != Z_DATA_ERROR))
++       if (( streamp->total_out > 0) && (err != Z_DATA_ERROR))
+        {
+-           *total_bytes_read = stream.total_out;
++           *total_bytes_read = streamp->total_out;
+            iRet = HI_NONFATAL_ERR;
+        }
+        else
+            iRet = HI_FATAL_ERR;
+-       inflateEnd(&stream);
+-       sd->decomp_state->d_stream = stream;
++       inflateEnd(streamp);
+        sd->decomp_state->stage = HTTP_DECOMP_FIN;
+        return iRet;
+    }
+-   if(sd->decomp_state->stage == HTTP_DECOMP_START)
+-       *total_bytes_read = stream.total_out;
+-   else
+-       *total_bytes_read = stream.total_out - sd->decomp_state->d_stream.total_out;
+-   sd->decomp_state->d_stream = stream;
++   *total_bytes_read = streamp->total_out - bytes_read_so_far;
+ 
+    /* Check if we need to decompress more */
+    if (sd->decomp_state->d_stream.total_in < sourceLen && *total_bytes_read != 0)

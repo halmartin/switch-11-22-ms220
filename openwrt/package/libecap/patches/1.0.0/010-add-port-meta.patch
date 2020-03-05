@@ -1,0 +1,31 @@
+--- a/src/libecap/common/names.cc    2011-02-17 09:03:40.000000000 -0800
++++ b/src/libecap/common/names.cc    2016-08-30 17:52:33.544765457 -0700
+@@ -23,9 +23,11 @@
+ const libecap::Name libecap::headerVia("Via", libecap::Name::NextId());
+ const libecap::Name libecap::headerXClientIp("X-Client-IP", libecap::Name::NextId());
+ const libecap::Name libecap::headerXServerIp("X-Server-IP", libecap::Name::NextId());
++const libecap::Name libecap::falseClientConn("_FALSE_INFO_", libecap::Name::NextId());
+
+ const libecap::Name libecap::metaClientIp = headerXClientIp;
+ const libecap::Name libecap::metaServerIp = headerXServerIp;
++const libecap::Name libecap::metaClientConn = falseClientConn;
+ const libecap::Name libecap::metaUserName("X-Client-Username", libecap::Name::NextId());
+ const libecap::Name libecap::metaAuthenticatedUser("X-Authenticated-User", libecap::Name::NextId());
+ const libecap::Name libecap::metaAuthenticatedGroups("X-Authenticated-Groups", libecap::Name::NextId());
+
+--- a/src/libecap/common/names.h    2011-02-17 09:03:40.000000000 -0800
++++ b/src/libecap/common/names.h    2016-08-30 17:52:33.544765457 -0700
+@@ -32,10 +32,12 @@
+ extern const Name headerVia;
+ extern const Name headerXClientIp;
+ extern const Name headerXServerIp;
++extern const Name falseClientConn;
+
+ // commonly used meta-information names, based on popular ICAP extensions
+ extern const Name metaClientIp;
+ extern const Name metaServerIp;
++extern const Name metaClientConn;
+ extern const Name metaUserName;
+ extern const Name metaAuthenticatedUser;
+ extern const Name metaAuthenticatedGroups;
+

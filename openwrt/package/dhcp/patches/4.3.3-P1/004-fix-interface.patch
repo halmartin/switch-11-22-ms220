@@ -1,0 +1,32 @@
+diff --git a/common/bpf.c b/common/bpf.c
+index 39d4f45..06d0479 100644
+--- a/common/bpf.c
++++ b/common/bpf.c
+@@ -601,8 +601,9 @@ get_hw_addr(const char *name, struct hardware *hw) {
+                         break;
+ #endif /* IFT_FDDI */
+                 default:
+-                        log_fatal("Unsupported device type %d for \"%s\"",
+-                                  sa->sdl_type, name);
++			hw->hlen = 1;
++			hw->hbuf[0] = HTYPE_IPMP;
++			break;
+         }
+ 
+ 	freeifaddrs(ifa);
+diff --git a/common/lpf.c b/common/lpf.c
+index 7889b6b..166a0af 100644
+--- a/common/lpf.c
++++ b/common/lpf.c
+@@ -549,8 +549,9 @@ get_hw_addr(const char *name, struct hardware *hw) {
+ 			memcpy(&hw->hbuf[1], sa->sa_data, 6);
+ 			break;
+ 		default:
+-			log_fatal("Unsupported device type %ld for \"%s\"",
+-				  (long int)sa->sa_family, name);
++			hw->hlen = 1;
++			hw->hbuf[0] = HTYPE_IPMP;
++			break;
+ 	}
+ 
+ 	close(sock);

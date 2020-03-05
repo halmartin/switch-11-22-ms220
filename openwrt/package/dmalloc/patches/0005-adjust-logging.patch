@@ -1,0 +1,75 @@
+diff --git a/error.c b/error.c
+index bb8c3fe..9e93f6e 100644
+--- a/error.c
++++ b/error.c
+@@ -684,6 +684,26 @@ void	_dmalloc_die(const int silent_b)
+  */
+ void	dmalloc_error(const char *func)
+ {
++  /* if errno code is ERROR_OVER_LIMIT, should always print a log and exit here.
++   * It's dangerous if this function returns without an exit, program might
++   * reach an undetermined stat, because of the change in dmalloc_shutdown()
++   * to make it dump the log after receiving ERROR_OVER_LIMIT error.
++   */
++  if (dmalloc_errno == ERROR_OVER_LIMIT) {
++    dmalloc_shutdown();
++    if (BIT_IS_SET(_dmalloc_flags, DEBUG_ERROR_ABORT)
++        || BIT_IS_SET(_dmalloc_flags, DEBUG_ERROR_DUMP)) {
++#if USE_ABORT
++      abort();
++#else
++#ifdef KILL_PROCESS
++      KILL_PROCESS;
++#endif
++#endif
++    }
++    _exit(1);
++  } // will not reach below code is errno is ERROR_OVER_LIMIT
++
+   /* do we need to log or print the error? */
+   if (dmalloc_logpath != NULL
+       || BIT_IS_SET(_dmalloc_flags, DEBUG_PRINT_MESSAGES)) {
+diff --git a/malloc.c b/malloc.c
+index 267848d..bcf7ecd 100644
+--- a/malloc.c
++++ b/malloc.c
+@@ -617,17 +617,23 @@ void	dmalloc_shutdown(void)
+    */
+   _dmalloc_open_log();
+   
+-  /* if we've died in dmalloc somewhere then leave fast and quietly */
+-  if (in_alloc_b) {
++  /* if we've died in dmalloc somewhere then leave fast and quietly.
++   * Make an exception for ERROR_OVER_LIMIT here, because we are almost
++   * confident that in this case, maintenance information should not be
++   * corrupted at this moment.
++   */
++  if (in_alloc_b && dmalloc_errno != ERROR_OVER_LIMIT) {
+     return;
+   }
+   
+ #if LOCK_THREADS
++if (dmalloc_errno != ERROR_OVER_LIMIT)
++  /* If due to ERROR_OVER_LIMIT, thread should have been locked during dmalloc_in() */
+   lock_thread();
+ #endif
+   
+   /* we do it again in case the lock synced the flag to true now */
+-  if (in_alloc_b) {
++  if (in_alloc_b && dmalloc_errno != ERROR_OVER_LIMIT) {
+ #if LOCK_THREADS
+     unlock_thread();
+ #endif
+diff --git a/settings.dist b/settings.dist
+index 1af8a29..d2ef626 100644
+--- a/settings.dist
++++ b/settings.dist
+@@ -78,7 +78,7 @@
+  * generate an exception when it sees a free(0L).
+  */
+ #define ALLOW_FREE_NULL 1
+-#define ALLOW_FREE_NULL_MESSAGE 1
++#define ALLOW_FREE_NULL_MESSAGE 0
+ 
+ /*
+  * Should we use the ra-address macros in return.h.  These are system

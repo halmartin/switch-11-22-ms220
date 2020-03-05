@@ -1,0 +1,5 @@
+Package: wmi-client
+Priority: optional
+Section: net
+Depends: libgcc libsasl2
+Description: A WMI client extracted from Samba4, packaged by OpenVAS

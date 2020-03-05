@@ -1,0 +1,4 @@
+Package: mii-tool
+Priority: optional
+Section: net
+Description: configure media type using MII commands

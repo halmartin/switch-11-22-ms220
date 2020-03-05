@@ -1,0 +1,8 @@
+config BR2_PACKAGE_LIBDRM
+        prompt "libdrm............................ Library for direct rendering infrastructure"
+	tristate
+	default n
+	help
+	  The libdri API provides a mechanism for direct rendering
+	  infrastructure access.
+

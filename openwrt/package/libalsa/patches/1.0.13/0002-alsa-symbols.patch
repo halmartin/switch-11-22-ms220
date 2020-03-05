@@ -1,0 +1,25 @@
+From c374a6c7c6b4e023f2c39a933bbb16f8eb228a8d Mon Sep 17 00:00:00 2001
+From: Abhinav Acharya <abhinav.acharya@meraki.net>
+Date: Tue, 3 Feb 2015 14:54:22 -0800
+Subject: [PATCH 2/2] alsa symbols
+
+---
+ include/alsa-symbols.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/alsa-symbols.h b/include/alsa-symbols.h
+index 8d31612..85cd729 100644
+--- a/include/alsa-symbols.h
++++ b/include/alsa-symbols.h
+@@ -57,7 +57,7 @@
+ 	__asm__ (".set " ASM_NAME(#name) "," ASM_NAME(#real));		\
+ 	__asm__ (".set ." ASM_NAME(#name) ",." ASM_NAME(#real))
+ #else
+-#if defined(__alpha__) || defined(__mips__)
++#if defined(__alpha__) || defined(__mips__) || defined(__arm__)
+ #define use_default_symbol_version(real, name, version) \
+         __asm__ (".weak " ASM_NAME(#name)); \
+         __asm__ (ASM_NAME(#name) " = " ASM_NAME(#real))
+-- 
+1.7.10.4
+

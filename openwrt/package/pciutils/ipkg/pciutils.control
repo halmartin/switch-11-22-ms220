@@ -1,0 +1,5 @@
+Package: pciutils
+Priority: optional
+Section: sys
+Description: Linux PCI Utilities
+Depends: zlib

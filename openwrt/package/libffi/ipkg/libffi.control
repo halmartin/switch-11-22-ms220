@@ -1,0 +1,4 @@
+Package: libffi
+Priority: optional
+Section: libs
+Description: Foreign Function Interface library

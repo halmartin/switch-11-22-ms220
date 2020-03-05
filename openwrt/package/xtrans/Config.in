@@ -1,0 +1,7 @@
+config BR2_PACKAGE_XTRANS
+        prompt "xtrans..............................X transport library"
+	tristate
+	default n
+	help
+	  X transport library. You probably only need this if you want to
+	  install an X server.

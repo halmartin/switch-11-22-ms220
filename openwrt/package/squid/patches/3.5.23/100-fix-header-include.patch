@@ -1,0 +1,392 @@
+--- a/compat/assert.h
++++ b/compat/assert.h
+@@ -6,6 +6,7 @@
+  * Please see the COPYING and CONTRIBUTORS files for details.
+  */
+ 
++#if !HAVE_ASSERT_H
+ #ifndef SQUID_ASSERT_H
+ #define SQUID_ASSERT_H
+ 
+@@ -25,4 +26,5 @@ extern void
+ xassert(const char *, const char *, int);
+ 
+ #endif /* SQUID_ASSERT_H */
++#endif /* HAVE_ASSERT_H */
+ 
+--- a/compat/stdio.h
++++ b/compat/stdio.h
+@@ -58,9 +58,11 @@ inline FILE * tmpfile(void) { return tmpfile64(); }
+ #include <cstdio>
+ #endif
+ 
++#ifndef HAVE_STDIO_H
+ #ifndef MAXPATHLEN
+ #define MAXPATHLEN SQUID_MAXPATHLEN
+ #endif
++#endif
+ 
+ #endif /* _SQUID_COMPAT_STDIO_H */
+ 
+--- a/include/MemPool.h
++++ b/include/MemPool.h
+@@ -9,6 +9,10 @@
+ #ifndef _MEM_POOL_H_
+ #define _MEM_POOL_H_
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ /**
+  \defgroup MemPoolsAPI  Memory Management (Memory Pool Allocator)
+  \ingroup Components
+@@ -43,6 +47,10 @@
+ #include <memory.h>
+ #endif
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ #if !M_MMAP_MAX
+ #if USE_DLMALLOC
+ #define M_MMAP_MAX -4
+--- a/include/cache_snmp.h
++++ b/include/cache_snmp.h
+@@ -13,9 +13,11 @@
+ 
+ typedef int64_t snint;
+ 
++#ifndef HAVE_SYS_PARAM_H
+ #ifndef MIN
+ #define MIN(a,b) (a<b?a:b)
+ #endif
++#endif
+ 
+ #include "snmp.h"
+ #include "snmp_api.h"
+--- a/include/squid.h
++++ b/include/squid.h
+@@ -97,5 +97,9 @@ using namespace Squid;
+ // temporary for the definition of LOCAL_ARRAY
+ #include "leakcheck.h"
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ #endif /* SQUID_CONFIG_H */
+ 
+--- a/src/Debug.h
++++ b/src/Debug.h
+@@ -12,9 +12,12 @@
+ #define SQUID_DEBUG_H
+ 
+ #include <iostream>
+-#undef assert
+ #include <sstream>
+ #include <iomanip>
++
++#if HAVE_ASSERT_H
++#include <assert.h>
++#else /* HAVE_ASSERT_H */
+ #if defined(assert)
+ #undef assert
+ #endif
+@@ -28,6 +31,7 @@
+ #else
+ #define assert(EX)  ((EX)?((void)0):xassert("EX", __FILE__, __LINE__))
+ #endif
++#endif /* HAVE_ASSERT_H */
+ 
+ /* context-based debugging, the actual type is subject to change */
+ typedef int Ctx;
+--- a/src/DescriptorSet.cc
++++ b/src/DescriptorSet.cc
+@@ -12,6 +12,10 @@
+ #include "DescriptorSet.h"
+ #include "globals.h" /* for Squid_MaxFD */
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ // pre-allocates descriptor store and index for Squid_MaxFD descriptors
+ DescriptorSet::DescriptorSet(): descriptors_(NULL), index_(NULL),
+     capacity_(0), size_(0)
+--- a/src/DiskIO/DiskDaemon/diskd.cc
++++ b/src/DiskIO/DiskDaemon/diskd.cc
+@@ -23,6 +23,9 @@
+ #if HAVE_SYS_SHM_H
+ #include <sys/shm.h>
+ #endif
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
+ 
+ void
+ xassert(const char *msg, const char *file, int line)
+--- a/src/DiskIO/DiskIOModule.h
++++ b/src/DiskIO/DiskIOModule.h
+@@ -11,6 +11,10 @@
+ 
+ #include <vector>
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ /* forward decls */
+ 
+ class CacheManager;
+--- a/src/ETag.cc
++++ b/src/ETag.cc
+@@ -11,6 +11,10 @@
+ 
+ #include <cstring>
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ /*
+  * Note: ETag is not an http "field" like, for example HttpHdrRange. ETag is a
+  * field-value that maybe used in many http fields.
+--- a/src/String.cc
++++ b/src/String.cc
+@@ -17,6 +17,10 @@
+ 
+ #include <climits>
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ int
+ String::psize() const
+ {
+--- a/src/String.cci
++++ b/src/String.cci
+@@ -10,6 +10,10 @@
+ 
+ #include <cstring>
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ String::String() : size_(0), len_(0), buf_(NULL)
+ {
+ #if DEBUGSTRINGS
+--- a/src/YesNoNone.cc
++++ b/src/YesNoNone.cc
+@@ -9,6 +9,10 @@
+ #include "squid.h"
+ #include "YesNoNone.h"
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ YesNoNone::operator void*() const
+ {
+     assert(option != 0); // must call configure() first
+--- a/src/base/Lock.h
++++ b/src/base/Lock.h
+@@ -9,6 +9,10 @@
+ #ifndef SQUID_SRC_BASE_LOCK_H
+ #define SQUID_SRC_BASE_LOCK_H
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ /**
+  * This class provides a tracking counter and presents
+  * lock(), unlock() and LockCount() accessors.
+--- a/src/base/RefCount.h
++++ b/src/base/RefCount.h
+@@ -11,6 +11,10 @@
+ #ifndef SQUID_REFCOUNT_H_
+ #define SQUID_REFCOUNT_H_
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ // reference counting requires the Lock API on base classes
+ #include "base/Lock.h"
+ 
+--- a/src/cbdata.h
++++ b/src/cbdata.h
+@@ -11,6 +11,10 @@
+ 
+ #include "typedefs.h"
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ /**
+  \defgroup CBDATAAPI Callback Data Allocator API
+  \ingroup Components
+--- a/src/debug.cc
++++ b/src/debug.cc
+@@ -17,6 +17,10 @@
+ /* for shutting_down flag in xassert() */
+ #include "globals.h"
+ 
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ char *Debug::debugOptions = NULL;
+ int Debug::override_X = 0;
+ int Debug::log_stderr = -1;
+--- a/src/errorpage.cc
++++ b/src/errorpage.cc
+@@ -37,6 +37,10 @@
+ #include "ssl/ErrorDetailManager.h"
+ #endif
+ 
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ /**
+  \defgroup ErrorPageInternal Error Page Internals
+  \ingroup ErrorPageAPI
+--- a/src/fs/ufs/RebuildState.h
++++ b/src/fs/ufs/RebuildState.h
+@@ -14,6 +14,10 @@
+ #include "UFSSwapDir.h"
+ #include "UFSSwapLogParser.h"
+ 
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ class StoreEntry;
+ 
+ namespace Fs
+--- a/src/fs/ufs/StoreFSufs.h
++++ b/src/fs/ufs/StoreFSufs.h
+@@ -14,6 +14,10 @@
+  \ingroup FileSystems
+  */
+ 
++#ifdef HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ #include "StoreFileSystem.h"
+ 
+ class DiskIOModule;
+--- a/src/main.cc
++++ b/src/main.cc
+@@ -130,6 +130,14 @@
+ #include <sys/wait.h>
+ #endif
+ 
++#if HAVE_ASSERT
++#include <assert.h>
++#endif
++
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ #if USE_WIN32_SERVICE
+ #include <process.h>
+ 
+--- a/src/mime.cc
++++ b/src/mime.cc
+@@ -29,6 +29,10 @@
+ #include <sys/stat.h>
+ #endif
+ 
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ #define GET_HDR_SZ 1024
+ 
+ /* forward declarations */
+--- a/src/ssl/gadgets.h
++++ b/src/ssl/gadgets.h
+@@ -20,6 +20,10 @@
+ #endif
+ #include <string>
+ 
++#ifdef HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ namespace Ssl
+ {
+ /**
+--- a/src/tools.cc
++++ b/src/tools.cc
+@@ -66,7 +66,10 @@ SBuf service_name(APP_SHORTNAME);
+ /* Workaround for crappy glic header files */
+ SQUIDCEXTERN int backtrace(void *, int);
+ SQUIDCEXTERN void backtrace_symbols_fd(void *, int, int);
++
++#ifndef HAVE_UNISTD_H
+ SQUIDCEXTERN int setresuid(uid_t, uid_t, uid_t);
++#endif
+ #else /* _SQUID_LINUX_ */
+ /* needed on Opensolaris for backtrace_symbols_fd */
+ #if HAVE_EXECINFO_H
+--- a/src/unlinkd.cc
++++ b/src/unlinkd.cc
+@@ -22,6 +22,10 @@
+ #include "tools.h"
+ #include "xusleep.h"
+ 
++#if HAVE_SYS_PARAM_H
++#include <sys/param.h>
++#endif
++
+ /* This code gets linked to Squid */
+ 
+ static int unlinkd_wfd = -1;
+--- a/tools/cachemgr.cc
++++ b/tools/cachemgr.cc
+@@ -82,6 +82,9 @@ extern "C" {
+ #include <fnmatch.h>
+ }
+ #endif
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
+ 
+ #ifndef DEFAULT_CACHEMGR_CONFIG
+ #define DEFAULT_CACHEMGR_CONFIG "/etc/squid/cachemgr.conf"
+--- a/tools/purge/purge.cc
++++ b/tools/purge/purge.cc
+@@ -129,6 +129,10 @@
+ #include "socket.hh"
+ #include "squid-tlv.hh"
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ #ifndef DEFAULTHOST
+ #define DEFAULTHOST "localhost"
+ #endif // DEFAULTHOST
+--- a/tools/test_tools.cc
++++ b/tools/test_tools.cc
+@@ -13,6 +13,10 @@
+ #include "dlink.h"
+ #include <iostream>
+ 
++#if HAVE_ASSERT_H
++#include <assert.h>
++#endif
++
+ void
+ xassert(const char *msg, const char *file, int line)
+ {

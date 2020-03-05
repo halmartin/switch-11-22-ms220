@@ -1,0 +1,11 @@
+--- a/configure	2013-05-20 04:50:55.000000000 -0700
++++ b/configure	2013-06-18 12:31:15.136838254 -0700
+@@ -6900,7 +6900,7 @@
+ #
+ # Similar POSIX issues on MinGW 32-bit and Cygwin
+ #
++if false; then
+-if ! test "x$squid_host_os" = "xmingw" -o "x$squid_host_os" = "xcygwin" -o "x$squid_cv_compiler" = "xclang"; then
+       ax_cxx_compile_cxx11_required=false
+   ac_ext=cpp
+ ac_cpp='$CXXCPP $CPPFLAGS'

@@ -1,0 +1,52 @@
+From 5f8b473d5e71346d3838d8d4bc6c82cd50383431 Mon Sep 17 00:00:00 2001
+From: Tania <taniat@meraki.com>
+Date: Fri, 3 Aug 2018 10:08:01 -0700
+Subject: [PATCH] settings_lexer.l: Replace val with sval.
+
+When strongswan-5.6.3 is built using OpenWRT with uclibc, a syntax error
+occurs on line 680 in settings_lexer.l:
+
+ #define val 1
+
+However, when yocto with musl or with glibc is used to build
+strongswan-5.6.3, there are no issues. To resolve the build issues, val
+has been rennamed to sval because it seems to already be defined for
+uclibc.
+---
+ src/libstrongswan/settings/settings_lexer.l | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/libstrongswan/settings/settings_lexer.l b/src/libstrongswan/settings/settings_lexer.l
+index fa1ecac10..771a40e0a 100644
+--- a/src/libstrongswan/settings/settings_lexer.l
++++ b/src/libstrongswan/settings/settings_lexer.l
+@@ -50,7 +50,7 @@ static void include_files(parser_helper_t *ctx);
+ %option extra-type="parser_helper_t*"
+ 
+ /* state used to scan values */
+-%x val
++%x sval
+ /* state used to scan include file patterns */
+ %x inc
+ /* state used to scan quoted strings */
+@@ -66,7 +66,7 @@ static void include_files(parser_helper_t *ctx);
+ "}"						return yytext[0];
+ 
+ "="						{
+-	yy_push_state(val, yyscanner);
++	yy_push_state(sval, yyscanner);
+ 	return yytext[0];
+ }
+ 
+@@ -85,7 +85,7 @@ static void include_files(parser_helper_t *ctx);
+ 	return NAME;
+ }
+ 
+-<val>{
++<sval>{
+ 	\r					/* just ignore these */
+ 	[\t ]+
+ 	<<EOF>>				|
+-- 
+2.18.0
+

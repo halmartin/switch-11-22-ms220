@@ -1,0 +1,37 @@
+From e4b497f367a3b2ae99cc52089a14a221b13a76ef Mon Sep 17 00:00:00 2001
+From: Michael Ellerman <michael@ellerman.id.au>
+Date: Tue, 16 Oct 2012 18:04:20 +1100
+Subject: [PATCH 65/98] Add documentation on how to submit patches
+
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ Documentation/manual.txt | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/Documentation/manual.txt b/Documentation/manual.txt
+index 989c589..65c8540 100644
+--- a/Documentation/manual.txt
++++ b/Documentation/manual.txt
+@@ -3,6 +3,7 @@ Device Tree Compiler Manual
+ 
+ I - "dtc", the device tree compiler
+     1) Obtaining Sources
++    1.1) Submitting Patches
+     2) Description
+     3) Command Line
+     4) Source File
+@@ -44,6 +45,10 @@ Tarballs of the 1.0.0 and latest releases are here:
+     http://www.jdl.com/software/dtc-v1.2.0.tgz
+     http://www.jdl.com/software/dtc-latest.tgz
+ 
++1.1) Submitting Patches
++
++Patches should be sent to jdl@jdl.com, and CC'ed to
++devicetree-discuss@lists.ozlabs.org.
+ 
+ 2) Description
+ 
+-- 
+1.8.1.2
+

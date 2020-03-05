@@ -1,0 +1,9 @@
+config BR2_PACKAGE_LIBALSA
+	prompt "libalsa............................ (Advanced Linux Sound Architecture) library"
+	tristate
+	default n if CONFIG_DEVEL
+	help
+	  This is the library package for alsa, needed by some userspace programs.
+	  You must have enabled the ALSA support in the kernel.
+
+	  http://www.alsa-project.org/

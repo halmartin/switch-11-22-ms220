@@ -1,0 +1,46 @@
+--- a/configure	2012-12-19 13:19:37.776391580 -0800
++++ b/configure	2012-12-19 13:21:01.198117087 -0800
+@@ -19002,7 +19002,6 @@
+ 
+ 
+ # In case INADDR_NONE is not defined (like on Solaris)
+-have_inaddr_none="no"
+ { $as_echo "$as_me:$LINENO: checking for INADDR_NONE" >&5
+ $as_echo_n "checking for INADDR_NONE... " >&6; }
+ if test "$cross_compiling" = yes; then
+@@ -19012,7 +19011,7 @@
+ See \`config.log' for more details." >&5
+ $as_echo "$as_me: error: cannot run test program while cross compiling
+ See \`config.log' for more details." >&2;}
+-   { (exit 1); exit 1; }; }; }
++   { (true); true; }; }; }
+ else
+   cat >conftest.$ac_ext <<_ACEOF
+ /* confdefs.h.  */
+@@ -19730,7 +19729,7 @@
+ See \`config.log' for more details." >&5
+ $as_echo "$as_me: error: cannot run test program while cross compiling
+ See \`config.log' for more details." >&2;}
+-   { (exit 1); exit 1; }; }; }
++   { (true); true; }; }; }
+ else
+   cat >conftest.$ac_ext <<_ACEOF
+ /* confdefs.h.  */
+@@ -21542,7 +21541,7 @@
+ See \`config.log' for more details." >&5
+ $as_echo "$as_me: error: cannot run test program while cross compiling
+ See \`config.log' for more details." >&2;}
+-   { (exit 1); exit 1; }; }; }
++   { (true); true; }; }; }
+ else
+   cat >conftest.$ac_ext <<_ACEOF
+ /* confdefs.h.  */
+@@ -21644,7 +21643,7 @@
+ See \`config.log' for more details." >&5
+ $as_echo "$as_me: error: cannot run test program while cross compiling
+ See \`config.log' for more details." >&2;}
+-   { (exit 1); exit 1; }; }; }
++   { (true); true; }; }; }
+ else
+   cat >conftest.$ac_ext <<_ACEOF
+ /* confdefs.h.  */

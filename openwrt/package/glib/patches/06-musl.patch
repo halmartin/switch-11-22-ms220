@@ -1,0 +1,154 @@
+commit 769aa421740cf26f0272706f71303a7d10d45ba7
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Sun Oct 16 18:25:33 2016 -0700
+
+    Look for poll.h instead of sys/poll.h
+    
+    This is the actual POSIX requirement and musl strictly follows POSIX.
+
+diff --git a/acconfig.h b/acconfig.h
+index 14d3033..eadd870 100644
+--- a/acconfig.h
++++ b/acconfig.h
+@@ -58,7 +58,7 @@
+ #undef HAVE_PTHREAD_MUTEX_TRYLOCK_POSIX
+ #undef HAVE_PWD_H
+ #undef HAVE_SYS_PARAM_H
+-#undef HAVE_SYS_POLL_H
++#undef HAVE_POLL_H
+ #undef HAVE_SYS_SELECT_H
+ #undef HAVE_SYS_TIME_H
+ #undef HAVE_SYS_TIMES_H
+diff --git a/config.h.in b/config.h.in
+index bbcbcb6..ca465c8 100644
+--- a/config.h.in
++++ b/config.h.in
+@@ -43,7 +43,7 @@
+ #undef HAVE_PTHREAD_MUTEX_TRYLOCK_POSIX
+ #undef HAVE_PWD_H
+ #undef HAVE_SYS_PARAM_H
+-#undef HAVE_SYS_POLL_H
++#undef HAVE_POLL_H
+ #undef HAVE_SYS_SELECT_H
+ #undef HAVE_SYS_TIME_H
+ #undef HAVE_SYS_TIMES_H
+@@ -139,8 +139,8 @@
+ /* Define if you have the <sys/param.h> header file.  */
+ #undef HAVE_SYS_PARAM_H
+ 
+-/* Define if you have the <sys/poll.h> header file.  */
+-#undef HAVE_SYS_POLL_H
++/* Define if you have the <poll.h> header file.  */
++#undef HAVE_POLL_H
+ 
+ /* Define if you have the <sys/select.h> header file.  */
+ #undef HAVE_SYS_SELECT_H
+diff --git a/config.h.win32 b/config.h.win32
+index 8b93efa..2363b78 100644
+--- a/config.h.win32
++++ b/config.h.win32
+@@ -33,7 +33,7 @@
+ /* #undef HAVE_POLL */
+ /* #undef HAVE_PWD_H */
+ /* #undef HAVE_SYS_PARAM_H */
+-/* #undef HAVE_SYS_POLL_H */
++/* #undef HAVE_POLL_H */
+ /* #undef HAVE_SYS_SELECT_H */
+ /* #undef HAVE_SYS_TIME_H */
+ /* #undef HAVE_SYS_TIMES_H */
+diff --git a/config.h.win32.in b/config.h.win32.in
+index 1e2105b..71e8c2e 100644
+--- a/config.h.win32.in
++++ b/config.h.win32.in
+@@ -33,7 +33,7 @@
+ /* #undef HAVE_POLL */
+ /* #undef HAVE_PWD_H */
+ /* #undef HAVE_SYS_PARAM_H */
+-/* #undef HAVE_SYS_POLL_H */
++/* #undef HAVE_POLL_H */
+ /* #undef HAVE_SYS_SELECT_H */
+ /* #undef HAVE_SYS_TIME_H */
+ /* #undef HAVE_SYS_TIMES_H */
+diff --git a/configure b/configure
+index 586cf67..d000169 100755
+--- a/configure
++++ b/configure
+@@ -7078,7 +7078,7 @@ else
+ fi
+ done
+ 
+-for ac_hdr in sys/poll.h
++for ac_hdr in poll.h
+ do
+ ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
+@@ -7113,7 +7113,7 @@ if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
+ #define $ac_tr_hdr 1
+ EOF
+  cat >> confdefs.h <<\EOF
+-#define HAVE_SYS_POLL_H 1
++#define HAVE_POLL_H 1
+ EOF
+ 
+ else
+@@ -9935,8 +9935,8 @@ x$ac_cv_header_values_h)
+   ;;
+ esac
+ 
+-if test x$ac_cv_header_sys_poll_h = xyes ; then
+-  glib_sys_poll_h=yes
++if test x$ac_cv_header_poll_h = xyes ; then
++  glib_poll_h=yes
+ fi
+ 
+ case 2 in
+@@ -10129,8 +10129,8 @@ _______EOF
+ 	if test x$g_mutex_header_file != x; then
+ 	  echo '#include <'"$g_mutex_header_file"'>' >> $outfile
+ 	fi
+-	if test x$glib_sys_poll_h = xyes; then
+-	  echo '#define GLIB_HAVE_SYS_POLL_H' >> $outfile
++	if test x$glib_poll_h = xyes; then
++	  echo '#define GLIB_HAVE_POLL_H' >> $outfile
+ 	fi
+ 
+ 	cat >> $outfile <<_______EOF
+diff --git a/configure.in b/configure.in
+index 8ee9339..092f363 100644
+--- a/configure.in
++++ b/configure.in
+@@ -286,7 +286,7 @@ AC_CHECK_HEADERS(float.h, AC_DEFINE(HAVE_FLOAT_H))
+ AC_CHECK_HEADERS(limits.h, AC_DEFINE(HAVE_LIMITS_H))
+ AC_CHECK_HEADERS(pwd.h, AC_DEFINE(HAVE_PWD_H))
+ AC_CHECK_HEADERS(sys/param.h, AC_DEFINE(HAVE_SYS_PARAM_H))
+-AC_CHECK_HEADERS(sys/poll.h, AC_DEFINE(HAVE_SYS_POLL_H))
++AC_CHECK_HEADERS(poll.h, AC_DEFINE(HAVE_POLL_H))
+ AC_CHECK_HEADERS(sys/select.h, AC_DEFINE(HAVE_SYS_SELECT_H))
+ AC_CHECK_HEADERS(sys/time.h, AC_DEFINE(HAVE_SYS_TIME_H))
+ AC_CHECK_HEADERS(sys/times.h, AC_DEFINE(HAVE_SYS_TIMES_H))
+@@ -995,8 +995,8 @@ _______EOF
+ 	if test x$g_mutex_header_file != x; then
+ 	  echo '#include <'"$g_mutex_header_file"'>' >> $outfile
+ 	fi
+-	if test x$glib_sys_poll_h = xyes; then
+-	  echo '#define GLIB_HAVE_SYS_POLL_H' >> $outfile
++	if test x$glib_poll_h = xyes; then
++	  echo '#define GLIB_HAVE_POLL_H' >> $outfile
+ 	fi
+ 
+ 	cat >> $outfile <<_______EOF
+diff --git a/gmain.c b/gmain.c
+index 8ead8a0..8635be8 100644
+--- a/gmain.c
++++ b/gmain.c
+@@ -44,8 +44,8 @@
+ #ifdef HAVE_SYS_TIME_H
+ #include <sys/time.h>
+ #endif /* HAVE_SYS_TIME_H */
+-#ifdef GLIB_HAVE_SYS_POLL_H
+-#  include <sys/poll.h>
++#ifdef GLIB_HAVE_POLL_H
++#  include <poll.h>
+ #  undef events	 /* AIX 4.1.5 & 4.3.2 define this for SVR3,4 compatibility */
+ #  undef revents /* AIX 4.1.5 & 4.3.2 define this for SVR3,4 compatibility */
+ #endif /* GLIB_HAVE_SYS_POLL_H */

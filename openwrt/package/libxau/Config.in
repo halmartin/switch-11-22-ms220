@@ -1,0 +1,7 @@
+config BR2_PACKAGE_LIBXAU
+        prompt "libxau..............................Libxau library"
+	tristate
+	default n
+	help
+	  Libxau library. You probably only need this if you want to
+	  install an X server.

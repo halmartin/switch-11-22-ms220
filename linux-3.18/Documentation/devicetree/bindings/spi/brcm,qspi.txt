@@ -1,0 +1,53 @@
+Broadcom QSPI controller
+
+The Broadcom QSPI controller is a SPI controller found on various chips
+including the iProc. It's designed to interface with serial flash chips,
+particularly m25p80-compatible chips.
+
+Required properties:
+
+- compatible: Must be "brcm,qspi".
+
+- reg: Six register ranges are required, in this order:
+
+	MSPI register range 		(QSPI_mspi_SPCR0_LSB, etc)
+	BSPI register range 		(QSPI_BSPI_REVISION_ID, etc)
+	BSPI_RAF register range 	(QSPI_raf_START_ADDR, etc)
+	QSPI interrupt register range 	(QSPI_raf_interrupt_LR_fullness_reached, etc)
+	QSPI IDM register 		(QSPI_IDM_IDM_IO_CONTROL_DIRECT)
+	CRU control register 		(CRU_control)
+
+- interrupts: One interrupt is required:
+
+	qspi_to_core_mspi_interrupt_done
+
+- clocks: The QSPI reference clock, used to set the SPI serial port baud rate.
+
+SPI slaves should be added as children of the qspi node.
+
+Example:
+
+qspi@18027200 {
+	compatible = "brcm,qspi";
+	reg = <0x18027200 0x188>,       // MSPI register range
+	      <0x18027000 0x50>,        // BSPI register range
+	      <0x18027100 0x24>,        // BSPI_RAF register range
+	      <0x180273a0 0x1c>,        // QSPI interrupt register range
+	      <0x1811c408 0x4>,         // QSPI_IDM_IDM_IO_CONTROL_DIRECT register
+	      <0x1803e000 0x4>;         // CRU control register
+
+	interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	clocks = <&apb_pclk>;
+
+	m25p80@0 {
+		compatible = "macronix,mx25l12805d";
+		reg = <0>;
+		spi-max-frequency = <70000000>;
+		m25p,fast-read;
+	};
+};
+

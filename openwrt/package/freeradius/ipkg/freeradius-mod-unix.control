@@ -1,0 +1,5 @@
+Package: freeradius-mod-unix
+Priority: optional
+Section: net
+Description: UNIX module for FreeRADIUS
+Depends: freeradius

@@ -1,0 +1,34 @@
+From 84a94f6ffcab762f44e44cba3409b7bc5fa46a89 Mon Sep 17 00:00:00 2001
+From: Simon Glass <sjg@chromium.org>
+Date: Thu, 19 Apr 2012 09:33:35 -0700
+Subject: [PATCH 43/98] dtc: Adjust .gitignore to be in alphabetical order
+
+This is the intent, so correct it.
+
+Signed-off-by: Simon Glass <sjg@chromium.org>
+---
+ tests/.gitignore | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tests/.gitignore b/tests/.gitignore
+index 0b71bcf..cca3dbc 100644
+--- a/tests/.gitignore
++++ b/tests/.gitignore
+@@ -10,6 +10,8 @@ tmp.*
+ /del_node
+ /del_property
+ /dtbs_equal_ordered
++/dtbs_equal_unordered
++/dtb_reverse
+ /dumptrees
+ /extra-terminating-null
+ /find_property
+@@ -50,5 +52,3 @@ tmp.*
+ /truncated_property
+ /utilfdt_test
+ /value-labels
+-/dtb_reverse
+-/dtbs_equal_unordered
+-- 
+1.8.1.2
+

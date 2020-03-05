@@ -1,0 +1,6 @@
+Package: libdrm
+Priority: optional
+Section: libs
+Depends:
+Description: Kernel DRM interface module
+

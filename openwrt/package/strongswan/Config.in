@@ -1,0 +1,10 @@
+config BR2_PACKAGE_STRONGSWAN
+    prompt "strongswan....................... strongSwan OpenSource IPsec implementation"
+    tristate
+    select BR2_PACKAGE_LIBOPENSSL
+    default n
+    help
+        strongSwan : the OpenSource IPsec-based VPN Solution
+
+        https://www.strongswan.org/
+

@@ -1,0 +1,5 @@
+Package: libfontenc
+Priority: optional
+Section: x11
+Depends:
+Description: X font library utilities

@@ -1,0 +1,9 @@
+config BR2_PACKAGE_VALGRIND
+	prompt "valgrind.......................... Profile and debug tool"
+	bool
+	default n
+	help
+          Tool for debugging and profiling Linux programs.
+
+          http://valgrind.kde.org/
+

@@ -1,0 +1,11 @@
+--- a/configure
++++ b/configure
+@@ -15802,7 +15802,7 @@ fi
+ { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_daq_daq_load_modules" >&5
+ $as_echo "$ac_cv_lib_daq_daq_load_modules" >&6; }
+ if test "x$ac_cv_lib_daq_daq_load_modules" = xyes; then :
+-  LIBS="${LIBS} -ldaq"
++  LIBS="${LIBS} -ldaq ${EXTRA_LIBS}"
+ else
+   LDAQ="no"
+ fi

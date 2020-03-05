@@ -1,0 +1,17 @@
+--- a/Samba/source/lib/tls/config.m4	2008-07-30 12:44:55.000000000 -0700
++++ b/Samba/source/lib/tls/config.m4	2011-08-02 14:44:52.263891675 -0700
+@@ -3,6 +3,7 @@
+ # check for gnutls/gnutls.h and -lgnutls
+ SMB_EXT_LIB_FROM_PKGCONFIG(GNUTLS, gnutls)
+ 
++if false ; then
+ if test x$SMB_ENABLE_GNUTLS = xNO; then
+ 	AC_CHECK_HEADERS(gnutls/gnutls.h)
+ 	AC_CHECK_LIB_EXT(gnutls, GNUTLS_LIBS, gnutls_global_init)
+@@ -27,5 +28,6 @@
+ 	AC_CHECK_TYPES([gnutls_datum_t],,,[#include "gnutls/gnutls.h"])
+ 	AC_DEFINE(ENABLE_GNUTLS,1,[Whether we have gnutls support (SSL)])
+ fi
++fi
+ # end SMB_EXT_LIB_GNUTLS
+ ###############################

@@ -1,0 +1,11 @@
+--- a/src/fs/ufs/StoreFSufs.h
++++ b/src/fs/ufs/StoreFSufs.h
+@@ -88,7 +88,7 @@ template <class C>
+ void
+ StoreFSufs<C>::setup()
+ {
+-    assert(!initialised);
++    assert(!this->initialised);
+     initialised = true;
+ }
+ 

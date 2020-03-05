@@ -1,0 +1,157 @@
+From 1197a4862dfbb3abdd518dc8f9e4a2aadd7b649f Mon Sep 17 00:00:00 2001
+From: aacharya <aacharya@meraki.net>
+Date: Tue, 30 Jan 2018 13:54:11 -0800
+Subject: [PATCH] sq-de
+
+---
+ kexec/arch/mips/include/arch/options.h   |  2 ++
+ kexec/arch/mips/kexec-meraki-part-mips.c | 26 ++++++++++++++++++++++++++
+ kexec/arch/mips/kexec-mips.c             | 13 +++++++++++++
+ kexec/arch/mips/kexec-mips.h             |  4 ++++
+ 4 files changed, 45 insertions(+)
+
+diff --git a/kexec/arch/mips/include/arch/options.h b/kexec/arch/mips/include/arch/options.h
+index 416e224..560d99e 100644
+--- a/kexec/arch/mips/include/arch/options.h
++++ b/kexec/arch/mips/include/arch/options.h
+@@ -5,6 +5,7 @@
+ #define OPT_APPEND	(OPT_ARCH_MAX+0)
+ #define OPT_DTB		(OPT_ARCH_MAX+1)
+ #define OPT_RAMDISK	(OPT_ARCH_MAX+2)
++#define OPT_STAGE2	(OPT_ARCH_MAX+3)
+ 
+ /* Options relevant to the architecture (excluding loader-specific ones),
+  * in this case none:
+@@ -14,6 +15,7 @@
+ 	{"command-line", 1, 0, OPT_APPEND}, \
+ 	{"append",	 1, 0, OPT_APPEND}, \
+ 	{"dtb",		1, 0, OPT_DTB }, \
++	{"stage2-load",		1, 0, OPT_STAGE2 }, \
+ 	{"initrd",	1, 0, OPT_RAMDISK },
+ 
+ 
+diff --git a/kexec/arch/mips/kexec-meraki-part-mips.c b/kexec/arch/mips/kexec-meraki-part-mips.c
+index fc618d9..f9752f9 100644
+--- a/kexec/arch/mips/kexec-meraki-part-mips.c
++++ b/kexec/arch/mips/kexec-meraki-part-mips.c
+@@ -28,6 +28,7 @@
+ #include "../../kexec.h"
+ #include "kexec-mips.h"
+ #include <sha1.h>
++#include "crashdump-mips.h"
+ 
+ #define MERAKI_PART_MAGIC 0x8e73ed8a
+ 
+@@ -89,11 +90,36 @@ void meraki_part_mips_usage(void)
+ 	elf_mips_usage();
+ }
+ 
++int meraki_stage2_mips_probe(const char* buf, off_t len)
++{
++	return 0;
++}
++
++int meraki_stage2_mips_load(int argc, char **argv, const char *buf, off_t len,
++	struct kexec_info *info)
++{
++	if (!arch_options.stage2_loadaddr) {
++	   printf("Missing --stage2-load\n");
++	   arch_usage();
++	   return 1;
++	}
++
++	add_segment(info, buf, len, arch_options.stage2_loadaddr, len);
++	info->entry = arch_options.stage2_loadaddr;
++
++	return 0;
++}
++
+ int meraki_part_mips_load(int argc, char **argv, const char *buf, off_t len,
+ 	struct kexec_info *info)
+ {
+ 	struct meraki_part_hdr* hdr = (struct meraki_part_hdr*)buf;
+ 
++	if (arch_options.stage2_loadaddr) {
++		return meraki_stage2_mips_load(argc, argv, buf + be32_to_cpu(hdr->hdr_len),
++			     be32_to_cpu(hdr->data_len), info);
++	}
++
+ 	return elf_mips_load(argc, argv, buf + be32_to_cpu(hdr->hdr_len),
+ 			     be32_to_cpu(hdr->data_len), info);
+ }
+diff --git a/kexec/arch/mips/kexec-mips.c b/kexec/arch/mips/kexec-mips.c
+index 7f44d1d..1bed07f 100644
+--- a/kexec/arch/mips/kexec-mips.c
++++ b/kexec/arch/mips/kexec-mips.c
+@@ -20,6 +20,7 @@
+ #include "../../kexec-syscall.h"
+ #include "kexec-mips.h"
+ #include <arch/options.h>
++#include <unistd.h>
+ 
+ /* Currently not used but required by top-level fs2dt code */
+ off_t initrd_base = 0;
+@@ -74,6 +75,7 @@ int get_memory_ranges(struct memory_range **range, int *ranges,
+ struct file_type file_type[] = {
+ 	{"elf-mips", elf_mips_probe, elf_mips_load, elf_mips_usage},
+ 	{"meraki-part-mips", meraki_part_mips_probe, meraki_part_mips_load, meraki_part_mips_usage},
++	{"stage2", meraki_stage2_mips_probe, meraki_stage2_mips_load, elf_mips_usage},
+ };
+ int file_types = sizeof(file_type) / sizeof(file_type[0]);
+ 
+@@ -84,6 +86,7 @@ void arch_usage(void)
+ 	"    --append=STRING       Set the kernel command line to STRING.\n"
+ 	"    --dtb=FILE            Use FILE as the device tree blob.\n"
+ 	"    --initrd=FILE         Use FILE as initial ramdisk.\n"
++	"    --stage2-load         Address at which to load stage2 image.\n"
+ 	);
+ }
+ 
+@@ -103,6 +106,7 @@ int arch_process_options(int argc, char **argv)
+ 	};
+ 	static const char short_options[] = KEXEC_ARCH_OPT_STR;
+ 	int opt;
++	char *endptr;
+ 
+ 	while ((opt = getopt_long(argc, argv, short_options,
+ 				  options, 0)) != -1) {
+@@ -116,6 +120,15 @@ int arch_process_options(int argc, char **argv)
+ 		case OPT_RAMDISK:
+ 			arch_options.initrd_file = optarg;
+ 			break;
++		case OPT_STAGE2:
++			arch_options.stage2_loadaddr = (void *)strtoul(optarg, &endptr, 0);
++			if (*endptr) {
++				fprintf(stderr,
++					"Bad option value in --stage2-load=%s\n",
++					optarg);
++				arch_usage();
++				return 1;
++			}
+ 		default:
+ 			break;
+ 		}
+diff --git a/kexec/arch/mips/kexec-mips.h b/kexec/arch/mips/kexec-mips.h
+index 6a331ee..53ebc1b 100644
+--- a/kexec/arch/mips/kexec-mips.h
++++ b/kexec/arch/mips/kexec-mips.h
+@@ -21,12 +21,16 @@ int meraki_part_mips_probe(const char *buf, off_t len);
+ int meraki_part_mips_load(int argc, char **argv, const char *buf, off_t len,
+ 	struct kexec_info *info);
+ void meraki_part_mips_usage(void);
++int meraki_stage2_mips_probe(const char *buf, off_t len);
++int meraki_stage2_mips_load(int argc, char **argv, const char *buf, off_t len,
++	struct kexec_info *info);
+ 
+ struct arch_options_t {
+ 	char *command_line;
+ 	char *dtb_file;
+ 	char *initrd_file;
+ 	int core_header_type;
++	void *stage2_loadaddr;
+ };
+ 
+ extern struct memory_ranges usablemem_rgns;
+-- 
+2.14.2
+

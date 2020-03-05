@@ -1,0 +1,12 @@
+--- ruby-1.8.4/ext/openssl/openssl_missing.h	2005-04-15 12:16:18.000000000 -0700
++++ ruby-1.8.4.new/ext/openssl/openssl_missing.h	2010-09-28 18:08:13.760104165 -0700
+@@ -116,8 +116,8 @@
+ int BN_mod_sqr(BIGNUM *r, const BIGNUM *a, const BIGNUM *m, BN_CTX *ctx);
+ int BN_mod_add(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx);
+ int BN_mod_sub(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx);
+-int BN_rand_range(BIGNUM *r, BIGNUM *range);
+-int BN_pseudo_rand_range(BIGNUM *r, BIGNUM *range);
++	//int BN_rand_range(BIGNUM *r, BIGNUM *range);
++	//int BN_pseudo_rand_range(BIGNUM *r, BIGNUM *range);
+ char *CONF_get1_default_config_file(void);
+ int PEM_def_callback(char *buf, int num, int w, void *key);

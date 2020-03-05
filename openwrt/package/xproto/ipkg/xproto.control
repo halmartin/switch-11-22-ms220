@@ -1,0 +1,5 @@
+Package: xproto
+Priority: optional
+Section: x11
+Depends:
+Description: X protocol headers

@@ -1,0 +1,30 @@
+From 317a5d92bc357aba2c993ee78b4c089b7539fcc6 Mon Sep 17 00:00:00 2001
+From: Stephen Warren <swarren@nvidia.com>
+Date: Fri, 28 Sep 2012 12:39:22 -0600
+Subject: [PATCH 61/98] dtc: zero out new label objects
+
+Without this, new->deleted may be left set to some random value, which
+may then cause future label references to fail to locate the label. The
+code that allocates properties and nodes already contains the equivalent
+memset().
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ livetree.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/livetree.c b/livetree.c
+index e856662..b61465f 100644
+--- a/livetree.c
++++ b/livetree.c
+@@ -36,6 +36,7 @@ void add_label(struct label **labels, char *label)
+ 		}
+ 
+ 	new = xmalloc(sizeof(*new));
++	memset(new, 0, sizeof(*new));
+ 	new->label = label;
+ 	new->next = *labels;
+ 	*labels = new;
+-- 
+1.8.1.2
+

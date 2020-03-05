@@ -1,0 +1,43 @@
+From 10d87313d0a4d35bb1eeb81881f5fcc691904cfc Mon Sep 17 00:00:00 2001
+From: sdarayan <sdarayan@meraki.com>
+Date: Mon, 8 May 2017 12:39:50 -0700
+Subject: [PATCH] pcm: (Patch) Makefile
+
+The pcm utility has a Makefile that is geared for compilation on
+a host machine without any real option for cross compilation. In
+particular, the Makefile has assumptions for compilation defines
+based on hardcoded values of a host machine.
+
+This patch reworks that.
+
+Doing this, pcm is quickly portable for monitoring performance on
+x86 platforms.
+
+For more information regarding pcm, please visit the following.
+~ https://github.com/opcm/pcm
+---
+ Makefile | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 3465dad..d54ff56 100644
+--- a/Makefile
++++ b/Makefile
+@@ -12,11 +12,13 @@ klocwork: $(EXE)
+ CXXFLAGS += -Wall -g -O3 -Wno-unknown-pragmas
+ 
+ # rely on Linux perf support (user needs CAP_SYS_ADMIN privileges), comment out to disable
+-ifneq ($(wildcard /usr/include/linux/perf_event.h),)
++ifneq ($(wildcard $(STAGING_DIR)/usr/include/linux/perf_event.h),)
+ CXXFLAGS += -DPCM_USE_PERF
+ endif
+ 
++ifeq ($(UNAME),)
+ UNAME:=$(shell uname)
++endif
+ 
+ ifeq ($(UNAME), Linux)
+ LIB= -pthread -lrt
+-- 
+1.9.1
+

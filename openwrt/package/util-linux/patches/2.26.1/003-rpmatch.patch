@@ -1,0 +1,24 @@
+commit 32ff2f2a9c7b1df520ffe744782955763c35fb1e
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Tue Jan 20 12:59:13 2015 -0800
+
+    Remove dependency on rpmatch
+    
+    rpmatch is missing from uClibc
+
+diff --git a/disk-utils/sfdisk.c b/disk-utils/sfdisk.c
+index 499dd8f..dea81bc 100644
+--- a/disk-utils/sfdisk.c
++++ b/disk-utils/sfdisk.c
+@@ -165,7 +165,10 @@ static int ask_callback(struct fdisk_context *cxt,
+ 			rc = get_user_reply(_(" [Y]es/[N]o: "), buf, sizeof(buf));
+ 			if (rc)
+ 				break;
+-			x = rpmatch(buf);
++                        x = ( (buf == NULL)? -1 :
++                              (*buf == 'y' || *buf == 'Y')? 1 :
++                              (*buf == 'n' || *buf == 'N')? 0 :
++                              -1 );
+ 			if (x == 1 || x == 0) {
+ 				fdisk_ask_yesno_set_result(ask, x);
+ 				break;

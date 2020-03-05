@@ -1,0 +1,138 @@
+diff --git a/src/racoon/handler.c b/src/racoon/handler.c
+index a795ee6..d6bd19e 100644
+--- a/src/racoon/handler.c
++++ b/src/racoon/handler.c
+@@ -363,6 +363,7 @@ newph1()
+ 
+ #ifdef ENABLE_DPD
+ 	iph1->dpd_support = 0;
++	iph1->dpd_vid_sent = 0;
+ 	iph1->dpd_seq = 0;
+ 	iph1->dpd_fails = 0;
+ #endif
+diff --git a/src/racoon/handler.h b/src/racoon/handler.h
+index 45d596e..792548d 100644
+--- a/src/racoon/handler.h
++++ b/src/racoon/handler.h
+@@ -202,6 +202,7 @@ struct ph1handle {
+ 
+ #ifdef ENABLE_DPD
+ 	int		dpd_support;	/* Does remote supports DPD ? */
++	int		dpd_vid_sent;	/* Have we sent our DPD VID? */
+ 	u_int32_t	dpd_last_ack;
+ 	u_int32_t	dpd_seq;		/* DPD seq number to receive */
+ 	u_int8_t	dpd_fails;		/* number of failures */
+diff --git a/src/racoon/isakmp.c b/src/racoon/isakmp.c
+index 048ca71..61da766 100644
+--- a/src/racoon/isakmp.c
++++ b/src/racoon/isakmp.c
+@@ -897,7 +897,7 @@ ph1_main(iph1, msg)
+ #endif
+ #ifdef ENABLE_DPD
+ 		/* Schedule the r_u_there.... */
+-		if(iph1->dpd_support && iph1->rmconf->dpd_interval)
++		if(iph1->dpd_support && iph1->dpd_vid_sent && iph1->rmconf->dpd_interval)
+ 			isakmp_sched_r_u(iph1, 0);
+ #endif
+ 
+diff --git a/src/racoon/isakmp_agg.c b/src/racoon/isakmp_agg.c
+index 2e387fb..422661a 100644
+--- a/src/racoon/isakmp_agg.c
++++ b/src/racoon/isakmp_agg.c
+@@ -265,8 +265,10 @@ agg_i1send(iph1, msg)
+ #ifdef ENABLE_DPD
+ 	if(iph1->rmconf->dpd){
+ 		vid_dpd = set_vendorid(VENDORID_DPD);
+-		if (vid_dpd != NULL)
++		if (vid_dpd != NULL) {
+ 			plist = isakmp_plist_append(plist, vid_dpd, ISAKMP_NPTYPE_VID);
++                        iph1->dpd_vid_sent = 1;
++                }
+ 	}
+ #endif
+ 
+@@ -1218,8 +1220,10 @@ agg_r1send(iph1, msg)
+ #endif
+ 
+ #ifdef ENABLE_DPD
+-	if (vid_dpd)
++	if (vid_dpd) {
+ 		plist = isakmp_plist_append(plist, vid_dpd, ISAKMP_NPTYPE_VID);
++                iph1->dpd_vid_sent = 1;
++        }
+ #endif
+ 
+ 	iph1->sendbuf = isakmp_plist_set_all (&plist, iph1);
+diff --git a/src/racoon/isakmp_base.c b/src/racoon/isakmp_base.c
+index f37d51e..3ebffdc 100644
+--- a/src/racoon/isakmp_base.c
++++ b/src/racoon/isakmp_base.c
+@@ -234,8 +234,10 @@ base_i1send(iph1, msg)
+ #ifdef ENABLE_DPD
+ 	if (iph1->rmconf->dpd) {
+ 		vid_dpd = set_vendorid(VENDORID_DPD);
+-		if (vid_dpd != NULL)
++		if (vid_dpd != NULL) {
+ 			plist = isakmp_plist_append(plist, vid_dpd, ISAKMP_NPTYPE_VID); 
++                        iph1->dpd_vid_sent = 1;
++                }
+ 	}
+ #endif  
+ #ifdef ENABLE_NATT
+@@ -986,6 +988,7 @@ base_r1send(iph1, msg)
+ 		} else {
+ 			plist = isakmp_plist_append(plist, vid_dpd,
+ 			    ISAKMP_NPTYPE_VID);
++                        iph1->dpd_vid_sent = 1;
+ 		}
+ 	}
+ #endif
+diff --git a/src/racoon/isakmp_ident.c b/src/racoon/isakmp_ident.c
+index c9a9653..6777c04 100644
+--- a/src/racoon/isakmp_ident.c
++++ b/src/racoon/isakmp_ident.c
+@@ -199,9 +199,11 @@ ident_i1send(iph1, msg)
+ #ifdef ENABLE_DPD
+ 	if(iph1->rmconf->dpd){
+ 		vid_dpd = set_vendorid(VENDORID_DPD);
+-		if (vid_dpd != NULL)
++		if (vid_dpd != NULL) {
+ 			plist = isakmp_plist_append(plist, vid_dpd,
+ 			    ISAKMP_NPTYPE_VID);
++                        iph1->dpd_vid_sent = 1;
++                }
+ 	}
+ #endif
+ 
+@@ -1030,8 +1032,10 @@ ident_r1send(iph1, msg)
+ #ifdef ENABLE_DPD
+ 	if (iph1->dpd_support) {
+ 		vid_dpd = set_vendorid(VENDORID_DPD);
+-		if (vid_dpd != NULL)
++		if (vid_dpd != NULL) {
+ 			plist = isakmp_plist_append(plist, vid_dpd, ISAKMP_NPTYPE_VID);
++			iph1->dpd_vid_sent = 1;
++                }
+ 	}
+ #endif
+ #ifdef ENABLE_FRAG
+@@ -1853,6 +1857,7 @@ ident_ir3mx(iph1)
+             vid_dpd = set_vendorid(VENDORID_DPD);
+             if (vid_dpd != NULL) {
+                 plist = isakmp_plist_append(plist, vid_dpd, ISAKMP_NPTYPE_VID);
++                        iph1->dpd_vid_sent = 1;
+                 plog(LLV_DEBUG, LOCATION, NULL, "sending DPD vendor ID\n");
+             }
+         }
+diff --git a/src/racoon/isakmp_inf.c b/src/racoon/isakmp_inf.c
+index dada095..2aeb823 100644
+--- a/src/racoon/isakmp_inf.c
++++ b/src/racoon/isakmp_inf.c
+@@ -1582,6 +1582,7 @@ isakmp_sched_r_u(iph1, retry)
+ 
+ 
+ 	if(iph1->dpd_support == 0 ||
++           iph1->dpd_vid_sent == 0 ||
+ 	   iph1->rmconf->dpd_interval == 0)
+ 		return 0;
+ 

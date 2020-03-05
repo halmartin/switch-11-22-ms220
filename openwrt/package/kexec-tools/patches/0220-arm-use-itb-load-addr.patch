@@ -1,0 +1,219 @@
+From 1383e932eab88c19df962b82325800e37f8fbeee Mon Sep 17 00:00:00 2001
+From: aacharya <aacharya@meraki.net>
+Date: Wed, 6 Dec 2017 12:31:30 -0800
+Subject: [PATCH] use itb load addr
+
+---
+ kexec/arch/arm/include/arch/options.h |  2 ++
+ kexec/arch/arm/kexec-arm.h            |  4 +++-
+ kexec/arch/arm/kexec-fit-arm.c        | 33 ++++++++++++++++++++++++++-------
+ kexec/arch/arm/kexec-zImage-arm.c     | 17 ++++++++++++++++-
+ 4 files changed, 47 insertions(+), 9 deletions(-)
+
+diff --git a/kexec/arch/arm/include/arch/options.h b/kexec/arch/arm/include/arch/options.h
+index bbd6947..e37fc1f 100644
+--- a/kexec/arch/arm/include/arch/options.h
++++ b/kexec/arch/arm/include/arch/options.h
+@@ -12,6 +12,7 @@
+ #define OPT_PAGE_OFFSET	(OPT_ARCH_MAX+3)
+ #define OPT_REUSE_CMDLINE	(OPT_ARCH_MAX+4)
+ #define OPT_CONFIG	(OPT_ARCH_MAX+5)
++#define OPT_LOADADDR	(OPT_ARCH_MAX+6)
+ 
+ /* Options relevant to the architecture (excluding loader-specific ones),
+  * in this case none:
+@@ -47,6 +48,7 @@
+ 	{ "image-size",		1, 0, OPT_IMAGE_SIZE }, \
+ 	{ "page-offset",	1, 0, OPT_PAGE_OFFSET }, \
+ 	{ "reuse-cmdline",	0, 0, OPT_REUSE_CMDLINE }, \
++	{ "use-loadaddr",	0, 0, OPT_LOADADDR }, \
+ 	{ "config",			1, 0, OPT_CONFIG },
+ 
+ #define KEXEC_ALL_OPT_STR KEXEC_ARCH_OPT_STR "a:r:s:"
+diff --git a/kexec/arch/arm/kexec-arm.h b/kexec/arch/arm/kexec-arm.h
+index ad6bdc5..117d264 100644
+--- a/kexec/arch/arm/kexec-arm.h
++++ b/kexec/arch/arm/kexec-arm.h
+@@ -15,9 +15,11 @@ int zImage_arm_load(int argc, char **argv, const char *buf, off_t len,
+ void zImage_arm_usage(void);
+ int do_zImage_arm_load(struct kexec_info *info,
+ 		const void *kernel, off_t kernel_len,
++		const char *kernel_load,
+ 		const char *command_line, off_t command_line_len,
+ 		const char *initrd, off_t initrd_len,
+-		const char *dtb_buf, off_t dtb_len);
++		const char *initrd_load,
++		const char *dtb_buf, off_t dtb_len, const char *dtb_load);
+ 
+ int uImage_arm_probe(const char *buf, off_t len);
+ int uImage_arm_load(int argc, char **argv, const char *buf, off_t len,
+diff --git a/kexec/arch/arm/kexec-fit-arm.c b/kexec/arch/arm/kexec-fit-arm.c
+index e159681..6c9af16 100644
+--- a/kexec/arch/arm/kexec-fit-arm.c
++++ b/kexec/arch/arm/kexec-fit-arm.c
+@@ -51,18 +51,22 @@ void fit_arm_usage(void)
+ 		"    --command-line=STRING Set the kernel command line to STRING.\n"
+ 		"    --append=STRING       Set the kernel command line to STRING.\n"
+ 		"    --reuse-cmdline       Use kernel command line from running system.\n"
++		"    --use-loadaddr        Use load address specified in FIT.\n"
+ 		);
+ }
+ 
+-
+ static int do_fit_arm_load(struct kexec_info *info,
+ 			   const void *fit,  off_t data_len,
+ 			   const char *command_line,
+-			   const char *config_name)
++			   const char *config_name,
++			   const char loadaddr_config)
+ {
+ 	int images_offset;
+ 	int configs_offset;
+ 	int config_offset;
++	uint32_t kernel_load;
++	uint32_t ramdisk_load;
++	uint32_t dtb_load;
+ 	int len;
+ 	int result;
+ 	const char *kernel_name, *ramdisk_name, *dtb_name;
+@@ -122,17 +126,17 @@ static int do_fit_arm_load(struct kexec_info *info,
+ 	}
+ 
+ 	if (find_fit_subimage(fit, images_offset, kernel_name,
+-			      &kernel_data, &kernel_len, NULL, NULL, NULL, "arm") < 0)
++			      &kernel_data, &kernel_len, &kernel_load, NULL, NULL, "arm") < 0)
+ 		return -1;
+ 
+ 	if (ramdisk_name)
+ 		if (find_fit_subimage(fit, images_offset, ramdisk_name,
+-				      &ramdisk_data, &ramdisk_len, NULL, NULL, NULL, "arm") < 0)
++				      &ramdisk_data, &ramdisk_len, &ramdisk_load, NULL, NULL, "arm") < 0)
+ 			return -1;
+ 
+ 	if (dtb_name)
+ 		if (find_fit_subimage(fit, images_offset, dtb_name,
+-				      &dtb_data, &dtb_len, NULL, NULL, NULL, "arm") < 0)
++				      &dtb_data, &dtb_len, &dtb_load, NULL, NULL, "arm") < 0)
+ 			return -1;
+ 
+ 	img_command_line = (const char*)
+@@ -146,15 +150,24 @@ static int do_fit_arm_load(struct kexec_info *info,
+ 		full_command_line_len = 1;
+ 	}
+ 
++	if (!loadaddr_config) {
++		kernel_load = 0;
++		ramdisk_load = 0;
++		dtb_load = 0;
++	}
++
+ 	result = do_zImage_arm_load(info,
+ 				    (const char*)kernel_data,
+ 				    kernel_len,
++				    (const char*)kernel_load,
+ 				    full_command_line,
+ 				    full_command_line_len,
+ 				    (const char*)ramdisk_data,
+ 				    ramdisk_len,
++				    (const char*)ramdisk_load,
+ 				    (const char*)dtb_data,
+-				    dtb_len);
++				    dtb_len,
++				    (const char*)dtb_load);
+ 
+ 	free((void *)full_command_line);
+ 	return result;
+@@ -168,6 +181,7 @@ int fit_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 	char *tmp_cmdline = NULL;
+ 	const char *append = NULL;
+ 	char *config = NULL;
++	char loadaddr_config = 0;
+ 	int opt;
+ 	int result;
+ 
+@@ -177,6 +191,7 @@ int fit_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 		{ "append",		1, 0, OPT_APPEND },
+ 		{ "reuse-cmdline",	0, 0, OPT_REUSE_CMDLINE },
+ 		{ "config",             1, 0, OPT_CONFIG },
++		{ "use-loadaddr",       0, 0, OPT_LOADADDR },
+ 		{ 0,                    0, 0, 0},
+ 	};
+ 	static const char short_options[] = KEXEC_ARCH_OPT_STR "d";
+@@ -197,6 +212,9 @@ int fit_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 		case OPT_CONFIG:
+ 			config = optarg;
+ 			break;
++		case OPT_LOADADDR:
++			loadaddr_config = 1;
++			break;
+ 		}
+ 	}
+ 	command_line = concat_cmdline(tmp_cmdline, append);
+@@ -207,7 +225,8 @@ int fit_arm_load(int argc, char **argv, const char *buf, off_t len,
+ 	result = do_fit_arm_load(info,
+ 				 buf, len,
+ 				 command_line,
+-				 config);
++				 config,
++				 loadaddr_config);
+ 	free(command_line);
+ 	if (config != NULL)
+ 		free(config);
+diff --git a/kexec/arch/arm/kexec-zImage-arm.c b/kexec/arch/arm/kexec-zImage-arm.c
+index 4fa9b26..c380ab3 100644
+--- a/kexec/arch/arm/kexec-zImage-arm.c
++++ b/kexec/arch/arm/kexec-zImage-arm.c
+@@ -347,9 +347,12 @@ static int setup_dtb_prop(char **bufp, off_t *sizep, int parentoffset,
+ 
+ int do_zImage_arm_load(struct kexec_info *info,
+         const void *kernel, off_t kernel_len,
++        const char *kernel_load,
+         const char *command_line, off_t command_line_len,
+         const char *initrd, off_t initrd_len,
+-        const char *dtb_buf, off_t dtb_len)
++        const char *initrd_load,
++        const char *dtb_buf, off_t dtb_len,
++        const char *dtb_load)
+ {
+ 	unsigned long base;
+ 	off_t dtb_offset;
+@@ -357,12 +360,20 @@ int do_zImage_arm_load(struct kexec_info *info,
+ 	char *dtb_buf_cpy;
+ 	off_t dtb_len_cpy;
+ 
++	if (kernel_load) {
++		base = kernel_load;
++		extra_size = 0x0;
++	} else {
+ 	base = locate_hole(info, kernel_len + extra_size, 0, 0,
+ 			   ULONG_MAX, INT_MAX);
++	}
+ 
+ 	if (base == ULONG_MAX)
+ 		return -1;
+ 
++	if (initrd_load)
++		initrd_base = initrd_load;
++	else
+ 	initrd_base = base + _ALIGN(kernel_len * 4, getpagesize());
+ 
+ 	/*
+@@ -404,11 +415,15 @@ int do_zImage_arm_load(struct kexec_info *info,
+ 		return -1;
+ 	}
+ 
++	if (dtb_load) {
++		dtb_offset = dtb_load;
++	} else {
+ 	/* Stick the dtb at the end of the initrd and page
+ 	 * align it.
+ 	 */
+ 	dtb_offset = initrd_base + initrd_len + getpagesize();
+ 	dtb_offset = _ALIGN_DOWN(dtb_offset, getpagesize());
++	}
+ 
+ 	add_segment(info, dtb_buf_cpy, dtb_len_cpy,
+ 				dtb_offset, dtb_len_cpy);
+-- 
+2.14.2
+

@@ -1,0 +1,12 @@
+config BR2_PACKAGE_LIBSOUP
+	prompt "libsoup............................. HTTP client/server library for GNOME"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  libsoup is an HTTP client/server library for GNOME. It uses GObjects and the
+	  glib main loop, to integrate well with GNOME applications, and also has a
+	  synchronous API, for use in threaded applications.
+
+	  https://wiki.gnome.org/Projects/libsoup
+
+	  Depends: glib2, intltool, libxml2

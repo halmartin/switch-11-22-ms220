@@ -1,0 +1,5 @@
+Package: randrproto
+Priority: optional
+Section: x11
+Depends:
+Description: X rotate and resize extension

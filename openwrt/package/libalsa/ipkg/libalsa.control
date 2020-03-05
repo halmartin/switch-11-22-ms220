@@ -1,0 +1,4 @@
+Package: libalsa
+Priority: optional
+Section: libs
+Description: (Advanced Linux Sound Architecture) library.

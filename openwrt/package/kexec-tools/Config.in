@@ -1,0 +1,26 @@
+config BR2_PACKAGE_KEXEC_TOOLS
+	prompt "kexec tools ...................... allow kexec"
+	tristate
+	default n
+	help
+	
+	  kexec tools...
+
+menu "Configuration"
+	depends on BR2_PACKAGE_KEXEC_TOOLS
+
+config BR2_PACKAGE_KEXEC_TOOLS_STATIC_IN_STAGING
+	prompt "kexec (static in staging) ........ kexec for initrd"
+	bool
+	default n
+	help
+	  put kexec-static in staging /usr/sbin for initrd
+
+config KEXEC_TOOLS_kdump
+	bool
+	prompt "kdump support"
+	default n
+	help
+	  Include the kdump utility.
+
+endmenu

@@ -1,0 +1,38 @@
+--- ipsec-tools-0.8.0/src/racoon/isakmp_cfg.c	2010-09-21 06:14:17.000000000 -0700
++++ ipsec-tools-0.8.0.new/src/racoon/isakmp_cfg.c	2011-12-11 15:24:37.400277958 -0800
+@@ -38,7 +38,7 @@
+ #include <sys/socket.h>
+ #include <sys/queue.h>
+ 
+-#include <utmpx.h>
++#include <utmp.h>
+ #if defined(__APPLE__) && defined(__MACH__)
+ #include <util.h>
+ #endif
+@@ -1661,7 +1661,7 @@
+ 	int inout;
+ {
+ 	int error = 0;
+-	struct utmpx ut;
++	struct utmp ut;
+ 	char addr[NI_MAXHOST];
+ 	
+ 	if (usr == NULL || usr[0]=='\0') {
+@@ -1686,7 +1686,7 @@
+ 			"Accounting : '%s' logging on '%s' from %s.\n",
+ 			ut.ut_user, ut.ut_id, addr);
+ 
+-		pututxline(&ut);
++		pututline(&ut);
+ 
+ 		break;
+ 	case ISAKMP_CFG_LOGOUT:	
+@@ -1696,7 +1696,7 @@
+ 			"Accounting : '%s' unlogging from '%s'.\n",
+ 			usr, ut.ut_id);
+ 
+-		pututxline(&ut);
++		pututline(&ut);
+ 
+ 		break;
+ 	default:

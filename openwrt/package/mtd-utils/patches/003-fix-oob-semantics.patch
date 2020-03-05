@@ -1,0 +1,109 @@
+diff -u b/nanddump.c b/nanddump.c
+--- b/nanddump.c
++++ b/nanddump.c
+@@ -47,8 +47,8 @@
+ "-f file    --file=file          Dump to file\n"
+ "-l length  --length=length      Length\n"
+ "-n         --noecc              Read without error correction\n"
+-"           --omitoob            Omit OOB data (default)\n"
+-"-o         --oob                Dump OOB data\n"
++"-o         --omitoob            Omit OOB data (default)\n"
++"           --oob                Dump OOB data\n"
+ "-p         --prettyprint        Print nice (hexdump)\n"
+ "-q         --quiet              Don't display progress and status messages\n"
+ "-s addr    --startaddress=addr  Start address\n"
+@@ -56,7 +56,8 @@
+ "--bb=METHOD, where METHOD can be `padbad', `dumpbad', or `skipbad':\n"
+ "    padbad:  dump flash data, substituting 0xFF for any bad blocks\n"
+ "    dumpbad: dump flash data, including any bad blocks\n"
+-"    skipbad: dump good data, completely skipping any bad blocks (default)\n",
++"    skipbad: dump good data, completely skipping any bad blocks (default)\n"
++"    omitbad: omit bad blocks from the dump (DEPRECATED)\n",
+ 	PROGRAM_NAME);
+ 	exit(status);
+ }
+@@ -92,25 +93,27 @@
+ 	padbad,   // dump flash data, substituting 0xFF for any bad blocks
+ 	dumpbad,  // dump flash data, including any bad blocks
+ 	skipbad,  // dump good data, completely skipping any bad blocks
++	omitbad,  // dump flash data, substituting nothing for any bad blocks (DEPRECATED)
+ } bb_method = skipbad;
+ 
+ static void process_options(int argc, char * const argv[])
+ {
+ 	int error = 0;
+-	bool oob_default = true;
++	bool bb_default = true, oob_default = true;
+ 
+ 	for (;;) {
+ 		int option_index = 0;
+-		static const char short_options[] = "hs:f:l:opqnca";
++		static const char short_options[] = "bhs:f:l:opqnca";
+ 		static const struct option long_options[] = {
+ 			{"version", no_argument, 0, 0},
+ 			{"bb", required_argument, 0, 0},
+-			{"omitoob", no_argument, 0, 0},
++			{"oob", no_argument, 0, 0},
+ 			{"help", no_argument, 0, 'h'},
+ 			{"forcebinary", no_argument, 0, 'a'},
+ 			{"canonicalprint", no_argument, 0, 'c'},
+ 			{"file", required_argument, 0, 'f'},
+-			{"oob", no_argument, 0, 'o'},
++			{"omitoob", no_argument, 0, 'o'},
++			{"omitbad", no_argument, 0, 'b'}, //DEPRECATED
+ 			{"prettyprint", no_argument, 0, 'p'},
+ 			{"startaddress", required_argument, 0, 's'},
+ 			{"length", required_argument, 0, 'l'},
+@@ -139,19 +142,32 @@
+ 							bb_method = dumpbad;
+ 						else if (!strcmp(optarg, "skipbad"))
+ 							bb_method = skipbad;
++						else if (!strcmp(optarg, "omitbad"))
++							bb_method = omitbad;
+ 						else
+ 							error++;
+ 						break;
+-					case 2: /* --omitoob */
++					case 2: /* --oob */
+ 						if (oob_default) {
+ 							oob_default = false;
+-							omitoob = true;
++							omitoob = false;
+ 						} else {
+ 							errmsg_die("--oob and --oomitoob are mutually exclusive");
+ 						}
+ 						break;
+ 				}
+ 				break;
++			case 'b':
++				/* Check if bb_method was already set explicitly */
++				if (bb_default) {
++					bb_default = false;
++					bb_method = omitbad;
++					warnmsg("--omitbad was deprecated in favor of --bb=skipbad.");
++				} else {
++					error++;
++					errmsg_die("--bb and --omitbad are mutually exclusive");
++				}
++				break;
+ 			case 's':
+ 				start_addr = simple_strtoll(optarg, &error);
+ 				break;
+@@ -164,7 +180,7 @@
+ 			case 'o':
+ 				if (oob_default) {
+ 					oob_default = false;
+-					omitoob = false;
++					omitoob = true;
+ 				} else {
+ 					errmsg_die("--oob and --oomitoob are mutually exclusive");
+ 				}
+@@ -412,6 +428,8 @@
+ 					end_addr = mtd.size;
+ 				continue;
+ 			}
++			if (bb_method == omitbad)
++				continue;
+ 			memset(readbuf, 0xff, bs);
+ 		} else {
+ 			/* Read page data and exit on failure */

@@ -1,0 +1,4 @@
+Package: mdadm
+Priority: optional
+Section: sys
+Description: mdadm

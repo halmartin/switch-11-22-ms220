@@ -1,0 +1,5 @@
+Package: json-glib
+Priority: optional
+Section: libs
+Description: JSON library built using GLIB
+Depends: glib2

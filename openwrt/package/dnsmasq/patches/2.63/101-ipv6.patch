@@ -1,0 +1,10 @@
+--- a/src/config.h	2012-08-16 06:04:05.000000000 -0700
++++ b/src/config.h	2012-09-05 19:25:47.895328853 -0700
+@@ -262,6 +262,7 @@
+ 
+ #if defined(INET6_ADDRSTRLEN) && defined(IPV6_V6ONLY)
+ #  define HAVE_IPV6
++#  define IPV6_V6ONLY  26
+ #  define ADDRSTRLEN INET6_ADDRSTRLEN
+ #elif defined(INET_ADDRSTRLEN)
+ #  undef HAVE_IPV6

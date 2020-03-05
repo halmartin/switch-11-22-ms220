@@ -1,0 +1,119 @@
+From cc2c178727cdeca4eb9756637c2e09e50e0856e7 Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Wed, 10 Apr 2013 14:29:07 -0400
+Subject: [PATCH 81/98] utilfdt_read: pass back up the length of data read
+
+For a follow up commit, we want to be able to scan the buffer that was
+returned to us.  In order to do that safely, we need to know how big
+the buffer actually is, so pass that back if requested.
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ fdtget.c          | 2 +-
+ fdtput.c          | 2 +-
+ tests/testutils.c | 2 +-
+ util.c            | 8 +++++---
+ util.h            | 6 ++++--
+ 5 files changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/fdtget.c b/fdtget.c
+index c2fbab2..374bee2 100644
+--- a/fdtget.c
++++ b/fdtget.c
+@@ -254,7 +254,7 @@ static int do_fdtget(struct display_info *disp, const char *filename,
+ 	const char *prop;
+ 	int i, node;
+ 
+-	blob = utilfdt_read(filename);
++	blob = utilfdt_read(filename, NULL);
+ 	if (!blob)
+ 		return -1;
+ 
+diff --git a/fdtput.c b/fdtput.c
+index f2197f5..572d6da 100644
+--- a/fdtput.c
++++ b/fdtput.c
+@@ -239,7 +239,7 @@ static int do_fdtput(struct display_info *disp, const char *filename,
+ 	char *blob;
+ 	int len, ret = 0;
+ 
+-	blob = utilfdt_read(filename);
++	blob = utilfdt_read(filename, NULL);
+ 	if (!blob)
+ 		return -1;
+ 
+diff --git a/tests/testutils.c b/tests/testutils.c
+index f185133..67b39b0 100644
+--- a/tests/testutils.c
++++ b/tests/testutils.c
+@@ -160,7 +160,7 @@ int nodename_eq(const char *s1, const char *s2)
+ void *load_blob(const char *filename)
+ {
+ 	char *blob;
+-	int ret = utilfdt_read_err(filename, &blob);
++	int ret = utilfdt_read_err(filename, &blob, NULL);
+ 
+ 	if (ret)
+ 		CONFIG("Couldn't open blob from \"%s\": %s", filename,
+diff --git a/util.c b/util.c
+index 12f0614..c689ea7 100644
+--- a/util.c
++++ b/util.c
+@@ -197,7 +197,7 @@ char get_escape_char(const char *s, int *i)
+ 	return val;
+ }
+ 
+-int utilfdt_read_err(const char *filename, char **buffp)
++int utilfdt_read_err(const char *filename, char **buffp, off_t *len)
+ {
+ 	int fd = 0;	/* assume stdin */
+ 	char *buf = NULL;
+@@ -238,13 +238,15 @@ int utilfdt_read_err(const char *filename, char **buffp)
+ 		free(buf);
+ 	else
+ 		*buffp = buf;
++	if (len)
++		*len = bufsize;
+ 	return ret;
+ }
+ 
+-char *utilfdt_read(const char *filename)
++char *utilfdt_read(const char *filename, off_t *len)
+ {
+ 	char *buff;
+-	int ret = utilfdt_read_err(filename, &buff);
++	int ret = utilfdt_read_err(filename, &buff, len);
+ 
+ 	if (ret) {
+ 		fprintf(stderr, "Couldn't open blob from '%s': %s\n", filename,
+diff --git a/util.h b/util.h
+index 543a173..3c20b15 100644
+--- a/util.h
++++ b/util.h
+@@ -80,9 +80,10 @@ char get_escape_char(const char *s, int *i);
+  * stderr.
+  *
+  * @param filename	The filename to read, or - for stdin
++ * @param len		If non-NULL, the amount of data we managed to read
+  * @return Pointer to allocated buffer containing fdt, or NULL on error
+  */
+-char *utilfdt_read(const char *filename);
++char *utilfdt_read(const char *filename, off_t *len);
+ 
+ /**
+  * Read a device tree file into a buffer. Does not report errors, but only
+@@ -91,9 +92,10 @@ char *utilfdt_read(const char *filename);
+  *
+  * @param filename	The filename to read, or - for stdin
+  * @param buffp		Returns pointer to buffer containing fdt
++ * @param len		If non-NULL, the amount of data we managed to read
+  * @return 0 if ok, else an errno value representing the error
+  */
+-int utilfdt_read_err(const char *filename, char **buffp);
++int utilfdt_read_err(const char *filename, char **buffp, off_t *len);
+ 
+ 
+ /**
+-- 
+1.8.1.2
+

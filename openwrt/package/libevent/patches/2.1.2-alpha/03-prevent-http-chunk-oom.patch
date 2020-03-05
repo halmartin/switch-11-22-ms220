@@ -1,0 +1,78 @@
+diff -urN libevent-2.1.1-alpha/http.c libevent-2.1.1-patch/http.c
+--- libevent-2.1.1-alpha/http.c	2012-11-10 13:28:39.915807917 -0800
++++ libevent-2.1.1-patch/http.c	2012-11-10 13:31:35.239102981 -0800
+@@ -897,14 +897,18 @@
+ 			return DATA_CORRUPTED;
+ 		}
+ 
+-		/* don't have enough to complete a chunk; wait for more */
++		/* don't have enough to complete a chunk; wait for more
+ 		if (req->ntoread > 0 && buflen < (ev_uint64_t)req->ntoread)
+ 			return (MORE_DATA_EXPECTED);
++		*/
+ 
+ 		/* Completed chunk */
+-		evbuffer_remove_buffer(buf, req->input_buffer, (size_t)req->ntoread);
+-		req->ntoread = -1;
+-		if (req->chunk_cb != NULL) {
++		size_t readlen = evbuffer_remove_buffer(buf, req->input_buffer, (size_t)req->ntoread);
++		if (req->ntoread > 0)
++			req->ntoread -= readlen;
++		if (req->ntoread == 0)
++			req->ntoread = -1;
++		if (req->chunk_cb != NULL && (req->ntoread < 0 || !(req->flags & EVHTTP_REQFLAG_BUFFER_CHUNK))) {
+ 			req->flags |= EVHTTP_REQ_DEFER_FREE;
+ 			(*req->chunk_cb)(req, req->cb_arg);
+ 			evbuffer_drain(req->input_buffer,
+@@ -3703,6 +3707,13 @@
+ }
+ 
+ void
++evhttp_request_set_flags(struct evhttp_request *req, unsigned flags)
++{
++	if (flags & EVHTTP_REQFLAG_BUFFER_CHUNK)
++		req->flags |= EVHTTP_REQFLAG_BUFFER_CHUNK;
++}
++
++void
+ evhttp_request_free(struct evhttp_request *req)
+ {
+ 	if ((req->flags & EVHTTP_REQ_DEFER_FREE) != 0) {
+diff -urN libevent-2.1.1-alpha/include/event2/http.h libevent-2.1.1-patch/include/event2/http.h
+--- libevent-2.1.1-alpha/include/event2/http.h	2012-11-10 13:28:39.915807917 -0800
++++ libevent-2.1.1-patch/include/event2/http.h	2012-11-10 13:23:29.388145353 -0800
+@@ -491,6 +491,21 @@
+ void evhttp_request_set_chunked_cb(struct evhttp_request *,
+     void (*cb)(struct evhttp_request *, void *));
+ 
++/**
++ * Set flags on the request.  See EVHTTP_REQFLAG_* for more information.
++ * @param flags Zero or more EVHTTP_REQFLAG_* flags to set for this request.
++ */
++void evhttp_request_set_flags(struct evhttp_request *, unsigned flags);
++
++/** Only deliver callbacks for complete HTTP chunks.
++ *
++ * This causes the http library to buffer HTTP content until a complete HTTP
++ * chunk has been received.  It is unsafe to set this flag on a publically
++ * accessible webserver if the max_body_size option is not set, because a client
++ * could send an arbitrarily large HTTP chunk, running the server out of memory.
++ */
++#define EVHTTP_REQFLAG_BUFFER_CHUNK 0x20
++
+ /** Frees the request object and removes associated events. */
+ void evhttp_request_free(struct evhttp_request *req);
+ 
+diff -urN libevent-2.1.1-alpha/include/event2/http_struct.h libevent-2.1.1-patch/include/event2/http_struct.h
+--- libevent-2.1.1-alpha/include/event2/http_struct.h	2012-02-29 12:54:36.000000000 -0800
++++ libevent-2.1.1-patch/include/event2/http_struct.h	2012-11-10 13:25:26.401003160 -0800
+@@ -77,6 +77,9 @@
+ #define EVHTTP_REQ_DEFER_FREE		0x0008
+ /** The request should be freed upstack */
+ #define EVHTTP_REQ_NEEDS_FREE		0x0010
++/** From http.h:
++#define EVHTTP_REQFLAG_BUFFER_CHUNK	0x0020
++*/
+ 
+ 	struct evkeyvalq *input_headers;
+ 	struct evkeyvalq *output_headers;

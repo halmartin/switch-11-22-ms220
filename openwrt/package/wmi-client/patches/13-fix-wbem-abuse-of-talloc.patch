@@ -1,0 +1,139 @@
+--- a/Samba/source/wmi/wbemdata.c	2012-05-02 20:59:05.117801731 -0700
++++ a/Samba/source/wmi/wbemdata.c	2012-05-02 21:01:17.154984532 -0700
+@@ -233,8 +233,8 @@
+ 	uint32_t i;
+ 
+ 	dst->count = src->count;
++	dst->item = talloc_array(mem_ctx, CIMSTRING, src->count);
+ 	for (i = 0; i < src->count; ++i){
+-		dst->item = talloc_zero(mem_ctx, CIMSTRING);
+ 		dst->item[i] = talloc_strdup(mem_ctx, src->item[i]);
+ 	}
+ }
+@@ -244,8 +244,8 @@
+ 	uint32_t i;
+ 
+ 	dst->count = src->count;
++	dst->item = talloc_array(mem_ctx, struct WbemQualifier *, src->count);
+ 	for (i = 0; i < src->count; ++i) {
+-		dst->item = talloc_zero(mem_ctx, struct WbemQualifier*);
+ 		duplicate_WbemQualifier(mem_ctx, src->item[i], dst->item[i]);
+ 	}
+ }
+@@ -365,65 +365,71 @@
+ 	uint32_t i;
+ 
+ 	switch (cimtype & CIM_TYPEMASK) {
+-        case CIM_SINT8:
+-        case CIM_UINT8:
+-        case CIM_SINT16:
+-        case CIM_UINT16:
+-        case CIM_SINT32:
+-        case CIM_UINT32:
+-        case CIM_SINT64:
+-        case CIM_UINT64:
+-        case CIM_REAL32:
+-        case CIM_REAL64:
+-        case CIM_BOOLEAN:
+-		*dst = *src;
+-		break;
++        case CIM_SINT8:   dst->v_sint8 = src->v_sint8; break;
++        case CIM_UINT8:   dst->v_uint8 = src->v_uint8; break;
++        case CIM_SINT16:  dst->v_sint16 = src->v_sint16; break;
++        case CIM_UINT16:  dst->v_uint16 = src->v_uint16; break;
++        case CIM_SINT32:  dst->v_sint32 = src->v_sint32; break;
++        case CIM_UINT32:  dst->v_uint32 = src->v_uint32; break;
++        case CIM_SINT64:  dst->v_sint64 = src->v_sint64; break;
++        case CIM_UINT64:  dst->v_uint64 = src->v_uint64; break;
++        case CIM_REAL32:  dst->v_real32 = src->v_real32; break;
++        case CIM_REAL64:  dst->v_real64 = src->v_real64; break;
++        case CIM_BOOLEAN: dst->v_boolean = src->v_boolean; break;
++
+         case CIM_STRING:
+         case CIM_DATETIME:
+         case CIM_REFERENCE:
+ 		dst->v_string = talloc_strdup(mem_ctx, src->v_string);
+ 		break;
++
+ 	case CIM_OBJECT:
+ 		if(src->v_object){
+ 			dst->v_object = talloc_zero(mem_ctx, struct WbemClassObject);
+ 			duplicate_WbemClassObject(dst->v_object, src->v_object, dst->v_object);
+ 		}
+ 		break;
+-        case CIM_ARR_SINT8:
+-	case CIM_ARR_UINT8:
+-		if(src->a_uint8){
+-		  dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
+-		  dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, src->a_uint8->count);
+-		}
+-		break;
+-        case CIM_ARR_SINT16:
+-        case CIM_ARR_UINT16:
+-        case CIM_ARR_BOOLEAN:
+-		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
+-		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 2*src->a_uint8->count);
+-		break;
+-        case CIM_ARR_SINT32:
+-        case CIM_ARR_UINT32:
+-        case CIM_ARR_REAL32:
+-		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
+-		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 4*src->a_uint8->count);
+-		break;
+-        case CIM_ARR_SINT64:
+-        case CIM_ARR_UINT64:
+-	case CIM_ARR_REAL64:
+-		dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
+-		dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 8*src->a_uint8->count);
+-		break;
++
++#define ARRAY_DUP(dst, src, type, member) do { \
++	if (src->member) { \
++		dst->member = (type*)talloc(mem_ctx, type); \
++		if (dst->member) { \
++			dst->member->count = src->member->count; \
++			dst->member->item = talloc_memdup(dst->member, src->member->item, sizeof(*src->member->item) * src->member->count); \
++		} \
++	} \
++} while(0)
++
++        case CIM_ARR_SINT8: ARRAY_DUP(dst, src, struct arr_int8, a_sint8); break;
++        case CIM_ARR_SINT16: ARRAY_DUP(dst, src, struct arr_int16, a_sint16); break;
++        case CIM_ARR_SINT32: ARRAY_DUP(dst, src, struct arr_int32, a_sint32); break;
++        case CIM_ARR_SINT64: ARRAY_DUP(dst, src, struct arr_dlong, a_sint64); break;
++
++        case CIM_ARR_UINT8: ARRAY_DUP(dst, src, struct arr_uint8, a_uint8); break;
++        case CIM_ARR_UINT16: ARRAY_DUP(dst, src, struct arr_uint16, a_uint16); break;
++        case CIM_ARR_UINT32: ARRAY_DUP(dst, src, struct arr_uint32, a_uint32); break;
++        case CIM_ARR_UINT64: ARRAY_DUP(dst, src, struct arr_udlong, a_uint64); break;
++
++        case CIM_ARR_REAL32: ARRAY_DUP(dst, src, struct arr_uint32, a_real32); break;
++        case CIM_ARR_REAL64: ARRAY_DUP(dst, src, struct arr_udlong, a_real64); break;
++        case CIM_ARR_BOOLEAN: ARRAY_DUP(dst, src, struct arr_uint16, a_boolean); break;
++
++#undef ARRAY_DUP
++
+         case CIM_ARR_STRING:
+         case CIM_ARR_DATETIME:
+         case CIM_ARR_REFERENCE:
+-		if(src->a_uint8)
+-        {
+-		  dst->a_uint8 = talloc_memdup(mem_ctx, src->a_uint8, sizeof(struct arr_uint8));
+-		  dst->a_uint8->item = talloc_memdup(dst->a_uint8, src->a_uint8->item, 4*src->a_uint8->count);
+-		  for (i = 0; i < src->a_uint8->count; ++i){
+-		    dst->a_string->item[i] = talloc_strdup(dst->a_uint8->item, src->a_string->item[i]);
+-		  }
++		if (src->a_string) {
++			dst->a_string = talloc(mem_ctx, struct arr_CIMSTRING);
++			if (dst->a_string) {
++				dst->a_string->count = src->a_string->count;
++				dst->a_string->item = talloc_array(dst->a_string, CIMSTRING, dst->a_string->count);
++				if (dst->a_string->item) {
++					for (i = 0 ; i < src->a_string->count ; ++i) {
++						dst->a_string->item[i] = talloc_strdup(dst->a_string->item, src->a_string->item[i]);
++					}
++				}
++			}
+ 		}
+ 		break;
+ 	default:

@@ -1,0 +1,44 @@
+commit 5d1df4c8f664cf205a3fadc28c47569882d6071f
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Mon Mar 13 17:17:14 2017 -0700
+
+    Make device tree optional for mips
+    
+    Some old products don't support device tree.  We should still allow
+    kexec on those.
+
+diff --git a/kexec/arch/mips/kexec-elf-mips.c b/kexec/arch/mips/kexec-elf-mips.c
+index 849a7ba..e79e1e2 100644
+--- a/kexec/arch/mips/kexec-elf-mips.c
++++ b/kexec/arch/mips/kexec-elf-mips.c
+@@ -149,11 +149,14 @@ int elf_mips_load(int argc, char **argv, const char *buf, off_t len,
+ 
+ 	if (arch_options.dtb_file) {
+ 		dtb_buf = slurp_file(arch_options.dtb_file, &dtb_length);
+-	} else {
++	} else if (access("/proc/device-tree", F_OK) == 0) {
+ 		create_flatten_tree(&dtb_buf, &dtb_length, cmdline_buf + strlen(CMDLINE_PREFIX));
+ 	}
+ 
+ 	if (arch_options.initrd_file) {
++		if  (!dtb_buf)
++			die("Must use a device tree to specify initrd\n");
++
+ 		initrd_buf = slurp_file(arch_options.initrd_file, &initrd_size);
+ 
+ 		/* Create initrd entries in dtb - although at this time
+@@ -177,9 +180,11 @@ int elf_mips_load(int argc, char **argv, const char *buf, off_t len,
+ 			sizeof(cmdline_buf), sizeof(void *),
+ 			cmdline_addr, 0x0fffffff, 1);
+ 
+-	add_buffer(info, dtb_buf, dtb_length, dtb_length, 0,
+-		_ALIGN_UP(kernel_addr + kernel_size, pagesize),
+-		0x0fffffff, 1);
++	if (dtb_buf) {
++		add_buffer(info, dtb_buf, dtb_length, dtb_length, 0,
++			   _ALIGN_UP(kernel_addr + kernel_size, pagesize),
++			   0x0fffffff, 1);
++	}
+ 
+ 	return 0;
+ }

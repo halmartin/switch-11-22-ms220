@@ -1,0 +1,16 @@
+--- uClibc++/include/string	2005-07-02 07:28:47.000000000 -0700
++++ uClibc++.new/include/string	2010-09-07 14:17:18.720513442 -0700
+@@ -1002,11 +1002,11 @@
+ 
+ template <> _UCXXEXPORT bool operator==(const string & lhs, const string & rhs);
+ template <> _UCXXEXPORT bool operator==(const char * lhs, const string & rhs);
+-template <> _UCXXEXPORT bool operator==(const string & rhs, const char * rhs);
++template <> _UCXXEXPORT bool operator==(const string & lhs, const char * rhs);
+ 
+ template <> _UCXXEXPORT bool operator!=(const string & lhs, const string & rhs);
+ template <> _UCXXEXPORT bool operator!=(const char * lhs, const string & rhs);
+-template <> _UCXXEXPORT bool operator!=(const string & rhs, const char * rhs);
++template <> _UCXXEXPORT bool operator!=(const string & lhs, const char * rhs);
+ 
+ template <> _UCXXEXPORT string operator+(const string & lhs, const char* rhs);
+ template <> _UCXXEXPORT string operator+(const char* lhs, const string & rhs);

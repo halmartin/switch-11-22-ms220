@@ -1,0 +1,268 @@
+/*
+ * Base device tree for Meraki switch-arm products, including:
+ *
+ *   * MS410 (Wolfcastle, Firescout BCM56547/8)
+ *   * MS425 (Hungry Hungry Hippo, Vega+ BCM58525)
+ *
+ * Copyright 2015 Cisco Systems
+ * Dean Thomas <dean.thomas@meraki.com>
+ *
+ * Licensed under the GNU/GPL. See COPYING for details.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include "skeleton.dtsi"
+
+/ {
+	interrupt-parent = <&gic>;
+
+	mpcore {
+		compatible = "simple-bus";
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		ranges = <0x0 0x19020000 0x00003000>;
+
+		scu@0000 {
+			compatible = "arm,cortex-a9-scu";
+			reg = <0x0000 0x100>;
+		};
+
+		timer@0200 {
+			compatible = "arm,cortex-a9-global-timer";
+			reg = <0x0200 0x100>;
+			interrupts = <GIC_PPI 11 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_periph>;
+		};
+
+		local-timer@0600 {
+			compatible = "arm,cortex-a9-twd-timer";
+			reg = <0x0600 0x100>;
+			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_periph>;
+		};
+
+		gic: interrupt-controller@1000 {
+			compatible = "arm,cortex-a9-gic";
+			reg = <0x1000 0x1000>,
+			      <0x0100 0x100>;
+
+			#address-cells = <0>;
+			#interrupt-cells = <3>;
+
+			interrupt-controller;
+		};
+
+		L2: cache-controller@2000 {
+			compatible = "arm,pl310-cache";
+			reg = <0x2000 0x1000>;
+			cache-unified;
+			cache-level = <2>;
+		};
+	};
+
+	/**
+	 * The "fixed-clock" driver allows us to specify clock frequencies
+	 * but doesn't actually control the clock in any way (enable, gate,
+	 * change rate, etc) -- it's purely informational.
+	 *
+	 * These clocks are defined here only so that other device nodes
+	 * can refer to them by phandle.
+	 */
+	clocks {
+		apb_clk: axi_clk3 {
+			compatible = "fixed-clock";
+
+			#clock-cells = <0>;
+
+			clock-frequency = <125000000>;
+		};
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a9";
+			reg = <0x0>;
+			next-level-cache = <&L2>;
+		};
+	};
+
+	axi {
+		compatible = "arm,amba-bus";
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		ranges;
+
+		chipcommonA {
+			compatible = "arm,amba-bus";
+
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			ranges = <0x0 0x18000000 0x00010000>;
+
+			uart0: serial@0300 {
+				compatible = "ns16550";
+				reg = <0x0300 0x08>;
+				clock-frequency = <62500000>;
+			};
+		};
+
+		nand@18026000 {
+			compatible = "brcm,nand-iproc",
+				     "brcm,brcmnand-v6.0",
+				     "brcm,brcmnand";
+			reg = <0x18026000 0x600>,
+			      <0x1811b408 0x600>,
+			      <0x18026f00 0x20>;
+			reg-names = "nand",
+				    "iproc-idm",
+				    "iproc-ext";
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			brcm,nand-has-wp;
+
+			nandcs@0 {
+				compatible = "brcm,nandcs";
+				reg = <0>;
+
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				nand-on-flash-bbt;
+				nand-ecc-strength = <24>;
+				nand-ecc-step-size = <1024>;
+
+				partition@0 {
+					label = "ubi";
+					reg   = <0x0 0x40000000>;
+				};
+			};
+		};
+
+		spi@18027200 {
+			compatible = "brcm,qspi";
+			reg = <0x18027200 0x188>,	// MSPI range
+			      <0x18027000 0x50>,	// BSPI range
+			      <0x18027100 0x24>,	// BSPI_RAF range
+			      <0x180273a0 0x1c>,	// QSPI interrupt range
+			      <0x1811c408 0x4>,		// QSPI_IDM_IDM_IO_CONTROL_DIRECT
+			      <0x1803e000 0x4>;		// CRU_control
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			clocks = <&apb_clk>;
+
+			m25p80@0 {
+				compatible = "macronix,mx25l12805d";
+				reg = <0>;
+
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				spi-max-frequency = <70000000>;
+				m25p,fast-read;
+
+				partition@0 {
+					label = "uboot";
+					reg   = <0x0 0x100000>;
+				};
+
+				partition@1 {
+					label = "bootkernel1";
+					reg   = <0x100000 0x700000>;
+				};
+
+				partition@2 {
+					label = "bootkernel2";
+					reg   = <0x800000 0x700000>;
+				};
+			};
+		};
+
+		chipcommonB {
+			compatible = "arm,amba-bus";
+
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			ranges = <0x0 0x18030000 0x00010000>;
+
+			i2c0: i2c@8000 {
+				compatible = "brcm,iproc-i2c";
+				reg = <0x8000 0x100>;
+
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				clock-frequency = <100000>;
+			};
+
+			wdt@9000 {
+				compatible = "arm,sp805", "arm,primecell";
+				reg = <0x9000 0x1000>;
+				clocks = <&apb_clk>;
+				clock-names = "apb_pclk";
+			};
+		};
+	};
+
+	/**
+	 * This node configures the bcma bus driver. Physically, this
+	 * is the same bus represented by the "axi" node above, but the
+	 * bcma bus driver scans the bus and automatically registers
+	 * devices for any cores that it finds, simplifying configuration
+	 * and allowing us to use bcma drivers available in mainline Linux.
+	 *
+	 * As noted in the brcm,bus-axi binding document, the driver cannot
+	 * automatically detect interrupt numbers, so devices that generate
+	 * interrupts need to be defined using the interrupt-map property
+	 * here (or in the appropriate board device tree).
+	 */
+	bcma {
+		compatible = "brcm,bus-axi";
+		reg = <0x18000000 0x1000>;
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		ranges = <0x0 0x18000000 0x00100000>;
+
+		#interrupt-cells = <1>;
+
+		interrupt-map-mask = <0xffffffff 0xffff>;
+
+		/**
+		 * We need to explicitly define the chipcommonA block since
+		 * it acts as a gpio-controller and an interrupt-controller
+		 * and other nodes need to refer to it by phandle.
+		 */
+		gpio0: chipcommonA {
+			reg = <0x0 0x1000>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <1>;
+		};
+	};
+
+	/*
+	 * Virtual (software defined) devices
+	 */
+	board-data {
+		compatible = "meraki,meraki-config";
+		i2c-eeprom = <&config_eeprom>;
+	};
+};

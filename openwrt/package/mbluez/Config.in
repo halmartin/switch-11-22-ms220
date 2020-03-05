@@ -1,0 +1,37 @@
+config BR2_COMPILE_MBLUEZ
+       tristate
+       default n
+       depends BR2_PACKAGE_LIBMBLUEZ
+
+config BR2_PACKAGE_LIBMBLUEZ
+	prompt "libmbluez......................... libbluetooth for embedded"
+	tristate
+	default n
+        select BR2_COMPILE_MBLUEZ
+	help
+	  Replacement for bluez-libs.
+          Fork of bluez for embedded platforms.
+	  
+	  Depends: libpthread
+
+config BR2_PACKAGE_MBLUEZ
+	prompt "mbluez............................ Bluetooth tools for embedded"
+	tristate
+	default n
+        depends BR2_PACKAGE_LIBMBLUEZ
+	help
+          Replacement for bluez-utils.
+	  Fork of bluez for embedded platforms.
+	  
+	  Depends: libpthread
+
+config BR2_PACKAGE_MBLUEZ_HCIDUMP
+	prompt "hcidump........................... HCI packet capture/dump"
+	tristate
+	default n
+        depends BR2_PACKAGE_LIBMBLUEZ
+	help
+          Utility for dumping HCI packets.
+	  Fork of bluez for embedded platforms.
+	  
+	  Depends: libpthread

@@ -1,0 +1,11 @@
+--- a/configure
++++ b/configure
+@@ -38229,7 +38229,7 @@ $as_echo "$as_me: WARNING: on how to increase your filedescriptor limit" >&2;}
+ fi
+ 
+ cat >>confdefs.h <<_ACEOF
+-#define SQUID_MAXFD $squid_filedescriptors_num
++#define SQUID_MAXFD 16384
+ _ACEOF
+ 
+ 

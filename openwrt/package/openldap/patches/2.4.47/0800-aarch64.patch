@@ -1,0 +1,32 @@
+From 60cdacfa52df4f0e725e8411144874419d10cfa6 Mon Sep 17 00:00:00 2001
+From: Ethan Everett <eeverett@meraki.com>
+Date: Fri, 30 Nov 2018 17:30:58 -0800
+Subject: [PATCH] aarch64
+
+---
+ build/config.sub | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/build/config.sub b/build/config.sub
+index 00e00c4..5869501 100755
+--- a/build/config.sub
++++ b/build/config.sub
+@@ -248,6 +248,7 @@ case $basic_machine in
+ 	# Some are omitted here because they have special meanings below.
+ 	1750a | 580 \
+ 	| a29k \
++	| aarch64 | aarch64_be \
+ 	| alpha | alphaev[4-8] | alphaev56 | alphaev6[78] | alphapca5[67] \
+ 	| alpha64 | alpha64ev[4-8] | alpha64ev56 | alpha64ev6[78] | alpha64pca5[67] \
+ 	| am33_2.0 \
+@@ -340,6 +341,7 @@ case $basic_machine in
+ 	# Recognize the basic CPU types with company name.
+ 	580-* \
+ 	| a29k-* \
++	| aarch64-* | aarch64_be-* \
+ 	| alpha-* | alphaev[4-8]-* | alphaev56-* | alphaev6[78]-* \
+ 	| alpha64-* | alpha64ev[4-8]-* | alpha64ev56-* | alpha64ev6[78]-* \
+ 	| alphapca5[67]-* | alpha64pca5[67]-* | arc-* \
+-- 
+2.18.0
+

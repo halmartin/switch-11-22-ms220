@@ -1,0 +1,22 @@
+commit 08ee3fde90e58deb67ed7a349b076fe4ad8923b9
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Thu Aug 3 11:12:17 2017 -0700
+
+    Fix GCC 6 issue.
+    
+    Fix an issue with GCC 6 throwing a warning on a sizeof of a sized
+    array parameter.
+
+diff --git a/pam_ldap.c b/pam_ldap.c
+index 5920d0b..338aecf 100644
+--- a/pam_ldap.c
++++ b/pam_ldap.c
+@@ -2584,7 +2584,7 @@ _get_md5_salt (char saltbuf[16])
+   _pam_ldap_md5_append (&state, (unsigned char *) &i, sizeof (i));
+   i = clock ();
+   _pam_ldap_md5_append (&state, (unsigned char *) &i, sizeof (i));
+-  _pam_ldap_md5_append (&state, (unsigned char *) saltbuf, sizeof (saltbuf));
++  _pam_ldap_md5_append (&state, (unsigned char *) saltbuf, 16);
+   _pam_ldap_md5_finish (&state, digest);
+ 
+   strcpy (saltbuf, "$1$");

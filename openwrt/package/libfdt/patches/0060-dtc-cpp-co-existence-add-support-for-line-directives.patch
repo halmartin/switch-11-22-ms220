@@ -1,0 +1,115 @@
+From 1b6d1941dc5b589632c254ee6e960404d7cef5f2 Mon Sep 17 00:00:00 2001
+From: Stephen Warren <swarren@nvidia.com>
+Date: Thu, 27 Sep 2012 17:11:05 -0600
+Subject: [PATCH 60/98] dtc: cpp co-existence: add support for #line directives
+
+Line control directives of the following formats are supported:
+    #line LINE "FILE"
+    # LINE "FILE" [FLAGS]
+
+This allows dtc to consume the output of pre-processors, and to provide
+error messages that refer to the original filename, including taking
+into account any #include directives that the pre-processor may have
+performed.
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ dtc-lexer.l               | 21 +++++++++++++++++++++
+ srcpos.c                  |  6 ++++++
+ srcpos.h                  |  2 ++
+ tests/line_directives.dts | 11 +++++++++++
+ tests/run_tests.sh        |  2 ++
+ 5 files changed, 42 insertions(+)
+ create mode 100644 tests/line_directives.dts
+
+diff --git a/dtc-lexer.l b/dtc-lexer.l
+index edbeb86..254d5af 100644
+--- a/dtc-lexer.l
++++ b/dtc-lexer.l
+@@ -71,6 +71,27 @@ static int pop_input_file(void);
+ 			push_input_file(name);
+ 		}
+ 
++<*>^"#"(line)?{WS}+[0-9]+{WS}+{STRING}({WS}+[0-9]+)? {
++			char *line, *tmp, *fn;
++			/* skip text before line # */
++			line = yytext;
++			while (!isdigit(*line))
++				line++;
++			/* skip digits in line # */
++			tmp = line;
++			while (!isspace(*tmp))
++				tmp++;
++			/* "NULL"-terminate line # */
++			*tmp = '\0';
++			/* start of filename */
++			fn = strchr(tmp + 1, '"') + 1;
++			/* strip trailing " from filename */
++			tmp = strchr(fn, '"');
++			*tmp = 0;
++			/* -1 since #line is the number of the next line */
++			srcpos_set_line(xstrdup(fn), atoi(line) - 1);
++		}
++
+ <*><<EOF>>		{
+ 			if (!pop_input_file()) {
+ 				yyterminate();
+diff --git a/srcpos.c b/srcpos.c
+index 3ee523d..246ab4b 100644
+--- a/srcpos.c
++++ b/srcpos.c
+@@ -328,3 +328,9 @@ srcpos_warn(struct srcpos *pos, char const *fmt, ...)
+ 
+ 	va_end(va);
+ }
++
++void srcpos_set_line(char *f, int l)
++{
++	current_srcfile->name = f;
++	current_srcfile->lineno = l;
++}
+diff --git a/srcpos.h b/srcpos.h
+index 5617916..93a2712 100644
+--- a/srcpos.h
++++ b/srcpos.h
+@@ -113,4 +113,6 @@ extern void srcpos_error(struct srcpos *pos, char const *, ...)
+ extern void srcpos_warn(struct srcpos *pos, char const *, ...)
+      __attribute__((format(printf, 2, 3)));
+ 
++extern void srcpos_set_line(char *f, int l);
++
+ #endif /* _SRCPOS_H_ */
+diff --git a/tests/line_directives.dts b/tests/line_directives.dts
+new file mode 100644
+index 0000000..e9d0800
+--- /dev/null
++++ b/tests/line_directives.dts
+@@ -0,0 +1,11 @@
++/dts-v1/;
++
++/* common format */
++#line 3 "foo.dts"
++/* newer gcc format */
++# 9 "baz.dts" 1
++/* flags are optional */
++# 6 "bar.dts"
++
++/ {
++};
+diff --git a/tests/run_tests.sh b/tests/run_tests.sh
+index 7d7a5f7..9ca45c9 100755
+--- a/tests/run_tests.sh
++++ b/tests/run_tests.sh
+@@ -257,6 +257,8 @@ dtc_tests () {
+     run_dtc_test -I dts -O dtb -o dtc_escapes.test.dtb propname_escapes.dts
+     run_test propname_escapes dtc_escapes.test.dtb
+ 
++    run_dtc_test -I dts -O dtb -o line_directives.test.dtb line_directives.dts
++
+     run_dtc_test -I dts -O dtb -o dtc_escapes.test.dtb escapes.dts
+     run_test string_escapes dtc_escapes.test.dtb
+ 
+-- 
+1.8.1.2
+

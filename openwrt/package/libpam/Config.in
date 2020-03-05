@@ -1,0 +1,10 @@
+config BR2_PACKAGE_LIBPAM
+	prompt "libpam....................... "
+	tristate
+	default m if BR2_LINUX_2_6_BRCM && CONFIG_DEVEL
+	default m if BR2_LINUX_2_6_X86 && CONFIG_DEVEL
+	default n
+	help
+	  libpam
+
+

@@ -1,0 +1,19 @@
+commit 362674618088ac1c928fbf43f2b81fbe0454ed18
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Sat May 28 17:32:41 2016 -0700
+
+    Updated patch
+
+diff --git a/util/Makefile.in b/util/Makefile.in
+index 8c2e5e9..75c2d27 100644
+--- a/util/Makefile.in
++++ b/util/Makefile.in
+@@ -723,7 +723,7 @@ mount_util.c: $(top_srcdir)/lib/mount_util.c
+ 
+ install-exec-hook:
+ 	-chmod u+s $(DESTDIR)$(bindir)/fusermount
+-	@if test ! -e $(DESTDIR)/dev/fuse; then \
++	-@if test ! -e $(DESTDIR)/dev/fuse; then \
+ 		$(MKDIR_P) $(DESTDIR)/dev; \
+ 		echo "mknod $(DESTDIR)/dev/fuse -m 0666 c 10 229 || true"; \
+ 		mknod $(DESTDIR)/dev/fuse -m 0666 c 10 229 || true; \

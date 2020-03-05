@@ -1,0 +1,14 @@
+config BR2_PACKAGE_DNSCRYPT_PROXY
+	prompt "DNSCrypt-Proxy....................... Secure communication with DNS server"
+	tristate
+	default y
+	help
+	  dnscrypt-proxy provides local service which can be used directly as your
+	  local resolver or as a DNS forwarder, encrypting and authenticating requests
+	  using the DNSCrypt protocol and passing them to an upstream server.
+	  The DNSCrypt protocol uses high-speed high-security elliptic-curve cryptography
+	  and is very similar to DNSCurve, but focuses on securing communications between
+	  a client and its first-level resolver.
+
+	  http://dnscrypt.org/
+

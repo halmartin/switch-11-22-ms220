@@ -1,0 +1,99 @@
+From a6d55e039fd22048687fe061b4609e2807efe764 Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Mon, 8 Apr 2013 00:56:54 -0400
+Subject: [PATCH 85/98] utilfdt_read: pass back up the length of data read
+
+For a follow up commit, we want to be able to scan the buffer that was
+returned to us.  In order to do that safely, we need to know how big
+the buffer actually is, so create a new set of funcs to pass that back.
+
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ util.c | 19 ++++++++++++++++---
+ util.h | 13 +++++++++++++
+ 2 files changed, 29 insertions(+), 3 deletions(-)
+
+diff --git a/util.c b/util.c
+index 4cdad10..350cf8b 100644
+--- a/util.c
++++ b/util.c
+@@ -198,7 +198,7 @@ char get_escape_char(const char *s, int *i)
+ 	return val;
+ }
+ 
+-int utilfdt_read_err(const char *filename, char **buffp)
++int utilfdt_read_err_len(const char *filename, char **buffp, off_t *len)
+ {
+ 	int fd = 0;	/* assume stdin */
+ 	char *buf = NULL;
+@@ -239,13 +239,20 @@ int utilfdt_read_err(const char *filename, char **buffp)
+ 		free(buf);
+ 	else
+ 		*buffp = buf;
++	*len = bufsize;
+ 	return ret;
+ }
+ 
+-char *utilfdt_read(const char *filename)
++int utilfdt_read_err(const char *filename, char **buffp)
++{
++	off_t len;
++	return utilfdt_read_err_len(filename, buffp, &len);
++}
++
++char *utilfdt_read_len(const char *filename, off_t *len)
+ {
+ 	char *buff;
+-	int ret = utilfdt_read_err(filename, &buff);
++	int ret = utilfdt_read_err_len(filename, &buff, len);
+ 
+ 	if (ret) {
+ 		fprintf(stderr, "Couldn't open blob from '%s': %s\n", filename,
+@@ -256,6 +263,12 @@ char *utilfdt_read(const char *filename)
+ 	return buff;
+ }
+ 
++char *utilfdt_read(const char *filename)
++{
++	off_t len;
++	return utilfdt_read_len(filename, &len);
++}
++
+ int utilfdt_write_err(const char *filename, const void *blob)
+ {
+ 	int fd = 1;	/* assume stdout */
+diff --git a/util.h b/util.h
+index 3f02cd8..95ae531 100644
+--- a/util.h
++++ b/util.h
+@@ -85,6 +85,13 @@ char get_escape_char(const char *s, int *i);
+ char *utilfdt_read(const char *filename);
+ 
+ /**
++ * Like utilfdt_read(), but also passes back the size of the file read.
++ *
++ * @param len		If non-NULL, the amount of data we managed to read
++ */
++char *utilfdt_read_len(const char *filename, off_t *len);
++
++/**
+  * Read a device tree file into a buffer. Does not report errors, but only
+  * returns them. The value returned can be passed to strerror() to obtain
+  * an error message for the user.
+@@ -95,6 +102,12 @@ char *utilfdt_read(const char *filename);
+  */
+ int utilfdt_read_err(const char *filename, char **buffp);
+ 
++/**
++ * Like utilfdt_read_err(), but also passes back the size of the file read.
++ *
++ * @param len		If non-NULL, the amount of data we managed to read
++ */
++int utilfdt_read_err_len(const char *filename, char **buffp, off_t *len);
+ 
+ /**
+  * Write a device tree buffer to a file. This will report any errors on
+-- 
+1.8.1.2
+

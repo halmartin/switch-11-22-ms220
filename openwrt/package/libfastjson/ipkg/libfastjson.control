@@ -1,0 +1,4 @@
+Package: libfastjson
+Priority: optional
+Section: libs
+Description: libfastjson

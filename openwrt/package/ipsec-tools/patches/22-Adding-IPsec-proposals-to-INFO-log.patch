@@ -1,0 +1,152 @@
+From 4a7f44afedaf9ce33a8c82795ed9ef045b1a8e4b Mon Sep 17 00:00:00 2001
+From: Tania <taniat@meraki.com>
+Date: Thu, 26 Apr 2018 15:48:26 -0700
+Subject: [PATCH] Adding IPsec proposals to INFO log
+
+---
+ racoon/ipsec_doi.c | 28 +++++++++++++++++++---------
+ racoon/proposal.c  | 19 +++++++++++--------
+ racoon/proposal.h  |  2 +-
+ 3 files changed, 31 insertions(+), 18 deletions(-)
+
+diff --git a/src/racoon/ipsec_doi.c b/src/racoon/ipsec_doi.c
+index 84a4c71..6e7d059 100644
+--- a/src/racoon/ipsec_doi.c
++++ b/src/racoon/ipsec_doi.c
+@@ -197,13 +197,21 @@ ipsecdoi_checkph1proposal(sa, iph1)
+ }
+ 
+ static void
+-print_ph1proposal(pair, s)
++print_ph1proposal(pair, s, peer_ip)
+ 	struct prop_pair *pair;
+ 	struct isakmpsa *s;
++	char *peer_ip;
+ {
+ 	struct isakmp_pl_p *prop = pair->prop;
+ 	struct isakmp_pl_t *trns = pair->trns;
+ 
++	plog(LLV_INFO, LOCATION, NULL,
++	     "PHASE1  proposal by peer %s to me: ([%s-%d]-[%s]-[%s])\n",
++	     peer_ip,
++	     s_oakley_attr_v(OAKLEY_ATTR_ENC_ALG, s->enctype),
++	     s->encklen,
++	     s_oakley_attr_v(OAKLEY_ATTR_HASH_ALG, s->hashtype),
++	     s_oakley_attr_v(OAKLEY_ATTR_GRP_DESC, s->dh_group));
+ 	plog(LLV_DEBUG, LOCATION, NULL,
+ 	     "prop#=%d, prot-id=%s, spi-size=%d, #trns=%d\n",
+ 	     prop->p_no, s_ipsecdoi_proto(prop->proto_id),
+@@ -272,7 +280,7 @@ get_ph1approval(iph1, doitype, sittype, pair)
+ 				if (t2isakmpsa(p->trns, sa,
+ 					       iph1->vendorid_mask) < 0)
+ 					continue;
+-				print_ph1proposal(p, sa);
++				print_ph1proposal(p, sa, saddr2str(iph1->remote));
+ 				if (iph1->rmconf != NULL) {
+ 					if (get_ph1approvalx(iph1->rmconf, &ctx))
+ 						goto found;
+@@ -1015,6 +1023,7 @@ get_ph2approvalx(iph2, pp)
+ 	struct prop_pair *ret = NULL;
+ 	struct saprop *pr0, *pr = NULL;
+ 	struct saprop *q1, *q2;
++	char *dst = saddr2str(iph2->dst);
+ 
+ 	pr0 = aproppair2saprop(pp);
+ 	if (pr0 == NULL)
+@@ -1022,12 +1031,12 @@ get_ph2approvalx(iph2, pp)
+ 
+ 	for (q1 = pr0; q1; q1 = q1->next) {
+ 		for (q2 = iph2->proposal; q2; q2 = q2->next) {
+-			plog(LLV_DEBUG, LOCATION, NULL,
+-				"peer's single bundle:\n");
+-			printsaprop0(LLV_DEBUG, q1);
+-			plog(LLV_DEBUG, LOCATION, NULL,
+-				"my single bundle:\n");
+-			printsaprop0(LLV_DEBUG, q2);
++			plog(LLV_INFO, LOCATION, NULL,
++			    "PHASE2  single bundle by peer %s to me:\n", dst);
++			printsaprop0(LLV_INFO, q1);
++			plog(LLV_INFO, LOCATION, NULL,
++			    "PHASE2  my single bundle to peer %s :\n", dst);
++			printsaprop0(LLV_INFO, q2);
+ 
+ 			pr = cmpsaprop_alloc(iph2->ph1, q1, q2, iph2->side);
+ 			if (pr != NULL)
+@@ -1044,7 +1053,8 @@ err:
+ 
+ found:
+ 	flushsaprop(pr0);
+-	plog(LLV_DEBUG, LOCATION, NULL, "matched\n");
++	plog(LLV_INFO, LOCATION, NULL, "PHASE2 matched for peer %s. Chosen proposal: \n", dst);
++	printsaprop0(LLV_INFO, pr);
+ 	iph2->approval = pr;
+ 
+     {
+diff --git a/src/racoon/proposal.c b/src/racoon/proposal.c
+index 33dd311..b936af4 100644
+--- a/src/racoon/proposal.c
++++ b/src/racoon/proposal.c
+@@ -946,8 +946,8 @@ printsaproto(pri, pr)
+ 		return;
+ 
+ 	plog(pri, LOCATION, NULL,
+-		" (proto_id=%s spisize=%d spi=%08lx spi_p=%08lx "
+-		"encmode=%s reqid=%d:%d)\n",
++		"PHASE2-PROP proto_id='%s' spisize='%d' spi='%08lx' spi_p='%08lx' "
++		"encmode='%s' reqid='%d-%d'\n",
+ 		s_ipsecdoi_proto(pr->proto_id),
+ 		(int)pr->spisize,
+ 		(unsigned long)ntohl(pr->spi),
+@@ -955,16 +955,18 @@ printsaproto(pri, pr)
+ 		s_ipsecdoi_attr_v(IPSECDOI_ATTR_ENC_MODE, pr->encmode),
+ 		(int)pr->reqid_in, (int)pr->reqid_out);
+ 
++        int i = 0;
+ 	for (tr = pr->head; tr; tr = tr->next) {
+-		printsatrns(pri, pr->proto_id, tr);
++		printsatrns(pri, i++, pr->proto_id, tr);
+ 	}
+ 
+ 	return;
+ }
+ 
+ void
+-printsatrns(pri, proto_id, tr)
++printsatrns(pri, proto_rank, proto_id, tr)
+ 	const int pri;
++        int proto_rank;
+ 	const int proto_id;
+ 	const struct satrns *tr;
+ {
+@@ -980,10 +982,11 @@ printsatrns(pri, proto_id, tr)
+ 		break;
+ 	case IPSECDOI_PROTO_IPSEC_ESP:
+ 		plog(pri, LOCATION, NULL,
+-			"  (trns_id=%s encklen=%d authtype=%s)\n",
+-			s_ipsecdoi_trns(proto_id, tr->trns_id),
+-			tr->encklen,
+-			s_ipsecdoi_attr_v(IPSECDOI_ATTR_AUTH, tr->authtype));
++		    "PHASE2-PROP proposal-%d='[%s-%d]-[%s]'\n",
++                    proto_rank,
++		    s_ipsecdoi_trns(proto_id, tr->trns_id),
++		    tr->encklen,
++		    s_ipsecdoi_attr_v(IPSECDOI_ATTR_AUTH, tr->authtype));
+ 		break;
+ 	case IPSECDOI_PROTO_IPCOMP:
+ 		plog(pri, LOCATION, NULL,
+diff --git a/src/racoon/proposal.h b/src/racoon/proposal.h
+index 11fbab8..0cc4da2 100644
+--- a/src/racoon/proposal.h
++++ b/src/racoon/proposal.h
+@@ -204,7 +204,7 @@ extern void flushsatrns __P((struct satrns *));
+ extern void printsaprop __P((const int, const struct saprop *));
+ extern void printsaprop0 __P((const int, const struct saprop *));
+ extern void printsaproto __P((const int, const struct saproto *));
+-extern void printsatrns __P((const int, const int, const struct satrns *));
++extern void printsatrns __P((const int, int, const int, const struct satrns *));
+ extern void print_proppair0 __P((int, struct prop_pair *, int));
+ extern void print_proppair __P((int, struct prop_pair *));
+ extern int set_proposal_from_policy __P((struct ph2handle *,
+-- 
+2.17.0
+

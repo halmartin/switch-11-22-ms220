@@ -1,0 +1,14 @@
+diff -ru lighttpd-1.4.19/src/response.c lighttpd-1.4.19-foo/src/response.c
+--- lighttpd-1.4.19/src/response.c	2008-03-02 04:59:18.000000000 -0800
++++ lighttpd-1.4.19-foo/src/response.c	2008-08-17 19:31:34.000000000 -0700
+@@ -79,7 +79,8 @@
+ 		}
+ 	}
+ 
+-	if (!have_date) {
++	// cliff: no valid clock on meraki devices
++	if (0 && !have_date) {
+ 		/* HTTP/1.1 requires a Date: header */
+ 		BUFFER_APPEND_STRING_CONST(b, "\r\nDate: ");
+ 
+Only in lighttpd-1.4.19-foo/src: response.c~

@@ -1,0 +1,7 @@
+config BR2_PACKAGE_PAM_SCRIPT
+        prompt "pam-script.......................... PAM script authentication module"
+        tristate
+        default m if CONFIG_DEVEL
+	depends BR2_PACKAGE_LIBPAM
+        help
+          A PAM plugin to authenticate through scripts

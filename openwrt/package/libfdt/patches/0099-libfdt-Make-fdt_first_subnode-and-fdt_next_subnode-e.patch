@@ -1,0 +1,28 @@
+From 9cf8a18eeb1bb6e5a092a3e6496823a6dada55ac Mon Sep 17 00:00:00 2001
+From: Kevin Paul Herbert <kph@meraki.net>
+Date: Fri, 17 Jan 2014 19:17:41 -0800
+Subject: [PATCH] libfdt: Make fdt_first_subnode() and fdt_next_subnode()
+ externals
+
+4e76ec796c90d44d417f82d9db2d67cfe575f8ed added two new globals,
+but it did not add them to the linker script.
+---
+ libfdt/version.lds | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/libfdt/version.lds b/libfdt/version.lds
+index 80b322b..941208e 100644
+--- a/libfdt/version.lds
++++ b/libfdt/version.lds
+@@ -54,6 +54,8 @@ LIBFDT_1.2 {
+ 		fdt_get_property_by_offset;
+ 		fdt_getprop_by_offset;
+ 		fdt_next_property_offset;
++		fdt_first_subnode;
++		fdt_next_subnode;
+ 
+ 	local:
+ 		*;
+-- 
+1.8.1.2
+

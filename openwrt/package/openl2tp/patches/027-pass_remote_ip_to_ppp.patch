@@ -1,0 +1,16 @@
+--- origopenl2tp/plugins/ppp_unix.c	2012-02-16 17:17:47.000000000 -0800
++++ newopenl2tp/plugins/ppp_unix.c	2012-03-29 17:24:31.000000000 -0700
+@@ -837,6 +837,13 @@
+ 
+ 		memset(&argv[0], 0, sizeof(argv));
+ 		arg = ppp_unix_params_to_argv(ppp, ppp->ppp_profile_data, PPP_UNIX_MAX_PPPD_ARGS, &argv[0]);
++
++		struct sockaddr_in *peer_addr = l2tp_tunnel_get_peer_addr(ppp->tunnel);
++		if (peer_addr) {
++			argv[arg++] = "remote_peer_address";
++			argv[arg++] = strdup(inet_ntoa(peer_addr->sin_addr));
++		}
++
+ 		argv[arg++] = "nodetach";
+ 		if (scfg->user_name != NULL) {
+ 			char buf[256];

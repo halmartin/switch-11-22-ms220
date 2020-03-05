@@ -1,0 +1,26 @@
+From 65cc4d2748a2c2e6f27f1cf39e07a5dbabd80ebf Mon Sep 17 00:00:00 2001
+From: Jon Loeliger <jdl@jdl.com>
+Date: Sat, 22 Jun 2013 12:54:28 -0500
+Subject: [PATCH 98/98] Tag Version 1.4.0
+
+Signed-off-by: Jon Loeliger <jdl@jdl.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 1169e6c..962f94e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -9,7 +9,7 @@
+ # CONFIG_LOCALVERSION from some future config system.
+ #
+ VERSION = 1
+-PATCHLEVEL = 3
++PATCHLEVEL = 4
+ SUBLEVEL = 0
+ EXTRAVERSION =
+ LOCAL_VERSION =
+-- 
+1.8.1.2
+

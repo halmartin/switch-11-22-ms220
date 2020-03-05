@@ -1,0 +1,28 @@
+--- hping3-20051105/Makefile	2005-11-05 02:31:41.000000000 -0800
++++ hping3-20051105.new/Makefile	2010-10-18 02:18:04.100887143 -0700
+@@ -9,7 +9,7 @@
+ CC= gcc
+ AR=/usr/bin/ar
+ RANLIB=/usr/bin/ranlib
+-CCOPT= -O2 -Wall  -I/usr/include/tcl8.4 -DUSE_TCL
++CCOPT= -O2 -Wall   
+ DEBUG= -g
+ #uncomment the following if you need libpcap based build under linux
+ #(not raccomanded)
+@@ -50,14 +50,13 @@
+ 	$(RANLIB) $@
+ 
+ hping3: byteorder.h $(OBJ)
+-	$(CC) -o hping3 $(CCOPT) $(DEBUG) $(OBJ) -L/usr/local/lib $(PCAP)  -ltcl8.4 -lm -lpthread
++	$(CC) -o hping3 $(CCOPT) $(DEBUG) $(OBJ) -L/usr/local/lib $(PCAP) -lm -lpthread
+ 	@echo
+-	./hping3 -v
+ 	@echo "use \`make strip' to strip hping3 binary"
+ 	@echo "use \`make install' to install hping3"
+ 
+ hping3-static: byteorder.h $(OBJ)
+-	$(CC) -static -o hping3-static $(CCOPT) $(DEBUG) $(OBJ) -L/usr/local/lib $(PCAP)  -ltcl8.4 -lm -lpthread -ldl
++	$(CC) -static -o hping3-static $(CCOPT) $(DEBUG) $(OBJ) -L/usr/local/lib $(PCAP) -lm -lpthread -ldl
+ 
+ byteorder.h:
+ 	./configure

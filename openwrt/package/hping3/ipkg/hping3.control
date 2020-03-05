@@ -1,0 +1,5 @@
+Package: hping3
+Priority: optional
+Section: net
+Depends: libgcc, libpcap
+Description: hping3

@@ -1,0 +1,735 @@
+/*
+ * Meraki Hungry Hungry Hippo support on the Meraki switch-arm platform
+ * Uses a BCM58525 Cortex-A9 processor
+ *
+ * Copyright 2015 Cisco Systems
+ * Adam Funkenbusch <adam.funkenbusch@meraki.net>
+ *
+ * Licensed under the GNU/GPL. See COPYING for details.
+ */
+
+/dts-v1/;
+
+#include "meraki-switch-arm.dtsi"
+#include <dt-bindings/input/input.h>
+
+/ {
+	compatible = "meraki,hungry-hungry-hippo";
+	model = "Meraki Hungry Hungry Hippo";
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a9";
+			next-level-cache = <&L2>;
+			reg = <0x0>;
+		};
+
+		cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a9";
+			next-level-cache = <&L2>;
+			enable-method = "brcm,bcm-nsp-smp";
+			secondary-boot-reg = <0xffff042c>;
+			reg = <0x1>;
+		};
+	};
+
+	memory {
+		reg = <0x60000000 0x80000000>;
+	};
+
+	clocks {
+		clk_periph: periph {
+			compatible = "fixed-clock";
+
+			#clock-cells = <0>;
+
+			clock-frequency = <600000000>;
+		};
+	};
+
+	pcie0: pcie@18012000 {
+		compatible = "brcm,iproc-pcie";
+		reg = <0x18012000 0x1000>,
+		      <0x18032000 0x1000>;
+
+		interrupts = <GIC_SPI 127 IRQ_TYPE_NONE>,
+		             <GIC_SPI 128 IRQ_TYPE_NONE>,
+		             <GIC_SPI 129 IRQ_TYPE_NONE>,
+		             <GIC_SPI 130 IRQ_TYPE_NONE>,
+		             <GIC_SPI 131 IRQ_TYPE_NONE>,
+		             <GIC_SPI 132 IRQ_TYPE_NONE>;
+		bus-range = <0x00 0xFF>;
+
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci";
+		ranges = <0x81000000 0 0x00000000 0x00000000 0 0x00010000
+		          0x82000000 0 0x08000000 0x08000000 0 0x08000000>;
+		phy-addr = <0>;
+		have-msi-intern-reg;
+	};
+
+	axi {
+		chipcommonA {
+			uart0: serial@0300 {
+				interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
+			};
+		};
+
+		nand@18026000 {
+			interrupts = <GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "nand_ctlrdy";
+		};
+
+		spi@18027200 {
+			interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
+		chipcommonB {
+			pwmchip: pwm@1000 {
+				compatible = "iproc-pwm";
+				reg = <0x1000 0x28>;
+				#pwm-cells = <2>;
+				chan0 {
+					channel = <0>;
+					active_low = <1>;
+				};
+				chan1 {
+					channel = <1>;
+					active_low = <1>;
+				};
+				chan2 {
+					channel = <2>;
+					active_low = <1>;
+				};
+			};
+
+			i2c0: i2c@8000 {
+				interrupts = <GIC_SPI 89 IRQ_TYPE_NONE>;
+
+				gpio_chip0:gpio-controller@20 {
+					compatible = "nxp,pca9555";
+					reg = <0x20>;
+					gpio-controller;
+					#gpio-cells = <2>;
+					interrupt-controller;
+					interrupt-parent = <&gpio0>;
+					interrupts = <12>;
+				};
+
+				gpio_chip1:gpio-controller@21 {
+					compatible = "nxp,pca9555";
+					reg = <0x21>;
+					gpio-controller;
+					#gpio-cells = <2>;
+					interrupt-controller;
+					interrupt-parent = <&gpio0>;
+					interrupts = <13>;
+				};
+
+				gpio_chip2:gpio-controller@22 {
+					compatible = "nxp,pca9555";
+					reg = <0x22>;
+					gpio-controller;
+					#gpio-cells = <2>;
+					interrupt-controller;
+					interrupt-parent = <&gpio0>;
+					interrupts = <14>;
+				};
+
+				gpio_chip3:gpio-controller@23 {
+					compatible = "nxp,pca9555";
+					reg = <0x23>;
+					gpio-controller;
+					#gpio-cells = <2>;
+					interrupt-controller;
+					interrupt-parent = <&gpio0>;
+					interrupts = <15>;
+				};
+
+				gpio_chip4:gpio-controller@24 {
+					compatible = "nxp,pca9555";
+					reg = <0x24>;
+					gpio-controller;
+					#gpio-cells = <2>;
+					interrupt-controller;
+					interrupt-parent = <&gpio0>;
+					interrupts = <16>;
+				};
+
+				gpio_chip5:gpio-controller@25 {
+					compatible = "nxp,pca9555";
+					reg = <0x25>;
+					gpio-controller;
+					#gpio-cells = <2>;
+				};
+
+				config_eeprom: eeprom@54 {
+					compatible = "24c64";
+					reg = <0x54>;
+					pagesize = <32>;
+				};
+
+				hwmon@2e {
+					compatible = "adi,adt7473";
+					reg = <0x2e>;
+				};
+			};
+
+			wdt@9000 {
+				interrupts = <GIC_SPI 167 IRQ_TYPE_LEVEL_HIGH>;
+			};
+		};
+	};
+
+	psu1 {
+		id = <1>;
+		compatible = "meraki,cisco-mps";
+		power_good = <&gpio_chip4 9 GPIO_ACTIVE_HIGH>;
+		present = <&gpio_chip4 11 GPIO_ACTIVE_HIGH>;
+		reg-names = "control-i2c", "data-i2c";
+		reg = <0x5a 1>, <0x52 1>;
+		i2c = <&i2c0>;
+	};
+
+	psu2 {
+		id = <2>;
+		compatible = "meraki,cisco-mps";
+		power_good = <&gpio_chip4 10 GPIO_ACTIVE_HIGH>;
+		present = <&gpio_chip4 12 GPIO_ACTIVE_HIGH>;
+		reg-names = "control-i2c", "data-i2c";
+		reg = <0x5b 1>, <0x53 1>;
+		i2c = <&i2c0>;
+	};
+
+	bcma {
+		interrupt-map =
+			/* chipcommonA */
+			<0x18000000 0 &gic GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>,
+
+			/* Ethernet Controller 0 */
+			<0x18022000 0 &gic GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	gpio-cfg {
+		compatible = "iproc-gpio-cfg";
+		reg-names = "cru-gpio-ctl", "aux-sel";
+		reg = <0x1803f1c0 0x24>, <0x18030028 0x4>;
+		gpios-general = <1 3 7 11 12 13 14 15 16 30 31>;
+		gpios-aux = <33 34 35>;
+		gpios-pullup = <12 13 14 15 16>;
+
+		trident2-reset {
+			gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+			direction = "out";
+		};
+
+#if defined(BOARD_MS425_16) || defined(BOARD_MS425_32)
+		phy0-reset {
+			gpios = <&gpio_chip4 4 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+			direction = "out";
+		};
+
+		phy1-reset {
+			gpios = <&gpio_chip4 5 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+			direction = "out";
+		};
+
+		phy2-reset {
+			gpios = <&gpio_chip4 6 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+			direction = "out";
+		};
+
+		phy3-reset {
+			gpios = <&gpio_chip4 7 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+			direction = "out";
+		};
+
+		phy4-reset {
+			gpios = <&gpio_chip4 8 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+			direction = "out";
+		};
+
+		qsfp1-reset {
+			gpios = <&gpio0 30 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+			direction = "out";
+		};
+
+		qsfp2-reset {
+			gpios = <&gpio0 31 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+			direction = "out";
+		};
+#endif // defined(BOARD_MS425_16) || defined(BOARD_MS425_32)
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		reset-button@1 {
+			label = "GPIO Reset Button";
+			linux,code = <KEY_RESTART>;
+			gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+#if defined(BOARD_MS425_16) || defined(BOARD_MS425_32)
+	sfp-bus {
+		compatible = "simple-bus";
+
+#if defined(BOARD_MS425_16)
+		sfp@1 {
+			compatible = "meraki,sfp-user";
+			id = <1>;
+			mod-abs = <&gpio_chip3 0 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 0 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@2 {
+			compatible = "meraki,sfp-user";
+			id = <2>;
+			mod-abs = <&gpio_chip3 1 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 1 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@3 {
+			compatible = "meraki,sfp-user";
+			id = <3>;
+			mod-abs = <&gpio_chip3 2 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 2 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@4 {
+			compatible = "meraki,sfp-user";
+			id = <4>;
+			mod-abs = <&gpio_chip3 3 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 3 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@5 {
+			compatible = "meraki,sfp-user";
+			id = <5>;
+			mod-abs = <&gpio_chip3 4 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 4 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@6 {
+			compatible = "meraki,sfp-user";
+			id = <6>;
+			mod-abs = <&gpio_chip3 5 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 5 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@7 {
+			compatible = "meraki,sfp-user";
+			id = <7>;
+			mod-abs = <&gpio_chip3 6 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 6 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@8 {
+			compatible = "meraki,sfp-user";
+			id = <8>;
+			mod-abs = <&gpio_chip3 7 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 7 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@9 {
+			compatible = "meraki,sfp-user";
+			id = <9>;
+			mod-abs = <&gpio_chip3 8 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 8 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@10 {
+			compatible = "meraki,sfp-user";
+			id = <10>;
+			mod-abs = <&gpio_chip3 9 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 9 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@11 {
+			compatible = "meraki,sfp-user";
+			id = <11>;
+			mod-abs = <&gpio_chip3 10 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 10 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@12 {
+			compatible = "meraki,sfp-user";
+			id = <12>;
+			mod-abs = <&gpio_chip3 11 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 11 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@13 {
+			compatible = "meraki,sfp-user";
+			id = <13>;
+			mod-abs = <&gpio_chip3 12 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 12 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@14 {
+			compatible = "meraki,sfp-user";
+			id = <14>;
+			mod-abs = <&gpio_chip3 13 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 13 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@15 {
+			compatible = "meraki,sfp-user";
+			id = <15>;
+			mod-abs = <&gpio_chip3 14 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 14 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@16 {
+			compatible = "meraki,sfp-user";
+			id = <16>;
+			mod-abs = <&gpio_chip3 15 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 15 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@17 {
+			compatible = "meraki,sfp-user";
+			id = <17>;
+			mod-abs = <&gpio_chip4 2 GPIO_ACTIVE_LOW>;
+			lpmode = <&gpio_chip5 10 GPIO_ACTIVE_HIGH>;
+			mod-sel = <&gpio_chip4 0 GPIO_ACTIVE_LOW>;
+		};
+
+		sfp@18 {
+			compatible = "meraki,sfp-user";
+			id = <18>;
+			mod-abs = <&gpio_chip4 3 GPIO_ACTIVE_LOW>;
+			lpmode = <&gpio_chip5 11 GPIO_ACTIVE_HIGH>;
+			mod-sel = <&gpio_chip4 1 GPIO_ACTIVE_LOW>;
+		};
+#endif /* defined(BOARD_MS425_16) */
+
+#if defined(BOARD_MS425_32)
+		sfp@1 {
+			compatible = "meraki,sfp-user";
+			id = <1>;
+			mod-abs = <&gpio_chip2 0 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 0 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@2 {
+			compatible = "meraki,sfp-user";
+			id = <2>;
+			mod-abs = <&gpio_chip2 1 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 1 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@3 {
+			compatible = "meraki,sfp-user";
+			id = <3>;
+			mod-abs = <&gpio_chip2 2 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 2 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@4 {
+			compatible = "meraki,sfp-user";
+			id = <4>;
+			mod-abs = <&gpio_chip2 3 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 3 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@5 {
+			compatible = "meraki,sfp-user";
+			id = <5>;
+			mod-abs = <&gpio_chip2 4 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 4 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@6 {
+			compatible = "meraki,sfp-user";
+			id = <6>;
+			mod-abs = <&gpio_chip2 5 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 5 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@7 {
+			compatible = "meraki,sfp-user";
+			id = <7>;
+			mod-abs = <&gpio_chip2 6 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 6 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@8 {
+			compatible = "meraki,sfp-user";
+			id = <8>;
+			mod-abs = <&gpio_chip2 7 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 7 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@9 {
+			compatible = "meraki,sfp-user";
+			id = <9>;
+			mod-abs = <&gpio_chip2 8 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 8 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@10 {
+			compatible = "meraki,sfp-user";
+			id = <10>;
+			mod-abs = <&gpio_chip2 9 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 9 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@11 {
+			compatible = "meraki,sfp-user";
+			id = <11>;
+			mod-abs = <&gpio_chip2 10 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 10 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@12 {
+			compatible = "meraki,sfp-user";
+			id = <12>;
+			mod-abs = <&gpio_chip2 11 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 11 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@13 {
+			compatible = "meraki,sfp-user";
+			id = <13>;
+			mod-abs = <&gpio_chip2 12 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 12 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@14 {
+			compatible = "meraki,sfp-user";
+			id = <14>;
+			mod-abs = <&gpio_chip2 13 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 13 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@15 {
+			compatible = "meraki,sfp-user";
+			id = <15>;
+			mod-abs = <&gpio_chip2 14 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 14 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@16 {
+			compatible = "meraki,sfp-user";
+			id = <16>;
+			mod-abs = <&gpio_chip2 15 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip0 15 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@17 {
+			compatible = "meraki,sfp-user";
+			id = <17>;
+			mod-abs = <&gpio_chip3 0 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 0 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@18 {
+			compatible = "meraki,sfp-user";
+			id = <18>;
+			mod-abs = <&gpio_chip3 1 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 1 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@19 {
+			compatible = "meraki,sfp-user";
+			id = <19>;
+			mod-abs = <&gpio_chip3 2 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 2 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@20 {
+			compatible = "meraki,sfp-user";
+			id = <20>;
+			mod-abs = <&gpio_chip3 3 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 3 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@21 {
+			compatible = "meraki,sfp-user";
+			id = <21>;
+			mod-abs = <&gpio_chip3 4 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 4 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@22 {
+			compatible = "meraki,sfp-user";
+			id = <22>;
+			mod-abs = <&gpio_chip3 5 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 5 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@23 {
+			compatible = "meraki,sfp-user";
+			id = <23>;
+			mod-abs = <&gpio_chip3 6 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 6 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@24 {
+			compatible = "meraki,sfp-user";
+			id = <24>;
+			mod-abs = <&gpio_chip3 7 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 7 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@25 {
+			compatible = "meraki,sfp-user";
+			id = <25>;
+			mod-abs = <&gpio_chip3 8 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 8 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@26 {
+			compatible = "meraki,sfp-user";
+			id = <26>;
+			mod-abs = <&gpio_chip3 9 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 9 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@27 {
+			compatible = "meraki,sfp-user";
+			id = <27>;
+			mod-abs = <&gpio_chip3 10 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 10 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@28 {
+			compatible = "meraki,sfp-user";
+			id = <28>;
+			mod-abs = <&gpio_chip3 11 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 11 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@29 {
+			compatible = "meraki,sfp-user";
+			id = <29>;
+			mod-abs = <&gpio_chip3 12 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 12 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@30 {
+			compatible = "meraki,sfp-user";
+			id = <30>;
+			mod-abs = <&gpio_chip3 13 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 13 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@31 {
+			compatible = "meraki,sfp-user";
+			id = <31>;
+			mod-abs = <&gpio_chip3 14 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 14 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@32 {
+			compatible = "meraki,sfp-user";
+			id = <32>;
+			mod-abs = <&gpio_chip3 15 GPIO_ACTIVE_HIGH>;
+			rx-los = <&gpio_chip1 15 GPIO_ACTIVE_HIGH>;
+		};
+
+		sfp@33 {
+			compatible = "meraki,sfp-user";
+			id = <33>;
+			mod-abs = <&gpio_chip4 2 GPIO_ACTIVE_LOW>;
+			lpmode = <&gpio_chip5 10 GPIO_ACTIVE_HIGH>;
+			mod-sel = <&gpio_chip4 0 GPIO_ACTIVE_LOW>;
+		};
+
+		sfp@34 {
+			compatible = "meraki,sfp-user";
+			id = <34>;
+			mod-abs = <&gpio_chip4 3 GPIO_ACTIVE_LOW>;
+			lpmode = <&gpio_chip5 11 GPIO_ACTIVE_HIGH>;
+			mod-sel = <&gpio_chip4 1 GPIO_ACTIVE_LOW>;
+		};
+#endif /* defined(BOARD_MS425_32) */
+	};
+#endif /* defined(BOARD_MS425_16) || defined(BOARD_MS425_32) */
+
+	leds {
+		compatible = "gpio-leds";
+		orange {
+			label = "power:orange";
+			gpios = <&gpio0 7 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+		white {
+			label = "power:white";
+			gpios = <&gpio0 11 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+#if defined(BOARD_MS425_16) || defined(BOARD_MS425_32)
+		fan1-orange {
+			label = "fan1:orange";
+			gpios = <&gpio_chip5 0 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		fan1-green {
+			label = "fan1:green";
+			gpios = <&gpio_chip5 1 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		fan2-orange {
+			label = "fan2:orange";
+			gpios = <&gpio_chip5 2 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		fan2-green {
+			label = "fan2:green";
+			gpios = <&gpio_chip5 3 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		fan3-orange {
+			label = "fan3:orange";
+			gpios = <&gpio_chip5 4 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		fan3-green {
+			label = "fan3:green";
+			gpios = <&gpio_chip5 5 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+#endif // defined(BOARD_MS425_16) || defined(BOARD_MS425_32)
+	};
+
+	pwm-leds {
+		compatible = "pwm-leds";
+		red {
+			label = "tricolor0:red";
+			pwms = <&pwmchip 0 50000>;
+		};
+		green {
+			label = "tricolor0:green";
+			pwms = <&pwmchip 1 50000>;
+		};
+		blue {
+			label = "tricolor0:blue";
+			pwms = <&pwmchip 2 50000>;
+		};
+	};
+};

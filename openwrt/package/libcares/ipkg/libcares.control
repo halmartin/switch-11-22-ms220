@@ -1,0 +1,5 @@
+Package: libcares
+Priority: optional
+Section: net
+Description: a C library for asynchronous DNS requests
+

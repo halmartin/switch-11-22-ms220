@@ -1,0 +1,5 @@
+Package: musl
+Priority: optional
+Section: net
+Depends: base-files
+Description: The new hotness in C libraries for embedded Linux systems

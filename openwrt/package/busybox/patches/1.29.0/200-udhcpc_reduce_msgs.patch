@@ -1,0 +1,32 @@
+From 92eb9edffe12e95539ef880df374d35c54991d5c Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Fri, 6 Jul 2018 18:36:02 -0700
+Subject: [PATCH 16/26] 200
+
+---
+ networking/udhcp/dhcpc.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/networking/udhcp/dhcpc.c b/networking/udhcp/dhcpc.c
+index c2805a0..044e944 100644
+--- a/networking/udhcp/dhcpc.c
++++ b/networking/udhcp/dhcpc.c
+@@ -705,6 +705,7 @@ static int bcast_or_ucast(struct dhcp_packet *packet, uint32_t ciaddr, uint32_t
+ static NOINLINE int send_discover(uint32_t xid, uint32_t requested)
+ {
+ 	struct dhcp_packet packet;
++	static int msgs = 0;
+ 
+ 	/* Fill in: op, htype, hlen, cookie, chaddr fields,
+ 	 * random xid field (we override it below),
+@@ -722,6 +723,7 @@ static NOINLINE int send_discover(uint32_t xid, uint32_t requested)
+ 	 */
+ 	add_client_options(&packet);
+ 
++	if (msgs++ < 3)
+ 	bb_error_msg("sending %s", "discover");
+ 	return raw_bcast_from_client_config_ifindex(&packet, INADDR_ANY);
+ }
+-- 
+2.17.0
+

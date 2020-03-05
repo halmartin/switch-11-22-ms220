@@ -1,0 +1,44 @@
+commit e4432b1d99bef813e6b05aa1afff3df3901beecd
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Wed Jun 1 23:41:08 2016 -0700
+
+    fix yywrap
+
+diff --git a/src/racoon/cftoken.c b/src/racoon/cftoken.c
+index 04858ad..7337cca 100644
+--- a/src/racoon/cftoken.c
++++ b/src/racoon/cftoken.c
+@@ -1731,13 +1731,7 @@ void yyset_lineno (int line_number  );
+  * section 1.
+  */
+ 
+-#ifndef YY_SKIP_YYWRAP
+-#ifdef __cplusplus
+-extern "C" int yywrap (void );
+-#else
+-extern int yywrap (void );
+-#endif
+-#endif
++#define yywrap() 1
+ 
+     static void yyunput (int c,char *buf_ptr  );
+     
+diff --git a/src/setkey/token.c b/src/setkey/token.c
+index f533cfc..f23130e 100644
+--- a/src/setkey/token.c
++++ b/src/setkey/token.c
+@@ -1133,13 +1133,7 @@ void yyset_lineno (int line_number  );
+  * section 1.
+  */
+ 
+-#ifndef YY_SKIP_YYWRAP
+-#ifdef __cplusplus
+-extern "C" int yywrap (void );
+-#else
+-extern int yywrap (void );
+-#endif
+-#endif
++#define yywrap() 1
+ 
+ #ifndef yytext_ptr
+ static void yy_flex_strncpy (char *,yyconst char *,int );

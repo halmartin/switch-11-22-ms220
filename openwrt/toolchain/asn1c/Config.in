@@ -1,0 +1,8 @@
+comment "asn1c options"
+
+config BR2_PACKAGE_ASN1C
+        bool "build asn1c compiler/toolkit for the host"
+        default n
+        help
+            Build asn1c for compiling ASN marshall/unmarshall code for the target.
+

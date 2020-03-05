@@ -1,0 +1,48 @@
+diff -ru lighttpd-1.4.19/src/mod_fastcgi.c lighttpd-1.4.19-foo/src/mod_fastcgi.c
+--- lighttpd-1.4.19/src/mod_fastcgi.c	2008-03-07 02:48:34.000000000 -0800
++++ lighttpd-1.4.19-foo/src/mod_fastcgi.c	2013-08-01 23:31:16.690682268 -0700
+@@ -908,7 +908,7 @@
+ 			return -1;
+ 		}
+ 
+-		if (-1 == listen(fcgi_fd, 1024)) {
++		if (-1 == listen(fcgi_fd, 100000)) {
+ 			log_error_write(srv, __FILE__, __LINE__, "ss",
+ 				"listen failed:", strerror(errno));
+ 			return -1;
+diff -ru lighttpd-1.4.19/src/mod_scgi.c lighttpd-1.4.19-foo/src/mod_scgi.c
+--- lighttpd-1.4.19/src/mod_scgi.c	2008-02-28 14:19:03.000000000 -0800
++++ lighttpd-1.4.19-foo/src/mod_scgi.c	2013-08-01 23:31:29.870916993 -0700
+@@ -729,7 +729,7 @@
+ 			return -1;
+ 		}
+ 
+-		if (-1 == listen(scgi_fd, 1024)) {
++		if (-1 == listen(scgi_fd, 100000)) {
+ 			log_error_write(srv, __FILE__, __LINE__, "ss",
+ 				"listen failed:", strerror(errno));
+ 			return -1;
+diff -ru lighttpd-1.4.19/src/network.c lighttpd-1.4.19-foo/src/network.c
+--- lighttpd-1.4.19/src/network.c	2006-10-04 06:26:23.000000000 -0700
++++ lighttpd-1.4.19-foo/src/network.c	2013-08-01 23:31:39.839094172 -0700
+@@ -305,7 +305,7 @@
+ 		return -1;
+ 	}
+ 
+-	if (-1 == listen(srv_socket->fd, 128 * 8)) {
++	if (-1 == listen(srv_socket->fd, 100000)) {
+ 		log_error_write(srv, __FILE__, __LINE__, "ss", "listen failed: ", strerror(errno));
+ 		return -1;
+ 	}
+diff -ru lighttpd-1.4.19/src/spawn-fcgi.c lighttpd-1.4.19-foo/src/spawn-fcgi.c
+--- lighttpd-1.4.19/src/spawn-fcgi.c	2008-02-28 04:19:34.000000000 -0800
++++ lighttpd-1.4.19-foo/src/spawn-fcgi.c	2013-08-01 23:31:48.139241735 -0700
+@@ -129,7 +129,7 @@
+ 		return -1;
+ 	}
+ 
+-	if (-1 == listen(fcgi_fd, 1024)) {
++	if (-1 == listen(fcgi_fd, 100000)) {
+ 		fprintf(stderr, "%s.%d: fd = -1\n",
+ 			__FILE__, __LINE__);
+ 		return -1;

@@ -1,0 +1,25 @@
+From 28db04a240d4641a3d5232bb867587402246ae18 Mon Sep 17 00:00:00 2001
+From: Patrick Verkaik <pverkaik@meraki.com>
+Date: Tue, 15 Dec 2015 16:53:16 -0800
+Subject: [PATCH] readline: prevent bash_cv_wcwidth_broken configure check
+
+This one doesn't work when cross-compiling.
+---
+ configure |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configure b/configure
+index f11ee25..d2cf87d 100755
+--- a/configure
++++ b/configure
+@@ -6318,6 +6318,7 @@ fi
+ 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for wcwidth broken with unicode combining characters" >&5
+ $as_echo_n "checking for wcwidth broken with unicode combining characters... " >&6; }
++bash_cv_wcwidth_broken=no
+ if ${bash_cv_wcwidth_broken+:} false; then :
+   $as_echo_n "(cached) " >&6
+ else
+-- 
+1.7.9.5
+

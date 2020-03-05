@@ -1,0 +1,132 @@
+--- a/configure.in
++++ b/configure.in
+@@ -296,7 +296,8 @@ AC_RUN_IFELSE(
+     return 0;
+ ]])],
+ [have_inaddr_none="yes"],
+-[have_inaddr_none="no"])
++[have_inaddr_none="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_inaddr_none)
+ if test "x$have_inaddr_none" = "xno"; then
+ 	AC_DEFINE([INADDR_NONE],[-1],[For INADDR_NONE definition])
+@@ -438,7 +439,8 @@ AC_RUN_IFELSE(
+    pcap_lex_destroy();
+ ]])],
+ [have_pcap_lex_destroy="yes"],
+-[have_pcap_lex_destroy="no"])
++[have_pcap_lex_destroy="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_pcap_lex_destroy)
+ if test "x$have_pcap_lex_destroy" = "xyes"; then
+     AC_DEFINE([HAVE_PCAP_LEX_DESTROY],[1],[Can cleanup lex buffer stack created by pcap bpf filter])
+@@ -726,7 +728,8 @@ AC_RUN_IFELSE(
+    hdr.n_real_dPort = 0;
+ ]])],
+ [have_daq_real_addresses="yes"],
+-[have_daq_real_addresses="no"])
++[have_daq_real_addresses="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_daq_real_addresses)
+ if test "x$have_daq_real_addresses" = "xyes"; then
+     AC_DEFINE([HAVE_DAQ_REAL_ADDRESSES],[1],
+@@ -764,7 +767,8 @@ AC_RUN_IFELSE(
+    hdr.address_space_id = 0;
+ ]])],
+ [have_daq_address_space_id="yes"],
+-[have_daq_address_space_id="no"])
++[have_daq_address_space_id="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_daq_address_space_id)
+ if test "x$have_daq_address_space_id" = "xyes"; then
+     AC_DEFINE([HAVE_DAQ_ADDRESS_SPACE_ID],[1],
+@@ -782,7 +786,8 @@ AC_RUN_IFELSE(
+    hdr.flow_id = 0;
+ ]])],
+ [have_daq_flow_id="yes"],
+-[have_daq_flow_id="no"])
++[have_daq_flow_id="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_daq_flow_id)
+ if test "x$have_daq_flow_id" = "xyes"; then
+     AC_DEFINE([HAVE_DAQ_FLOW_ID],[1],
+@@ -802,7 +807,8 @@ AC_RUN_IFELSE(
+    mod.value = NULL;
+ ]])],
+ [have_daq_ext_modflow="yes"],
+-[have_daq_ext_modflow="no"])
++[have_daq_ext_modflow="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_daq_ext_modflow)
+ if test "x$have_daq_ext_modflow" = "xyes"; then
+     CCONFIGFLAGS="${CCONFIGFLAGS} -DHAVE_DAQ_EXT_MODFLOW"
+@@ -823,7 +829,8 @@ AC_RUN_IFELSE(
+    mod.value = NULL;
+ ]])],
+ [have_daq_queryflow="yes"],
+-[have_daq_queryflow="no"])
++[have_daq_queryflow="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_daq_queryflow)
+ if test "x$have_daq_queryflow" = "xyes"; then
+     CCONFIGFLAGS="${CCONFIGFLAGS} -DHAVE_DAQ_QUERYFLOW"
+@@ -841,7 +848,8 @@ AC_RUN_IFELSE(
+    DAQ_Data_Channel_Params_t params;
+ ]])],
+ [have_daq_data_channel_flags="yes"],
+-[have_daq_data_channel_flags="no"])
++[have_daq_data_channel_flags="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_daq_data_channel_flags)
+ if test "x$have_daq_data_channel_flags" = "xyes"; then
+     CCONFIGFLAGS="${CCONFIGFLAGS} -DHAVE_DAQ_DATA_CHANNEL_PARAMS"
+@@ -860,7 +868,8 @@ AC_RUN_IFELSE(
+    dpKey.src_af = 0;
+ ]])],
+ [have_daq_data_channel_separate_ip_versions="yes"],
+-[have_daq_data_channel_separate_ip_versions="no"])
++[have_daq_data_channel_separate_ip_versions="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_daq_data_channel_separate_ip_versions)
+ if test "x$have_daq_data_channel_separate_ip_versions" = "xyes"; then
+     CCONFIGFLAGS="${CCONFIGFLAGS} -DHAVE_DAQ_DATA_CHANNEL_SEPARATE_IP_VERSIONS"
+@@ -879,7 +888,8 @@ AC_RUN_IFELSE(
+    verdict = DAQ_VERDICT_RETRY;
+ ]])],
+ [have_daq_verdict_retry="yes"],
+-[have_daq_verdict_retry="no"])
++[have_daq_verdict_retry="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_daq_verdict_retry)
+ if test "x$have_daq_verdict_retry" = "xyes"; then
+     AC_DEFINE([HAVE_DAQ_VERDICT_RETRY],[1],
+@@ -897,7 +907,8 @@ AC_RUN_IFELSE(
+    hdr.flags = DAQ_PKT_FLAG_TRACE_ENABLED;
+ ]])],
+ [have_daq_packet_trace="yes"],
+-[have_daq_packet_trace="no"])
++[have_daq_packet_trace="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_daq_packet_trace)
+ if test "x$have_daq_packet_trace" = "xyes"; then
+     AC_DEFINE([HAVE_DAQ_PKT_TRACE],[1],
+@@ -917,7 +928,8 @@ AC_RUN_IFELSE(
+    fl.type = DAQ_MODFLOW_TYPE_VER_REASON;
+ ]])],
+ [have_daq_verdict_reason="yes"],
+-[have_daq_verdict_reason="no"])
++[have_daq_verdict_reason="no"],
++[AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+ AC_MSG_RESULT($have_daq_verdict_reason)
+ if test "x$have_daq_verdict_reason" = "xyes"; then
+     AC_DEFINE([HAVE_DAQ_VERDICT_REASON],[1],
+@@ -953,7 +965,8 @@ if eval "echo $host_cpu|grep -i sparc >/dev/null"; then
+         __asm__ __volatile__("rd %%tick, %0" : "=r"(val));
+     ]])],
+     [sparcv9="yes"],
+-    [sparcv9="no"])
++    [sparcv9="no"],
++    [AC_MSG_WARN(configure.in has been patched by meraki to not check dependency when cross compiling)])
+     AC_MSG_RESULT($sparcv9)
+     if test "x$sparcv9" = "xyes"; then
+         AC_DEFINE([SPARCV9],[1],[For sparc v9 with %time register])

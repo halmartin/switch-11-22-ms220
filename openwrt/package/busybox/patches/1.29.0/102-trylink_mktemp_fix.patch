@@ -1,0 +1,34 @@
+From 8e8d0c6476fb9f5baebc1e8eea0bef2770e9f4b0 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Tue, 3 Jul 2018 09:41:17 -0700
+Subject: [PATCH 12/26] 102
+
+---
+ scripts/trylink | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/trylink b/scripts/trylink
+index e11eedf..a80604e 100755
+--- a/scripts/trylink
++++ b/scripts/trylink
+@@ -46,7 +46,7 @@ try() {
+ }
+ 
+ check_cc() {
+-    tempname="$(mktemp tmp.XXXXXXXXXX)"
++    tempname="$(mktemp /tmp/tmp.XXXXXXXXXX)"
+     echo "int main(int argc,char**argv){return argv?argc:0;}" >"$tempname".c
+     # Can use "-o /dev/null", but older gcc tend to *unlink it* on failure! :(
+     # Was using "-xc /dev/null", but we need a valid C program.
+@@ -60,7 +60,7 @@ check_cc() {
+ }
+ 
+ check_libc_is_glibc() {
+-    tempname="$(mktemp tmp.XXXXXXXXXX)"
++    tempname="$(mktemp /tmp/tmp.XXXXXXXXXX)"
+     echo "\
+ 	#include <stdlib.h>
+ 	/* Apparently uclibc defines __GLIBC__ (compat trick?). Oh well. */
+-- 
+2.17.0
+

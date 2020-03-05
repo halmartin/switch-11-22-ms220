@@ -1,0 +1,7 @@
+config BR2_PACKAGE_NUTTCP
+	prompt "nuttcp............................ A program for tcp/udp performance testing"
+	tristate
+	default n
+	help
+	  http://nuttcp.org/
+

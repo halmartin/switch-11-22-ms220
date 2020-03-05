@@ -1,0 +1,42 @@
+From 3cbf82987425f0bfcdd898a24db9647b35ee7351 Mon Sep 17 00:00:00 2001
+From: Simon Glass <sjg@chromium.org>
+Date: Wed, 11 Apr 2012 16:32:26 -0700
+Subject: [PATCH 42/98] dtc: Remove spurious output on stderr
+
+Outputing to stderr is best avoided unless there is an error or warning to
+display. At present dtc always displays the name of the file it is compiling
+and the input/output formats. For example:
+
+DTC: dts->dts  on file "-"
+
+This can cause problems in some build systems. For example, U-Boot shows
+build errors for any boards which use dtc at present. It is typically the
+only message output during such a build. The C compiler does not output
+anything in general. The current dtc behaviour makes it difficult to
+provide a silent build in the normal case where nothing went wrong.
+
+Remove the message entirely.
+
+Signed-off-by: Simon Glass <sjg@chromium.org>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ dtc.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/dtc.c b/dtc.c
+index 83aef32..bee5085 100644
+--- a/dtc.c
++++ b/dtc.c
+@@ -193,9 +193,6 @@ int main(int argc, char *argv[])
+ 	if (minsize)
+ 		fprintf(stderr, "DTC: Use of \"-S\" is deprecated; it will be removed soon, use \"-p\" instead\n");
+ 
+-	fprintf(stderr, "DTC: %s->%s  on file \"%s\"\n",
+-		inform, outform, arg);
+-
+ 	if (depname) {
+ 		depfile = fopen(depname, "w");
+ 		if (!depfile)
+-- 
+1.8.1.2
+

@@ -1,0 +1,79 @@
+diff -U3 -r nuttcp-6.1.2-org/nuttcp-6.1.2.c nuttcp-6.1.2/nuttcp-6.1.2.c
+--- nuttcp-6.1.2-org/nuttcp-6.1.2.c	2014-06-05 22:52:40.807094157 -0700
++++ nuttcp-6.1.2/nuttcp-6.1.2.c	2014-06-05 22:52:58.859369530 -0700
+@@ -757,6 +757,7 @@
+ 
+ char hostbuf[ADDRSTRLEN];	/* buffer to hold text of address */
+ char host3buf[HOSTNAMELEN + 1];	/* buffer to hold 3rd party name or address */
++struct sockaddr bind_addr;
+ int trans = 1;			/* 0=receive, !0=transmit mode */
+ int sinkmode = 1;		/* 0=normal I/O, !0=sink/source mode */
+ int nofork = 0;	 		/* set to 1 to not fork server */
+@@ -877,6 +878,7 @@
+ "	--disable-v4-mapped disable v4 mapping in v6 server (default)\n"
+ "	--enable-v4-mapped enable v4 mapping in v6 server\n"
+ #endif
++"	--bind-addr <address> ip address to bind socket to\n"
+ "Usage (server): nuttcp -S[f][P] [-options]\n\
+ 		note server mode excludes use of -s\n\
+ 		'P' suboption makes 3rd party {in,out}bound control ports same\n\
+@@ -899,6 +901,7 @@
+ "	--disable-v4-mapped disable v4 mapping in v6 server (default)\n"
+ "	--enable-v4-mapped enable v4 mapping in v6 server\n"
+ #endif
++"	--bind-addr <address> ip address to bind socket to\n"
+ "Format options:\n\
+ 	-fxmitstats	also give transmitter stats (MB) with -i (UDP only)\n\
+ 	-frunningtotal	also give cumulative stats on interval reports\n\
+@@ -1321,6 +1324,7 @@
+ 	rcvwin = 0;
+ 	srvrwin = -1;
+ 	format |= WANTRTT;
++	bind_addr.sa_family = AF_UNSPEC;
+ 
+ 	if (argc < 2) goto usage;
+ 
+@@ -1862,6 +1866,26 @@
+ 				v4mapped=1;
+ 			}
+ #endif
++			else if (strcmp(&argv[0][2], "bind-addr") == 0 && argc > 1) {
++
++				bzero((char *)&bind_addr, sizeof(bind_addr));
++				bind_addr.sa_family = AF_INET;
++				int s = inet_pton(AF_INET, argv[1], bind_addr.sa_data);
++#ifdef AF_INET6
++				if (s <= 0) {
++					bind_addr.sa_family = AF_INET6;
++					s = inet_pton(AF_INET6, argv[1], bind_addr.sa_data);
++				}
++#endif
++				if (s <= 0) {
++					fprintf(stderr, "invalid ip address %s\n", argv[1]);
++					fflush(stderr);
++					exit(1);
++				}
++
++				argv++;
++				argc--;
++			}
+ 			else {
+ 				goto usage;
+ 			}
+@@ -3021,6 +3045,16 @@
+ 		bzero((char *)&sinhim6[stream_idx], sizeof(sinhim6[stream_idx]));
+ #endif
+ 
++		if (bind_addr.sa_family == AF_INET) {
++			sinme[stream_idx].sin_addr.s_addr = ((struct in_addr *) bind_addr.sa_data)->s_addr;
++		}
++#ifdef AF_INET6
++		else if (bind_addr.sa_family == AF_INET6) {
++			memcpy(sinme6[stream_idx].sin6_addr.s6_addr, ((struct in6_addr *) bind_addr.sa_data)->s6_addr,
++				sizeof(sinme6[stream_idx].sin6_addr.s6_addr));
++		}
++#endif
++
+ 		if (((trans && !reverse) && (stream_idx > 0)) ||
+ 		    ((!trans && reverse) && (stream_idx > 0)) ||
+ 		    (client && (stream_idx == 0))) {

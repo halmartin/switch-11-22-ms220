@@ -1,0 +1,16 @@
+config BR2_PACKAGE_GETTEXT
+	prompt "gettext.......................... Because we need it for glib2"
+	tristate
+	select BR2_PACKAGE_LIBICONV
+	default m if CONFIG_DEVEL
+	help
+	  The GNU `gettext' utilities are a set of tools that provide a
+	  framework to help other GNU packages produce multi-lingual
+	  messages.
+
+	  Only the libintl library will be installed in the
+	  target. The full gettext suite, including tools, will be
+	  installed in the staging directory.
+
+	  http://www.gnu.org/software/gettext/
+

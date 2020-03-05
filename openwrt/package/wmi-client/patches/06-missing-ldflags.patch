@@ -1,0 +1,11 @@
+--- a/Samba/source/build/m4/check_ld.m4	2011-07-25 15:30:49.000000000 -0700
++++ b/Samba/source/build/m4/check_ld.m4	2011-07-25 15:55:43.567679290 -0700
+@@ -30,7 +30,7 @@
+ STLD_FLAGS="-rcs"
+ BLDSHARED="false"
+ LD="${CC}"
+-LDFLAGS=""
++LDFLAGS="${LDFLAGS}"
+ SHLD="${CC}"
+ SHLD_FLAGS="-shared"
+ SHLIBEXT="so"

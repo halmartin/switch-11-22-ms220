@@ -1,0 +1,20 @@
+diff --git a/src/main.c b/src/main.c
+index 72a6351..7313579 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -311,10 +311,11 @@ shut_down(int sig)
+     do_shutdown = sig == SIGINT ? -1 : 1;
+ #ifndef _SQUID_MSWIN_
+ #ifdef KILL_PARENT_OPT
+-    if (getppid() > 1) {
+-	debug(1, 1) ("Killing RunCache, pid %ld\n", (long) getppid());
+-	if (kill(getppid(), sig) < 0)
+-	    debug(1, 1) ("kill %ld: %s\n", (long) getppid(), xstrerror());
++    pid_t ppid = getppid();
++    if (ppid > 1) {
++       debug(1, 1) ("Killing RunCache, pid %ld\n", (long) ppid);
++       if (kill(ppid, sig) < 0)
++           debug(1, 1) ("kill %ld: %s\n", (long) ppid, xstrerror());
+     }
+ #endif
+ #if SA_RESETHAND == 0

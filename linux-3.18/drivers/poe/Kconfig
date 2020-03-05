@@ -1,0 +1,20 @@
+menuconfig POWER_OVER_ETHERNET
+	tristate "Power over Ethernet support"
+	help
+	  Say Y here to enable Power over Ethernet (PoE) support.
+	  This allows management of Power over Ethernet controllers
+	  by the kernel, and monitoring/control from userspace.
+
+config POE_PD690XX
+	tristate "PD690xx PoE support"
+	depends on POWER_OVER_ETHERNET
+	help
+	  Say Y to enable a driver for MicroSemi's PD690xx PoE
+	  controllers in auto mode.
+
+config POE_BCM59121
+    tristate "BCM59121 PoE support"
+    depends on POWER_OVER_ETHERNET
+    help
+      Say Y to enable a driver for Broadcom 59121 PoE
+      controllers in auto mode.

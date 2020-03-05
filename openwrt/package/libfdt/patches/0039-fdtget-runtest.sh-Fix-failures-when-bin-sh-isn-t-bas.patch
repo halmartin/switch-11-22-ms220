@@ -1,0 +1,39 @@
+From eaec1dbc5946d5fd01a9ef7120f8461c74d759a0 Mon Sep 17 00:00:00 2001
+From: Stephen Warren <swarren@wwwdotorg.org>
+Date: Tue, 20 Mar 2012 20:23:46 -0600
+Subject: [PATCH 39/98] fdtget-runtest.sh: Fix failures when /bin/sh isn't bash
+
+On Ubuntu, /bin/sh is dash (at least by default), and dash's echo doesn't
+accept the -e option. This means that fdtget-runtest.sh's EXPECT file will
+contain "-e foo" rather than just "foo", which causes a test failure.
+
+To work around this, run /bin/echo instead of (builtin) echo, which has
+more chance of supporting the -e option.
+
+Another possible fix is to change all the #! lines to /bin/bash rather
+than /bin/sh, and change run_tests.sh to invoke sub-scripts using $SHELL
+instead of just "sh". However, that would require bash specifically, which
+may not be desirable.
+
+Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ tests/fdtget-runtest.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/fdtget-runtest.sh b/tests/fdtget-runtest.sh
+index 982fbe1..c3a3559 100755
+--- a/tests/fdtget-runtest.sh
++++ b/tests/fdtget-runtest.sh
+@@ -8,7 +8,7 @@ rm -f $LOG $EXPECT
+ trap "rm -f $LOG $EXPECT" 0
+ 
+ expect="$1"
+-echo -e $expect >$EXPECT
++/bin/echo -e $expect >$EXPECT
+ shift
+ 
+ verbose_run_log_check "$LOG" $VALGRIND $DTGET "$@"
+-- 
+1.8.1.2
+

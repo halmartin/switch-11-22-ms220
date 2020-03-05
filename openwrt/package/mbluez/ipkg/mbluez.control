@@ -1,0 +1,5 @@
+Package: mbluez
+Priority: optional
+Section: net
+Description: Bluetooth tools for embedded
+Depends: libmbluez, kmod-bluetooth

@@ -1,0 +1,50 @@
+--- a/Makefile.am	2016-01-21 23:54:15.000000000 -0800
++++ b/Makefile.am	2016-03-03 20:55:58.867922713 -0800
+@@ -51,6 +51,10 @@
+ SUBDIRS += contrib/imkmsg
+ endif
+ 
++if ENABLE_IMCHARDEVICE
++SUBDIRS += contrib/imchardevice
++endif
++
+ if ENABLE_IMPSTATS
+ SUBDIRS += plugins/impstats
+ endif
+--- a/configure.ac	2016-01-22 05:35:45.000000000 -0800
++++ b/configure.ac	2016-03-03 20:55:58.943916804 -0800
+@@ -354,6 +354,18 @@
+ )
+ AM_CONDITIONAL(ENABLE_IMKMSG, test x$enable_kmsg = xyes)
+ 
++# imchardevice
++AC_ARG_ENABLE(imchardevice,
++        [AS_HELP_STRING([--enable-imchardevice],[Char device log functionality, useful for Click @<:@default=no@:>@])],
++        [case "${enableval}" in
++         yes) enable_imchardevice="yes" ;;
++          no) enable_imchardevice="no" ;;
++           *) AC_MSG_ERROR(bad value ${enableval} for --enable-imchardevice) ;;
++         esac],
++        [enable_imchardevice="no"]
++)
++AM_CONDITIONAL(ENABLE_IMCHARDEVICE, test x$enable_imchardevice = xyes)
++
+ # imjournal
+ AC_ARG_ENABLE(imjournal,
+         [AS_HELP_STRING([--enable-imjournal],[Systemd journal message import @<:@default=no@:>@])],
+@@ -1753,6 +1765,7 @@
+ 		contrib/omhiredis/Makefile \
+ 		contrib/omrabbitmq/Makefile \
+ 		contrib/imkmsg/Makefile \
++    contrib/imchardevice/Makefile \
+ 		contrib/mmgrok/Makefile \
+ 		contrib/mmcount/Makefile \
+ 		contrib/omzmq3/Makefile \
+@@ -1788,6 +1801,7 @@
+ echo "---{ input plugins }---"
+ echo "    Klog functionality enabled:               $enable_klog ($os_type)"
+ echo "    /dev/kmsg functionality enabled:          $enable_kmsg"
++echo "    char device input module enabled:         $enable_imchardevice"
+ echo "    plain tcp input module enabled:           $enable_imptcp"
+ echo "    imdiag enabled:                           $enable_imdiag"
+ echo "    file input module enabled:                $enable_imfile"

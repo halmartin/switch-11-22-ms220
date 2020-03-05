@@ -1,0 +1,5 @@
+Package: libmount
+Priority: optional
+Section: admin
+Depends: libblkid, libuuid
+Description: Filesystem mount library

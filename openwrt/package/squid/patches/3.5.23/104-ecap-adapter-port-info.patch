@@ -1,0 +1,86 @@
+--- a/src/adaptation/ecap/XactionRep.cc    2016-05-08 05:46:35.000000000 -0700
++++ b/src/adaptation/ecap/XactionRep.cc    2016-08-30 18:01:33.957746391 -0700
+@@ -87,7 +87,9 @@
+ Adaptation::Ecap::XactionRep::option(const libecap::Name &name) const
+ {
+     if (name == libecap::metaClientIp)
+-        return clientIpValue();
++        return clientIpValue(libecap::metaClientIp);
++    if (name == libecap::metaClientConn)
++        return clientIpValue(libecap::metaClientConn);
+     if (name == libecap::metaUserName)
+         return usernameValue();
+     if (Adaptation::Config::masterx_shared_name && name == Adaptation::Config::masterx_shared_name)
+@@ -102,7 +104,7 @@
+ void
+ Adaptation::Ecap::XactionRep::visitEachOption(libecap::NamedValueVisitor &visitor) const
+ {
+-    if (const libecap::Area value = clientIpValue())
++    if (const libecap::Area value = clientIpValue(libecap::metaClientIp))
+         visitor.visit(libecap::metaClientIp, value);
+     if (const libecap::Area value = usernameValue())
+         visitor.visit(libecap::metaUserName, value);
+@@ -119,7 +121,7 @@
+ }
+
+ const libecap::Area
+-Adaptation::Ecap::XactionRep::clientIpValue() const
++Adaptation::Ecap::XactionRep::clientIpValue(const libecap::Name field) const
+ {
+     const HttpRequest *request = dynamic_cast<const HttpRequest*>(theCauseRep ?
+                                  theCauseRep->raw().header : theVirginRep.raw().header);
+@@ -127,17 +129,33 @@
+     // TODO: move this logic into HttpRequest::clientIp(bool) and
+     // HttpRequest::clientIpString(bool) and reuse everywhere
+     if (TheConfig.send_client_ip && request) {
+-        Ip::Address client_addr;
++        if (field == libecap::metaClientIp) {
++            Ip::Address client_addr;
+ #if FOLLOW_X_FORWARDED_FOR
+-        if (TheConfig.use_indirect_client) {
+-            client_addr = request->indirect_client_addr;
+-        } else
++            if (TheConfig.use_indirect_client) {
++                client_addr = request->indirect_client_addr;
++            } else
+ #endif
+-            client_addr = request->client_addr;
+-        if (!client_addr.isAnyAddr() && !client_addr.isNoAddr()) {
+-            char ntoabuf[MAX_IPSTRLEN] = "";
+-            client_addr.toStr(ntoabuf,MAX_IPSTRLEN);
+-            return libecap::Area::FromTempBuffer(ntoabuf, strlen(ntoabuf));
++                client_addr = request->client_addr;
++            if (!client_addr.isAnyAddr() && !client_addr.isNoAddr()) {
++                char ntoabuf[MAX_IPSTRLEN] = "";
++                client_addr.toStr(ntoabuf, MAX_IPSTRLEN);
++                return libecap::Area::FromTempBuffer(ntoabuf, strlen(ntoabuf));
++            }
++        } else if (field == libecap::metaClientConn) {
++            Ip::Address addr = request->client_addr;
++            char buf[MAX_IPSTRLEN] = "";
++            addr.toStr(buf, MAX_IPSTRLEN);
++            String out = String(buf);
++            int size;
++            if (size = snprintf(buf, MAX_IPSTRLEN, " %d ", addr.port()) > 0)
++               out.append(buf);
++            addr = request->my_addr;
++            addr.toStr(buf, MAX_IPSTRLEN);
++            out.append(buf, strlen(buf));
++            if (size = snprintf(buf, MAX_IPSTRLEN, " %d", addr.port()) > 0)
++               out.append(buf);
++            return libecap::Area::FromTempBuffer(out.rawBuf(), out.size());
+         }
+     }
+     return libecap::Area();
+
+--- a/src/adaptation/ecap/XactionRep.h    2016-05-08 05:46:35.000000000 -0700
++++ b/src/adaptation/ecap/XactionRep.h    2016-08-30 18:01:33.957746391 -0700
+@@ -93,7 +93,7 @@
+     void terminateMaster();
+     void scheduleStop(const char *reason);
+
+-    const libecap::Area clientIpValue() const;
++    const libecap::Area clientIpValue(const libecap::Name) const;
+     const libecap::Area usernameValue() const;
+     const libecap::Area masterxSharedValue(const libecap::Name &name) const;
+     /// Return the adaptation meta header value for the given header "name"

@@ -1,0 +1,174 @@
+diff --git a/server/db.c b/server/db.c
+index 94f1584..ce91353 100644
+--- a/server/db.c
++++ b/server/db.c
+@@ -1108,26 +1108,50 @@ void db_startup (testp)
+ int new_lease_file ()
+ {
+ 	char newfname [512];
+-	char backfname [512];
++	char rotating_fname [512];
++	char unsafe_rt_fname [512];
+ 	TIME t;
+ 	int db_fd;
+-	int db_validity;
+-	FILE *new_db_file;
++	int rotating_fd;
++	int safe_rotation;
++
++	if (snprintf (rotating_fname, sizeof rotating_fname, "%s.rotating",
++		     path_dhcpd_db) >= sizeof rotating_fname)
++		log_fatal("rotating_flag_file: path too long");
++	rotating_fd = open (rotating_fname, O_WRONLY | O_TRUNC | O_CREAT, 0664);
++	if (rotating_fd < 0) {
++		log_error ("Can't create rotating status file: %m");
++		return 0;
++	}
++
++	if (snprintf (unsafe_rt_fname, sizeof unsafe_rt_fname, "%s.unsafe_rotation",
++		     path_dhcpd_db) >= sizeof unsafe_rt_fname)
++		log_fatal("unsafe_rotate_flag_file: path too long");
++	safe_rotation = access(unsafe_rt_fname, F_OK);
++ 
++	/* If we already have an open database, close it. */
++	if (db_file) {
++		fclose (db_file);
++		db_file = (FILE *)0;
++	}
+ 
+ 	/* Make a temporary lease file... */
+ 	time(&t);
+ 
+-	db_validity = lease_file_is_corrupt;
+-
+ 	/* %Audit% Truncated filename causes panic. %2004.06.17,Safe%
+ 	 * This should never happen since the path is a configuration
+ 	 * variable from build-time or command-line.  But if it should,
+ 	 * either by malice or ignorance, we panic, since the potential
+ 	 * for havoc is high.
+ 	 */
+-	if (snprintf (newfname, sizeof newfname, "%s.%d",
+-		     path_dhcpd_db, (int)t) >= sizeof newfname)
+-		log_fatal("new_lease_file: lease file path too long");
++	if (!safe_rotation) {
++		strcpy(newfname, path_dhcpd_db);
++		unlink(path_dhcpd_db);
++	} else {
++	    if (snprintf (newfname, sizeof newfname, "%s.%d",
++	    	        path_dhcpd_db, (int)t) >= sizeof newfname)
++	    	    log_fatal("new_lease_file: lease file path too long");
++	}
+ 
+ 	db_fd = open (newfname, O_WRONLY | O_TRUNC | O_CREAT, 0664);
+ 	if (db_fd < 0) {
+@@ -1150,96 +1174,35 @@ int new_lease_file ()
+ 	}
+ #endif /* PARANOIA */
+ 
+-	if ((new_db_file = fdopen(db_fd, "w")) == NULL) {
++	if ((db_file = fdopen(db_fd, "w")) == NULL) {
+ 		log_error("Can't fdopen new lease file: %m");
+-		close(db_fd);
+-		goto fdfail;
+-	}
+-
+-	/* Close previous database, if any. */
+-	if (db_file)
+-		fclose(db_file);
+-	db_file = new_db_file;
+-
+-	errno = 0;
+-	fprintf (db_file, "# The format of this file is documented in the %s",
+-		 "dhcpd.leases(5) manual page.\n");
+-
+-	if (errno)
+-		goto fail;
+-
+-	fprintf (db_file, "# This lease file was written by isc-dhcp-%s\n\n",
+-		 PACKAGE_VERSION);
+-	if (errno)
+-		goto fail;
+-
+-	fprintf (db_file, "# authoring-byte-order entry is generated,"
+-                          " DO NOT DELETE\n");
+-	if (errno)
+-		goto fail;
+-
+-	fprintf (db_file, "authoring-byte-order %s;\n\n",
+-		 (DHCP_BYTE_ORDER == LITTLE_ENDIAN ?
+-		  "little-endian" : "big-endian"));
+-	if (errno)
+ 		goto fail;
+-
+-	/* At this point we have a new lease file that, so far, could not
+-	 * be described as either corrupt nor valid.
+-	 */
+-	lease_file_is_corrupt = 0;
++	}
+ 
+ 	/* Write out all the leases that we know of... */
+ 	counting = 0;
+ 	if (!write_leases ())
+ 		goto fail;
+ 
+-#if defined (TRACING)
+-	if (!trace_playback ()) {
+-#endif
+-	    /* %Audit% Truncated filename causes panic. %2004.06.17,Safe%
+-	     * This should never happen since the path is a configuration
+-	     * variable from build-time or command-line.  But if it should,
+-	     * either by malice or ignorance, we panic, since the potential
+-	     * for havoc is too high.
+-	     */
+-	    if (snprintf (backfname, sizeof backfname, "%s~", path_dhcpd_db)
+-			>= sizeof backfname)
+-		log_fatal("new_lease_file: backup lease file path too long");
+-
+-	    /* Get the old database out of the way... */
+-	    if (unlink (backfname) < 0 && errno != ENOENT) {
+-		log_error ("Can't remove old lease database backup %s: %m",
+-			   backfname);
+-		goto fail;
+-	    }
+-	    if (link(path_dhcpd_db, backfname) < 0) {
+-		if (errno == ENOENT) {
+-			log_error("%s is missing - no lease db to backup.",
+-				  path_dhcpd_db);
+-		} else {
+-			log_error("Can't backup lease database %s to %s: %m",
+-				  path_dhcpd_db, backfname);
++	/* Move in the new file... */
++	if (safe_rotation) {
++		if (rename (newfname, path_dhcpd_db) < 0) {
++			log_error ("Can't install new lease database %s to %s: %m",
++				   newfname, path_dhcpd_db);
+ 			goto fail;
+ 		}
+-	    }
+-#if defined (TRACING)
+-	}
+-#endif
+-	
+-	/* Move in the new file... */
+-	if (rename (newfname, path_dhcpd_db) < 0) {
+-		log_error ("Can't install new lease database %s to %s: %m",
+-			   newfname, path_dhcpd_db);
+-		goto fail;
+ 	}
+ 
++	close(rotating_fd);
++	unlink(rotating_fname);
+ 	counting = 1;
++	lease_file_is_corrupt = 0;
+ 	return 1;
+ 
+-      fail:
+-	lease_file_is_corrupt = db_validity;
+-      fdfail:
++       fail:
++	close(rotating_fd);
++	unlink(rotating_fname);
++	lease_file_is_corrupt = 1;
+ 	(void)unlink (newfname);
+ 	return 0;
+ }

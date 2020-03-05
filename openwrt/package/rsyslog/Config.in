@@ -1,0 +1,9 @@
+config BR2_PACKAGE_RSYSLOG
+	prompt "rsyslog........................... rocket-fast system for log processing"
+	tristate
+	default m if CONFIG_DEVEL
+        select BR2_PACKAGE_LIBESTR
+        select BR2_PACKAGE_LIBFASTJSON
+	select BR2_PACKAGE_LIBGNUTLS
+	help
+	  Rsyslog is a fast syslog tool.

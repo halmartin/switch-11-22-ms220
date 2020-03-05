@@ -1,0 +1,11 @@
+--- a/Samba/source/lib/charset/config.m4	2008-07-30 12:44:55.000000000 -0700
++++ b/Samba/source/lib/charset/config.m4	2011-07-22 15:54:59.619599141 -0700
+@@ -10,7 +10,7 @@
+    if (cd == 0 || cd == (iconv_t)-1) return -1;
+    return 0;
+ } 
+-   ],[AC_MSG_RESULT(yes); $3],[AC_MSG_RESULT(no); $4])
++   ],[AC_MSG_RESULT(yes); $3],[AC_MSG_RESULT(no); $4],true)
+ ])
+ 
+ dnl SMB_CHECK_ICONV_DIR(dir,action-if-found,action-if-not-found)

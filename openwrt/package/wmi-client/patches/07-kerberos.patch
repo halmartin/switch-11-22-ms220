@@ -1,0 +1,10 @@
+--- a/Samba/source/wmi/config.mk	2011-07-25 17:29:20.000000000 -0700
++++ b/Samba/source/wmi/config.mk	2011-07-25 17:31:55.827681074 -0700
+@@ -28,6 +28,7 @@
+ 		RPC_NDR_REMACT \
+ 		NDR_TABLE \
+ 		DCOM_PROXY_DCOM \
++		KERBEROS_LIB \
+ 		dcom \
+ 		wmi
+ # End BINARY wmic

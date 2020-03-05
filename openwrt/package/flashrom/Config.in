@@ -1,0 +1,7 @@
+config BR2_PACKAGE_FLASHROM
+	prompt "flashrom.......................... BIOS flashing tool"
+	tristate
+        depends BR2_PACKAGE_PCIUTILS
+	default n
+	help
+	  This tool is used to flash the BIOS/Coreboot Flash.

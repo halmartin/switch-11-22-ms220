@@ -1,0 +1,39 @@
+From a6e6c60e3a97a6b3a033cd052bb3740fd53cbf4c Mon Sep 17 00:00:00 2001
+From: Horst Kronstorfer <hkronsto@frequentis.com>
+Date: Tue, 7 Feb 2012 10:02:53 +0100
+Subject: [PATCH 33/98] dtc: Fix zero-length input segfault
+
+This patch fixes a segmentation fault caused by dereferencing a NULL
+pointer (pos->file aka yylloc.file) in srcpos_string when the input
+length is 0 (fe 'dtc </dev/null'.) Reason: yylloc.file is initialized
+with 0 and the tokenizer, which updates yylloc.file via srcpos_update
+doesn't get a chance to run on zero-length input.
+
+Signed-off-by: Horst Kronstorfer <hkronsto@frequentis.com>
+---
+ treesource.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/treesource.c b/treesource.c
+index c09aafa..33eeba5 100644
+--- a/treesource.c
++++ b/treesource.c
+@@ -23,6 +23,7 @@
+ 
+ extern FILE *yyin;
+ extern int yyparse(void);
++extern YYLTYPE yylloc;
+ 
+ struct boot_info *the_boot_info;
+ int treesource_error;
+@@ -34,6 +35,7 @@ struct boot_info *dt_from_source(const char *fname)
+ 
+ 	srcfile_push(fname);
+ 	yyin = current_srcfile->f;
++	yylloc.file = current_srcfile;
+ 
+ 	if (yyparse() != 0)
+ 		die("Unable to parse input tree\n");
+-- 
+1.8.1.2
+

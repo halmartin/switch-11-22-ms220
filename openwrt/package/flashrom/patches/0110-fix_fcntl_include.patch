@@ -1,0 +1,21 @@
+commit 151851d88722a651b9a9de4d010a380e68cc9af0
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Sun Oct 16 15:21:37 2016 -0700
+
+    Fix wrong include
+    
+    The POSIX standard has fcntl.h in the base include directory, not sys.
+
+diff --git a/linux_spi.c b/linux_spi.c
+index 26725e1..6f83247 100644
+--- a/linux_spi.c
++++ b/linux_spi.c
+@@ -22,7 +22,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
+-#include <sys/fcntl.h>
++#include <fcntl.h>
+ #include <errno.h>
+ #include <ctype.h>
+ #include <unistd.h>

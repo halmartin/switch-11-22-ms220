@@ -1,0 +1,24 @@
+commit adac17cfe3d7971a29b52fc7cdfa07a5eb10f091
+Author: Adam Weis <aweis@meraki.com>
+Date:   Thu Apr 7 12:29:42 2016 -0700
+
+    PATCH: modify the squid configure script to set SQUID_MAXFD to 16384.
+    
+    Squid is annoying, and does not observe any of the configuration variables we pass
+    to the configure script, due to what we believe is inconsistencies with our cross
+    compilations versus the squid developers idea of cross compilation.  Since Squid is
+    on the way out, I feel okay with this disgusting hack.
+
+diff --git a/configure b/configure
+index 9d01784..de997c3 100755
+--- a/configure
++++ b/configure
+@@ -37522,7 +37522,7 @@ $as_echo "$as_me: WARNING: on how to increase your filedescriptor limit" >&2;}
+ fi
+ 
+ cat >>confdefs.h <<_ACEOF
+-#define SQUID_MAXFD $squid_filedescriptors_num
++#define SQUID_MAXFD 16384
+ _ACEOF
+ 
+ 

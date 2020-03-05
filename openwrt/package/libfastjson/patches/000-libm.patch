@@ -1,0 +1,36 @@
+--- /dev/null
++++ b/math_compatibility.h
+@@ -0,0 +1,11 @@
++#ifndef __math_compatibility_h
++#define __math_compatibility_h
++
++#undef isnan
++#define isnan(x) __builtin_isnan(x)
++#undef isinf
++#define isinf(x) __builtin_isinf(x)
++#undef modf
++#define modf(x,y) __builtin_modf(x,y)
++
++#endif
+
+--- a/json_object.c
++++ b/json_object.c
+@@ -34,6 +34,7 @@
+ #include "json_object_private.h"
+ #include "json_object_iterator.h"
+ #include "json_util.h"
++#include "math_compatibility.h"
+
+ #if !defined(HAVE_STRDUP)
+ # error You do not have strdup on your system.
+
+--- a/json_print.c
++++ b/json_print.c
+@@ -29,6 +29,7 @@
+ #include "json_object.h"
+ #include "json_object_private.h"
+ #include "json_object_iterator.h"
++#include "math_compatibility.h"
+
+
+ #if !defined(HAVE_SNPRINTF)

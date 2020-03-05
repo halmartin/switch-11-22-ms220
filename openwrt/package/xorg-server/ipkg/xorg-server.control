@@ -1,0 +1,5 @@
+Package: xorg-server
+Priority: optional
+Section: x11
+Depends: fontconfig, xcmiscproto, bigreqsproto, fontsproto, videoproto, recordproto, scrnsaverproto, resourceproto, xcalibrateproto, xkbfile, xfont, pciaccess, libxext, renderproto, randrproto, fixesproto, pixman
+Description: The X Window System Server

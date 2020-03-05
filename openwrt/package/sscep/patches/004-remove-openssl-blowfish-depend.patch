@@ -1,0 +1,15 @@
+--- a/sscep.c	2018-06-21 21:11:01.602495669 -0700
++++ b/sscep.c	2018-06-22 00:11:17.389146820 -0700
+@@ -483,7 +488,12 @@
+ 	if (!E_flag) {
+ 		enc_alg = (EVP_CIPHER *)EVP_des_cbc();
+ 	} else if (!strncmp(E_char, "blowfish", 8)) {
++#ifndef OPENSSL_NO_BF
+ 		enc_alg = (EVP_CIPHER *)EVP_bf_cbc();
++#else
++		fprintf(stderr, "No Blowfish support configured in OpenSSL\n");
++		exit (SCEP_PKISTATUS_ERROR);
++#endif
+ 	} else if (!strncmp(E_char, "des", 3)) {
+ 		enc_alg = (EVP_CIPHER *)EVP_des_cbc();
+ 	} else if (!strncmp(E_char, "3des", 4)) {

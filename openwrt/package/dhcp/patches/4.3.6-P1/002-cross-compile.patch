@@ -1,0 +1,32 @@
+diff --git a/bind/Makefile.in b/bind/Makefile.in
+index 66c815e..7ad945a 100644
+--- a/bind/Makefile.in
++++ b/bind/Makefile.in
+@@ -26,7 +26,8 @@ include ./bindvar.tmp
+ 
+ bindsrcdir=bind-${version}
+ 
+-bindconfig = --disable-kqueue --disable-epoll --disable-devpoll \
++bindconfig = --target=@target_alias@ --build=@host_alias@ BUILD_CC=cc \
++	--with-randomdev=/dev/random --disable-kqueue --disable-epoll --disable-devpoll \
+ 	--without-openssl --without-libxml2 --enable-exportlib \
+ 	--with-gssapi=no --enable-threads=no --without-lmdb @BINDCONFIG@ \
+ 	--with-export-includedir=${binddir}/include \
+@@ -63,6 +64,8 @@ bind1:
+ 	else                                                            \
+ 		echo Configuring BIND Export libraries for DHCP. ;      \
+ 		rm -rf ${cleandirs} ${cleanfiles} ;                     \
++		sed 's^$${CC} $${ALL_CFLAGS} $${LDFLAGS} -o $$@ $${srcdir}/gen.c $${LIBS}^$${BUILD_CC} $${ALWAYS_INCLUDES} $${CINCLUDES} $${STD_CINCLUDES} $${ALL_CFLGS} $${LDFLAGS} -o $$@ $${srcdir}/gen.c^' ${bindsrcdir}/lib/export/dns/Makefile.in > ${bindsrcdir}/lib/export/dns/Makefile.in.new ; \
++		mv ${bindsrcdir}/lib/export/dns/Makefile.in.new ${bindsrcdir}/lib/export/dns/Makefile.in ; \
+ 		(cd ${bindsrcdir} &&                                    \
+                  ./configure ${bindconfig} > ${binddir}/configure.log); \
+ 	fi
+@@ -113,7 +116,7 @@ bind2-hostgen:
+                                                                              \
+ 		echo Installing BIND Export libraries to ${binddir}. ;       \
+ 		(cd ${bindsrcdir}/lib/export ;                               \
+-		  MAKE=${GMAKE} ${GMAKE} install > ${binddir}/install.log) ; \
++		  MAKE=${GMAKE} ${GMAKE} DESTDIR= install > ${binddir}/install.log) ; \
+ 	fi
+ 
+ clean:

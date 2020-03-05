@@ -1,0 +1,21 @@
+--- wireless-tools.29/iwlist.c
++++ wireless-tools.29/iwlist.c
+@@ -799,7 +799,7 @@ print_scanning_info(int		skfd,
+ 	  if(iw_get_ext(skfd, ifname, SIOCGIWSCAN, &wrq) < 0)
+ 	    {
+ 	      /* Check if buffer was too small (WE-17 only) */
+-	      if((errno == E2BIG) && (range.we_version_compiled > 16))
++	      if((errno == E2BIG) && (range.we_version_compiled > 16) && (buflen < 65535))
+ 		{
+ 		  /* Some driver may return very large scan results, either
+ 		   * because there are many cells, or because they have many
+@@ -815,6 +815,9 @@ print_scanning_info(int		skfd,
+ 		  else
+ 		    buflen *= 2;
+ 
++                  if(buflen > 65535)
++                    buflen = 65535;
++
+ 		  /* Try again */
+ 		  goto realloc;
+ 		}

@@ -1,0 +1,16 @@
+diff -ur openldap-2.2.29-orig/include//ldap_pvt_thread.h openldap-2.2.29/include//ldap_pvt_thread.h
+--- openldap-2.2.29-orig/include//ldap_pvt_thread.h	2005-05-03 15:40:37.000000000 -0700
++++ openldap-2.2.29/include//ldap_pvt_thread.h	2011-05-03 10:03:35.000000000 -0700
+@@ -49,9 +49,11 @@
+ 	/* LARGE stack. Will be twice as large on 64 bit machine. */
+ #define LDAP_PVT_THREAD_STACK_SIZE  ( 1 * 1024 * 1024 * sizeof(void *) )
+ /* May be explicitly defined to zero to disable it */
+-#elif LDAP_PVT_THREAD_STACK_SIZE == 0
++#else
++#if LDAP_PVT_THREAD_STACK_SIZE == 0
+ #undef LDAP_PVT_THREAD_SET_STACK_SIZE
+ #endif
++#endif
+ 
+ LDAP_F( int )
+ ldap_pvt_thread_create LDAP_P((

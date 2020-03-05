@@ -1,0 +1,33 @@
+From 8dec4d86ad3f44ef5011f86394d8f3061a09237a Mon Sep 17 00:00:00 2001
+From: Michael Ellerman <michael@ellerman.id.au>
+Date: Tue, 16 Oct 2012 17:58:56 +1100
+Subject: [PATCH 64/98] dtc: srcpos_verror() should print to stderr
+
+Errors should go to stderr.
+
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ srcpos.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/srcpos.c b/srcpos.c
+index 246ab4b..c20bc53 100644
+--- a/srcpos.c
++++ b/srcpos.c
+@@ -297,9 +297,9 @@ srcpos_verror(struct srcpos *pos, char const *fmt, va_list va)
+ 
+        srcstr = srcpos_string(pos);
+ 
+-       fprintf(stdout, "Error: %s ", srcstr);
+-       vfprintf(stdout, fmt, va);
+-       fprintf(stdout, "\n");
++       fprintf(stderr, "Error: %s ", srcstr);
++       vfprintf(stderr, fmt, va);
++       fprintf(stderr, "\n");
+ }
+ 
+ void
+-- 
+1.8.1.2
+

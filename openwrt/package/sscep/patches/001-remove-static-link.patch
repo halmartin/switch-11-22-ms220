@@ -1,0 +1,11 @@
+--- a/Linux/Makefile	2017-12-07 15:12:30.584030263 -0800
++++ b/Linux/Makefile	2017-12-07 15:12:00.944080389 -0800
+@@ -17,7 +17,7 @@
+ PROG	= sscep
+ OBJS    = sscep.o init.o net.o sceputils.o pkcs7.o ias.o fileutils.o configuration.o engine.o
+ 
+-all: $(PROG)_static $(PROG)_dyn
++all: $(PROG)_dyn
+ 
+ $(PROG)_static: $(OBJS)
+ 	$(CC) $(CFLAGS) -o $(PROG)_static $(OBJS) $(OPENSSL)/libcrypto.a -ldl

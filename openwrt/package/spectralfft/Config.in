@@ -1,0 +1,13 @@
+config BR2_PACKAGE_SPECTRALFFT
+	prompt "SPECTRALFFT.............................. A file to process spectral analysis fft"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  A small utility to take the fft of the spectral data
+
+config BR2_PACKAGE_SPECTRALFFT_WITH_FFTW
+	prompt "Enable FFTW support"
+	bool
+	default y
+	depends BR2_PACKAGE_SPECTRALFFT
+        depends BR2_PACKAGE_LIBFFTW

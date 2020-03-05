@@ -1,0 +1,58 @@
+diff -Naur mtr-0.87.1/report.c mtr-0.87.1.new/report.c
+--- mtr-0.87.1/report.c	2016-08-09 08:31:36.000000000 -0700
++++ mtr-0.87.1.new/report.c	2017-08-24 14:07:35.768568596 -0700
+@@ -265,8 +265,9 @@
+ 
+ void json_close(void)
+ {
+-  int i, j, at, first, max;
++  int i, j, z, at, first, max;
+   ip_t *addr;
++  ip_t *addr2 = NULL;
+   char name[81];
+ 
+   printf("{\n");
+@@ -294,7 +295,6 @@
+   at = first = net_min();
+   for(; at < max; at++) {
+     addr = net_addr(at);
+-    snprint_addr(name, sizeof(name), addr);
+ 
+     if(at == first) {
+       printf("{\n");
+@@ -302,7 +302,34 @@
+       printf("    {\n");
+     }
+     printf("      \"count\": \"%d\",\n", at+1);
+-    printf("      \"host\": \"%s\",\n", name);
++ 
++    printf("      \"hosts\": [\n");
++
++    for (z = 0; z < MAXPATH; z++) {
++      addr2 = net_addrs(at, z);
++
++      if ((addrcmp ((void *) &unspec_addr, (void *) addr2, af)) == 0)
++        break;
++
++      if (z != 0) {
++        printf(",\n");
++      }
++
++      snprint_addr(name, sizeof(name), addr2);
++      printf("        {\"name\": \"%s\"", name);
++
++#ifdef IPINFO
++      if(!ipinfo_no) {
++        char* fmtinfo = fmt_ipinfo(addr2);
++        if (fmtinfo != NULL) fmtinfo = trim(fmtinfo);
++        printf(", \"ASN\": \"%s\"", fmtinfo);
++      }
++#endif
++      printf("}");
++    }
++
++    printf("\n      ],\n");
++
+     for( i=0; i<MAXFLD; i++ ) {
+       j = fld_index[fld_active[i]];
+ 

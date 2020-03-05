@@ -1,0 +1,5 @@
+Package: freeradius-mod-expr
+Priority: optional
+Section: net
+Description: EXPR module for FreeRADIUS
+Depends: freeradius

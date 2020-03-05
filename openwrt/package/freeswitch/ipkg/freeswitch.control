@@ -1,0 +1,5 @@
+Package: freeswitch 
+Priority: optional
+Section: net
+Depends: libncurses libreadline libpthread libpcre libgnutls libspeex libspeexdsp libuuid libjpeg
+Description: FreeSWITCH open source telephony platform

@@ -1,0 +1,5 @@
+Package: libblkid
+Priority: optional
+Section: admin
+Depends: libuuid
+Description: libblkid library

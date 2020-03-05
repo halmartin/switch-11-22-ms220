@@ -1,0 +1,72 @@
+From 10c77208ae921a5fcb63359527a8f78e9c9a33e7 Mon Sep 17 00:00:00 2001
+From: "E.O. Stinson" <yostinso@gmail.com>
+Date: Fri, 27 Mar 2015 18:07:43 +0000
+Subject: [PATCH] Support milliseconds in segmented filenames using -m_strftime
+ 1 and %LL
+
+Reviewed-by: aacharya@meraki.com
+---
+ libavformat/segment.c | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/libavformat/segment.c b/libavformat/segment.c
+index 8ec3653b38..d82a5d184c 100644
+--- a/libavformat/segment.c
++++ b/libavformat/segment.c
+@@ -28,6 +28,7 @@
+ 
+ #include <float.h>
+ #include <time.h>
++#include <sys/time.h>
+ 
+ #include "avformat.h"
+ #include "avio_internal.h"
+@@ -97,6 +98,7 @@ typedef struct SegmentContext {
+     int64_t time;          ///< segment duration
+     int use_strftime;      ///< flag to expand filename with strftime
+     int increment_tc;      ///< flag to increment timecode if found
++    int use_merakitime;    ///< flag to expand filename with strftime + add milli/microsecond support
+ 
+     char *times_str;       ///< segment times specification string
+     int64_t *times;        ///< list of segment interval specification
+@@ -206,6 +208,29 @@ static int set_segment_filename(AVFormatContext *s)
+             av_log(oc, AV_LOG_ERROR, "Could not get segment filename with strftime\n");
+             return AVERROR(EINVAL);
+         }
++    } else if (seg->use_merakitime) {
++        struct timeval now_precise;
++        struct tm *tm, tmpbuf;
++        int i, s_len;
++        char ms[4];
++        if (gettimeofday(&now_precise, NULL)) {
++            av_log(oc, AV_LOG_ERROR, "Could not get time with gettimeofday for use with use_merakitime\n");
++            return AVERROR(EINVAL);
++        }
++        tm = localtime_r(&now_precise.tv_sec, &tmpbuf);
++        if (!strftime(oc->filename, sizeof(oc->filename), s->filename, tm)) {
++            av_log(oc, AV_LOG_ERROR, "Could not get segment filename with strftime\n");
++            return AVERROR(EINVAL);
++        }
++        s_len = strlen(oc->filename);
++        snprintf(ms, sizeof(ms), "%03ld", now_precise.tv_usec/1000);
++        for (i = 0; i < s_len - 3; i++) {
++            if (oc->filename[i] == '%' && oc->filename[i+1] == 'L' && oc->filename[i+1] == 'L') {
++                oc->filename[i] = ms[0];
++                oc->filename[i+1] = ms[1];
++                oc->filename[i+2] = ms[2];
++            }
++        }
+     } else if (av_get_frame_filename(oc->filename, sizeof(oc->filename),
+                                      s->filename, seg->segment_idx) < 0) {
+         av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->filename);
+@@ -1051,6 +1076,7 @@ static const AVOption options[] = {
+     { "strftime",          "set filename expansion with strftime at segment creation", OFFSET(use_strftime), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
+     { "increment_tc", "increment timecode between each segment", OFFSET(increment_tc), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
+     { "break_non_keyframes", "allow breaking segments on non-keyframes", OFFSET(break_non_keyframes), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
++    { "m_strftime",          "set filename expansion with strftime (+ support %LL for ms) at segment creation", OFFSET(use_merakitime), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, E },
+ 
+     { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, E },
+     { "write_header_trailer", "write a header to the first segment and a trailer to the last one", OFFSET(write_header_trailer), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, E },
+-- 
+2.13.0
+

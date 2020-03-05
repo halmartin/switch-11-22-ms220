@@ -1,0 +1,270 @@
+diff -ur dnsmasq-2.47/src/config.h dnsmasq-2.47-new/src/config.h
+--- dnsmasq-2.47/src/config.h	2009-02-05 04:14:24.000000000 -0800
++++ dnsmasq-2.47-new/src/config.h	2009-02-08 13:55:52.000000000 -0800
+@@ -166,6 +166,7 @@
+ 
+ /* platform independent options- uncomment to enable */
+ #define HAVE_TFTP
++#define HAVE_DHCP
+ /* #define HAVE_BROKEN_RTC */
+ /* #define HAVE_DBUS */
+ 
+@@ -174,6 +175,11 @@
+ #undef HAVE_TFTP
+ #endif
+ 
++/* Allow DHCP to be disabled with COPTS=-DNO_DHCP */
++#ifdef NO_DHCP
++#undef HAVE_DHCP
++#endif
++
+ /* platform dependent options. */
+ 
+ /* Must preceed __linux__ since uClinux defines __linux__ too. */
+diff -ur dnsmasq-2.47/src/dhcp.c dnsmasq-2.47-new/src/dhcp.c
+--- dnsmasq-2.47/src/dhcp.c	2009-02-01 07:59:08.000000000 -0800
++++ dnsmasq-2.47-new/src/dhcp.c	2009-02-08 13:56:50.000000000 -0800
+@@ -16,6 +16,8 @@
+ 
+ #include "dnsmasq.h"
+ 
++#ifdef HAVE_DHCP
++
+ struct iface_param {
+   struct in_addr relay, primary;
+   struct dhcp_context *current;
+@@ -982,6 +984,8 @@
+   return NULL;
+ }
+ 
++#endif
++
+ char *get_domain(struct in_addr addr)
+ {
+   struct cond_domain *c;
+diff -ur dnsmasq-2.47/src/dnsmasq.c dnsmasq-2.47-new/src/dnsmasq.c
+--- dnsmasq-2.47/src/dnsmasq.c	2009-02-02 03:19:58.000000000 -0800
++++ dnsmasq-2.47-new/src/dnsmasq.c	2009-02-08 14:04:53.000000000 -0800
+@@ -67,8 +67,10 @@
+   struct iname *if_tmp;
+   int piperead, pipefd[2], err_pipe[2];
+   struct passwd *ent_pw = NULL;
++#ifdef HAVE_DHCP
+   uid_t script_uid = 0;
+   gid_t script_gid = 0;
++#endif
+   struct group *gp= NULL;
+   long i, max_fd = sysconf(_SC_OPEN_MAX);
+   char *baduser = NULL;
+@@ -108,11 +110,13 @@
+     daemon->edns_pktsz : DNSMASQ_PACKETSZ;
+   daemon->packet = safe_malloc(daemon->packet_buff_sz);
+ 
++#ifdef HAVE_DHCP
+   if (!daemon->lease_file)
+     {
+       if (daemon->dhcp)
+ 	daemon->lease_file = LEASEFILE;
+     }
++#endif
+   
+   /* Close any file descriptors we inherited apart from std{in|out|err} */
+   for (i = 0; i < max_fd; i++)
+@@ -145,6 +149,7 @@
+   
+   now = dnsmasq_time();
+   
++#ifdef HAVE_DHCP
+   if (daemon->dhcp)
+     {
+ #if !defined(HAVE_LINUX_NETWORK) && !defined(IP_RECVIF)
+@@ -162,6 +167,7 @@
+       lease_init(now);
+       dhcp_init();
+     }
++#endif
+ 
+   if (!enumerate_interfaces())
+     die(_("failed to find list of interfaces: %s"), NULL, EC_MISC);
+@@ -204,6 +210,7 @@
+   if (daemon->port != 0)
+     pre_allocate_sfds();
+ 
++#ifdef HAVE_DHCP
+   /* Note getpwnam returns static storage */
+   if (daemon->dhcp && daemon->lease_change_command && daemon->scriptuser)
+     {
+@@ -215,6 +222,7 @@
+       else
+ 	baduser = daemon->scriptuser;
+     }
++#endif
+   
+   if (daemon->username && !(ent_pw = getpwnam(daemon->username)))
+     baduser = daemon->username;
+@@ -349,10 +357,12 @@
+    
+    /* if we are to run scripts, we need to fork a helper before dropping root. */
+   daemon->helperfd = -1;
++#ifdef HAVE_DHCP
+ #ifndef NO_FORK
+   if (daemon->dhcp && daemon->lease_change_command)
+     daemon->helperfd = create_helper(pipewrite, err_pipe[1], script_uid, script_gid, max_fd);
+ #endif
++#endif
+ 
+   if (!(daemon->options & OPT_DEBUG) && getuid() == 0)   
+     {
+@@ -482,6 +492,7 @@
+   if (daemon->max_logs != 0)
+     my_syslog(LOG_INFO, _("asynchronous logging enabled, queue limit is %d messages"), daemon->max_logs);
+ 
++#ifdef HAVE_DHCP
+   if (daemon->dhcp)
+     {
+       struct dhcp_context *dhcp_tmp;
+@@ -497,6 +508,7 @@
+ 		    daemon->dhcp_buff, inet_ntoa(dhcp_tmp->end), daemon->dhcp_buff2);
+ 	}
+     }
++#endif
+ 
+ #ifdef HAVE_TFTP
+   if (daemon->options & OPT_TFTP)
+@@ -582,11 +594,13 @@
+       set_dbus_listeners(&maxfd, &rset, &wset, &eset);
+ #endif	
+   
++#ifdef HAVE_DHCP
+       if (daemon->dhcp)
+ 	{
+ 	  FD_SET(daemon->dhcpfd, &rset);
+ 	  bump_maxfd(daemon->dhcpfd, &maxfd);
+ 	}
++#endif
+ 
+ #ifdef HAVE_LINUX_NETWORK
+       FD_SET(daemon->netlinkfd, &rset);
+@@ -596,6 +610,7 @@
+       FD_SET(piperead, &rset);
+       bump_maxfd(piperead, &maxfd);
+ 
++#ifdef HAVE_DHCP
+ #ifndef NO_FORK
+       while (helper_buf_empty() && do_script_run(now));
+ 
+@@ -608,7 +623,7 @@
+       /* need this for other side-effects */
+       while (do_script_run(now));
+ #endif
+-      
++#endif
+       /* must do this just before select(), when we know no
+ 	 more calls to my_syslog() can occur */
+       set_log_writer(&wset, &maxfd);
+@@ -662,8 +677,10 @@
+       check_tftp_listeners(&rset, now);
+ #endif      
+ 
++#ifdef HAVE_DHCP
+       if (daemon->dhcp && FD_ISSET(daemon->dhcpfd, &rset))
+ 	dhcp_packet(now);
++#endif
+ 
+ #ifndef NO_FORK
+       if (daemon->helperfd != -1 && FD_ISSET(daemon->helperfd, &wset))
+@@ -777,7 +794,9 @@
+ 	    reload_servers(daemon->resolv_files->name);
+ 	    check_servers();
+ 	  }
++#ifdef HAVE_DHCP
+ 	rerun_scripts();
++#endif
+ 	break;
+ 	
+       case EVENT_DUMP:
+@@ -786,11 +805,13 @@
+ 	break;
+ 	
+       case EVENT_ALARM:
++#ifdef HAVE_DHCP
+ 	if (daemon->dhcp)
+ 	  {
+ 	    lease_prune(NULL, now);
+ 	    lease_update_file(now);
+ 	  }
++#endif
+ 	break;
+ 		
+       case EVENT_CHILD:
+@@ -840,6 +861,7 @@
+ 	  if (daemon->tcp_pids[i] != 0)
+ 	    kill(daemon->tcp_pids[i], SIGALRM);
+ 	
++#ifdef HAVE_DHCP
+ #ifndef NO_FORK
+ 	/* handle pending lease transitions */
+ 	if (daemon->helperfd != -1)
+@@ -853,6 +875,7 @@
+ 	    close(daemon->helperfd);
+ 	  }
+ #endif
++#endif
+ 	
+ 	if (daemon->lease_stream)
+ 	  fclose(daemon->lease_stream);
+@@ -922,7 +945,7 @@
+ {
+   if (daemon->port != 0)
+     cache_reload(daemon->addn_hosts);
+-  
++#ifdef HAVE_DHCP
+   if (daemon->dhcp)
+     {
+       if (daemon->options & OPT_ETHERS)
+@@ -934,6 +957,9 @@
+       lease_update_file(now); 
+       lease_update_dns();
+     }
++#else
++  (void) now;
++#endif
+ }
+ 
+ static int set_dns_listeners(time_t now, fd_set *set, int *maxfdp)
+diff -ur dnsmasq-2.47/src/lease.c dnsmasq-2.47-new/src/lease.c
+--- dnsmasq-2.47/src/lease.c	2009-02-01 08:00:16.000000000 -0800
++++ dnsmasq-2.47-new/src/lease.c	2009-02-08 13:56:42.000000000 -0800
+@@ -16,6 +16,7 @@
+ 
+ #include "dnsmasq.h"
+ 
++#ifdef HAVE_DHCP
+ static struct dhcp_lease *leases = NULL, *old_leases = NULL;
+ static int dns_dirty, file_dirty, leases_left;
+ 
+@@ -608,6 +609,4 @@
+   return 0; /* nothing to do */
+ }
+ 	  
+-
+-      
+-
++#endif
+diff -ur dnsmasq-2.47/src/rfc2131.c dnsmasq-2.47-new/src/rfc2131.c
+--- dnsmasq-2.47/src/rfc2131.c	2009-02-01 08:01:34.000000000 -0800
++++ dnsmasq-2.47-new/src/rfc2131.c	2009-02-08 13:56:25.000000000 -0800
+@@ -16,6 +16,8 @@
+ 
+ #include "dnsmasq.h"
+ 
++#ifdef HAVE_DHCP
++
+ #define BOOTREQUEST              1
+ #define BOOTREPLY                2
+ #define DHCP_COOKIE              0x63825363
+@@ -1978,3 +1980,4 @@
+     }
+ }
+ 
++#endif

@@ -1,0 +1,13 @@
+Only in curl-7.14.0-orig/lib: .#content_encoding.c
+diff -ur curl-7.14.0-orig/lib/content_encoding.c curl-7.14.0/lib/content_encoding.c
+--- curl-7.14.0-orig/lib/content_encoding.c	2005-03-30 23:02:03.000000000 -0800
++++ curl-7.14.0/lib/content_encoding.c	2010-09-03 14:47:21.522766458 -0700
+@@ -108,7 +108,7 @@
+ 
+     status = inflate(z, Z_SYNC_FLUSH);
+     if (status == Z_OK || status == Z_STREAM_END) {
+-      if(DSIZ - z->avail_out) {
++      if((DSIZ - z->avail_out) && (!k->ignorebody)) {
+         result = Curl_client_write(data, CLIENTWRITE_BODY, decomp,
+                                    DSIZ - z->avail_out);
+         /* if !CURLE_OK, clean up, return */

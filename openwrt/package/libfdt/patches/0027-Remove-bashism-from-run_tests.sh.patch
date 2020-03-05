@@ -1,0 +1,30 @@
+From a90b5b149197a8b38bd569c6a8abc9fc0363fa4b Mon Sep 17 00:00:00 2001
+From: David Gibson <david@gibson.dropbear.id.au>
+Date: Fri, 3 Feb 2012 16:12:05 +1100
+Subject: [PATCH 27/98] Remove bashism from run_tests.sh
+
+The patches introducing fdtget and fdtput inserted a peculiar bashism to
+run_tests.sh using non-portable assignment within an (( )) expression.
+This patch fixes it.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ tests/run_tests.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/run_tests.sh b/tests/run_tests.sh
+index 2650559..37c173c 100755
+--- a/tests/run_tests.sh
++++ b/tests/run_tests.sh
+@@ -478,7 +478,7 @@ fdtput_tests () {
+     tac $base | tr a-z A-Z | sort -r >$bigfile2
+ 
+     # Allow just enough space for both file1 and file2
+-    (( space = $(stat -c %s $file1) + $(stat -c %s $file2) ))
++    space=$(( $(stat -c %s $file1) + $(stat -c %s $file2) ))
+     $DTC -O dtb -p $space -o $file ${file%.dtb}.dts 2>/dev/null
+ 
+     # run_fdtput_test <test-name> <expected-result> <file> <key> <flags>
+-- 
+1.8.1.2
+

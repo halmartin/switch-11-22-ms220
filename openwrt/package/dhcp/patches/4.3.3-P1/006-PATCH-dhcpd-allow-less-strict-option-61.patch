@@ -1,0 +1,102 @@
+From 3d3c6caf0ef5ff165dd712edfb363595cb795439 Mon Sep 17 00:00:00 2001
+From: Adam Weis <aweis@meraki.com>
+Date: Mon, 27 Mar 2017 21:46:59 -0700
+Subject: [PATCH] PATCH: dhcpd allow less strict option 61
+
+---
+ common/options.c | 15 ++++++++++++---
+ includes/dhcpd.h |  1 +
+ server/dhcpd.c   | 12 ++++++++++++
+ server/stables.c |  1 +
+ 4 files changed, 26 insertions(+), 3 deletions(-)
+
+diff --git a/common/options.c b/common/options.c
+index 74f1fb5..ec1d0a5 100644
+--- a/common/options.c
++++ b/common/options.c
+@@ -4241,6 +4241,8 @@ add_option(struct option_state *options,
+ 	return 1;
+ }
+ 
++int meraki_nonstrict_option_61 = 0;
++
+ /**
+  *  Checks if received BOOTP/DHCPv4 packet is sane
+  *
+@@ -4257,9 +4259,16 @@ int validate_packet(struct packet *packet)
+ 	if (oc) {
+ 		/* Let's check if client-identifier is sane */
+ 		if (oc->data.len == 0) {
+-			log_debug("Dropped DHCPv4 packet with zero-length client-id");
+-			return (0);
+-
++			/*
++			 * PATCH: allow 0-length option 61 DHCP packets
++			 * Some of our customers have broken clients
++			 */
++			if (meraki_nonstrict_option_61) {
++				log_debug("Ignoring RFC2132, allowing zero-length client-id option");
++			} else {
++				log_debug("Dropped DHCPv4 packet with zero-length client-id");
++				return (0);
++			}
+ 		} else if (oc->data.len == 1) {
+ 			/*
+ 			 * RFC2132, section 9.14 states that minimum length of client-id
+diff --git a/includes/dhcpd.h b/includes/dhcpd.h
+index 1fd12db..2a8aa10 100644
+--- a/includes/dhcpd.h
++++ b/includes/dhcpd.h
+@@ -790,6 +790,7 @@ struct lease_state {
+ #define SV_ECHO_CLIENT_ID		85
+ #define SV_SERVER_ID_CHECK		86
+ #define SV_PREFIX_LEN_MODE		87
++#define SV_MERAKI_NONSTRICT_OPTION_61	88
+ 
+ #if !defined (DEFAULT_PING_TIMEOUT)
+ # define DEFAULT_PING_TIMEOUT 1
+diff --git a/server/dhcpd.c b/server/dhcpd.c
+index b415512..16b81fa 100644
+--- a/server/dhcpd.c
++++ b/server/dhcpd.c
+@@ -78,6 +78,7 @@ int ddns_update_style;
+ int dont_use_fsync = 0; /* 0 = default, use fsync, 1 = don't use fsync */
+ int server_id_check = 0; /* 0 = default, don't check server id, 1 = do check */
+ int prefix_length_mode = PLM_EXACT;
++extern int meraki_nonstrict_option_61;
+ 
+ const char *path_dhcpd_conf = _PATH_DHCPD_CONF;
+ const char *path_dhcpd_db = _PATH_DHCPD_DB;
+@@ -1125,6 +1126,17 @@ void postconf_initialization (int quiet)
+ 		data_string_forget(&db, MDL);
+ 	}
+ 
++	/*
++	 * PATCH: meraki option to allow less strict option 61 (0 length packets)
++	 */
++	oc = lookup_option(&server_universe, options, SV_MERAKI_NONSTRICT_OPTION_61);
++	if ((oc != NULL) &&
++		evaluate_boolean_option_cache(NULL, NULL, NULL, NULL, options, NULL,
++						&global_scope, oc, MDL)) {
++		log_info("Setting Meraki nonstrict option 61 to true");
++		meraki_nonstrict_option_61 = 1;
++	}
++
+ #if defined (BINARY_LEASES)
+ 	if (local_family == AF_INET) {
+ 		log_info("Source compiled to use binary-leases");
+diff --git a/server/stables.c b/server/stables.c
+index 963503e..a051f92 100644
+--- a/server/stables.c
++++ b/server/stables.c
+@@ -275,6 +275,7 @@ static struct option server_options[] = {
+ 	{ "echo-client-id", "f",		&server_universe,  SV_ECHO_CLIENT_ID, 1 },
+ 	{ "server-id-check", "f",		&server_universe,  SV_SERVER_ID_CHECK, 1 },
+ 	{ "prefix-length-mode", "Nprefix_length_modes.",	&server_universe,  SV_PREFIX_LEN_MODE, 1 },
++	{ "meraki-nonstrict-option-61", "f",	&server_universe, SV_MERAKI_NONSTRICT_OPTION_61, 1 },
+ 	{ NULL, NULL, NULL, 0, 0 }
+ };
+ 
+-- 
+2.10.2
+

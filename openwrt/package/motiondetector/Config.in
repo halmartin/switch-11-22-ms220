@@ -1,0 +1,6 @@
+config BR2_PACKAGE_MOTIONDETECTOR
+	prompt "motion detector.............................. A tool to detect motion events in video clips"
+	tristate
+	default n
+	help
+		Meraki SAD-based motion detection algorithm

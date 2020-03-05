@@ -1,0 +1,30 @@
+commit 49db23c4dce0e8df373c7f69e2d74c85be05b94a
+Author: basil gor <basilgor@gmail.com>
+Date:   Sun Jan 2 02:19:29 2011 +0300
+
+    detached session clean up fix
+    
+    l2tp_session_unlink called l2tp_tunnel_session_remove during clean up on
+    termination unconditionally even if session->tunnel is Null (happens
+    with persistent option). Proper check added.
+---
+ l2tp_session.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/l2tp_session.c b/l2tp_session.c
+index 39f0e54..e769e5c 100644
+--- a/l2tp_session.c
++++ b/l2tp_session.c
+@@ -3117,8 +3117,10 @@ static void l2tp_session_unlink(struct l2tp_session *session, int force)
+ 	L2TP_DEBUG(L2TP_FUNC, "%s: tunl %s: force=%d", __func__, session->fsmi.name, force);
+ 
+ 	if ((session->use_count == 0) || force) {
+-		/* Unlink session from the tunnel's session list */
+-		l2tp_tunnel_session_remove(session->my_tunnel, &session->session_list, &session->session_id_hlist, 0);
++		if (session->my_tunnel) {
++			/* Unlink session from the tunnel's session list */
++			l2tp_tunnel_session_remove(session->my_tunnel, &session->session_list, &session->session_id_hlist, 0);
++		}
+ 
+ 		/* Unlink session from our list */
+ 		usl_list_del(&session->list);

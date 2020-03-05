@@ -1,0 +1,33 @@
+From 19cd5ead0b692c8c10e286252a7f4a725133d8f4 Mon Sep 17 00:00:00 2001
+From: KRONSTORFER Horst <Horst.KRONSTORFER@frequentis.com>
+Date: Tue, 11 Dec 2012 21:12:14 +0000
+Subject: [PATCH 72/98] dtc: Drop the '-S is deprecated' warning
+
+The 'deprecated' warning is in there for more than 4 years now
+and nobody seemed to be confused enough to vote it out.  Let's
+drop the warning then.
+
+This reverts commit 315c5d095ebdf29f1912186e76ab9f95e694b18a.
+
+Signed-off-by: Horst Kronstorfer <hkronsto@frequentis.com>
+---
+ dtc.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/dtc.c b/dtc.c
+index a375683..d40e220 100644
+--- a/dtc.c
++++ b/dtc.c
+@@ -201,9 +201,6 @@ int main(int argc, char *argv[])
+ 	if (minsize && padsize)
+ 		die("Can't set both -p and -S\n");
+ 
+-	if (minsize)
+-		fprintf(stderr, "DTC: Use of \"-S\" is deprecated; it will be removed soon, use \"-p\" instead\n");
+-
+ 	if (depname) {
+ 		depfile = fopen(depname, "w");
+ 		if (!depfile)
+-- 
+1.8.1.2
+

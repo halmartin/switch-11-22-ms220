@@ -1,0 +1,4 @@
+Package: dmalloc
+Priority: optional
+Section: lib
+Description: The debug malloc library

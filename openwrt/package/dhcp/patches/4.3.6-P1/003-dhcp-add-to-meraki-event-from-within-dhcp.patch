@@ -1,0 +1,81 @@
+diff --git a/server/dhcp.c b/server/dhcp.c
+index 5b4e0b9..3a436a5 100644
+--- a/server/dhcp.c
++++ b/server/dhcp.c
+@@ -289,6 +289,8 @@ void dhcpdiscover (packet, ms_nulltp)
+ {
+ 	struct lease *lease = (struct lease *)0;
+ 	char msgbuf [1024]; /* XXX */
++	char mac[1024];
++	char interface[1024];
+ 	TIME when;
+ 	const char *s;
+ 	int peer_has_leases = 0;
+@@ -326,19 +328,21 @@ void dhcpdiscover (packet, ms_nulltp)
+ 			  piaddr(packet->client_addr));
+ 	} else
+ #endif
+-	snprintf (msgbuf, sizeof msgbuf, "DHCPDISCOVER from %s %s%s%svia %s",
+-		 (packet -> raw -> htype
+-		  ? print_hw_addr (packet -> raw -> htype,
+-				   packet -> raw -> hlen,
+-				   packet -> raw -> chaddr)
+-		  : (lease
+-		     ? print_hex_1(lease->uid_len, lease->uid, 60)
+-		     : "<no identifier>")),
+-		  s ? "(" : "", s ? s : "", s ? ") " : "",
+-		  packet -> raw -> giaddr.s_addr
+-		  ? inet_ntoa (packet -> raw -> giaddr)
+-		  : packet -> interface -> name);
+-
++	{
++		snprintf(mac, sizeof mac, "%s %s%s%s",
++			 (packet -> raw -> htype
++			  ? print_hw_addr (packet -> raw -> htype,
++					   packet -> raw -> hlen,
++					   packet -> raw -> chaddr)
++			  : (lease
++			     ? print_hex_1(lease->uid_len, lease->uid, 60)
++			     : "<no identifier>")),
++			 s ? "(" : "", s ? s : "", s ? ") ": "");
++		snprintf(interface, sizeof interface, "%s",
++			 (packet -> raw -> giaddr.s_addr) ? inet_ntoa (packet -> raw -> giaddr) : packet -> interface -> name);
++		snprintf (msgbuf, sizeof msgbuf, "DHCPDISCOVER from %svia %s",
++			  mac, interface);
++	}
+ 	/* Sourceless packets don't make sense here. */
+ 	if (!packet -> shared_network) {
+ #if defined(DHCPv6) && defined(DHCP4o6)
+@@ -392,10 +396,31 @@ void dhcpdiscover (packet, ms_nulltp)
+ 			if (peer_has_leases)
+ 				log_error ("%s: peer holds all free leases",
+ 					   msgbuf);
+-			else
++			else {
+ 				log_error ("%s: network %s: no free leases",
+ 					   msgbuf,
+ 					   packet -> shared_network -> name);
++				char vlan_info[1024] = {0};
++				if (strcmp(interface, "hostlan")) {
++					int vlan_num;
++					int n = sscanf(interface, "hostlan.%d", &vlan_num);
++					if (n == 1)
++						snprintf(vlan_info, sizeof vlan_info, " vlan='%d'", vlan_num);
++					else
++						snprintf(vlan_info, sizeof vlan_info, "%s", interface);
++				}
++
++				FILE* fp = fopen("/click/event_log/add_event", "w");
++				if (!fp) {
++					log_error("error opening event_log/add_event!");
++					return;
++				}
++				fprintf(fp, "dhcp_no_leases \"network=\'%s\'%s\" \"DHCP: no free DHCP leases to give %s on network %s\" %s",
++					packet -> shared_network -> name, vlan_info,
++					mac, packet -> shared_network -> name, mac);
++				if (0 != fclose(fp))
++					log_error("error closing/writing event_log/add_event");
++			}
+ 			return;
+ 		}
+ 	}

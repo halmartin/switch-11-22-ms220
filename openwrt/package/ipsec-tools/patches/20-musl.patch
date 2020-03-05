@@ -1,0 +1,276 @@
+commit 420a5e52ee1f899597a9675c7052a381d7535f73
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Wed Jun 1 20:34:09 2016 -0700
+
+    fix for musl
+
+diff --git a/src/libipsec/ipsec_dump_policy.c b/src/libipsec/ipsec_dump_policy.c
+index 4d0eb77..dbfd3bc 100644
+--- a/src/libipsec/ipsec_dump_policy.c
++++ b/src/libipsec/ipsec_dump_policy.c
+@@ -52,6 +52,10 @@
+ #include "ipsec_strerror.h"
+ #include "libpfkey.h"
+ 
++#ifndef __P
++#define __P(args) args
++#endif
++
+ static const char *ipsp_dir_strs[] = {
+ 	"any", "in", "out", "fwd",
+ #ifdef __linux__
+diff --git a/src/libipsec/ipsec_strerror.h b/src/libipsec/ipsec_strerror.h
+index 2b4264f..6849ee1 100644
+--- a/src/libipsec/ipsec_strerror.h
++++ b/src/libipsec/ipsec_strerror.h
+@@ -35,7 +35,7 @@
+ #define _IPSEC_STRERROR_H
+ 
+ extern int __ipsec_errcode;
+-extern void __ipsec_set_strerror __P((const char *));
++extern void __ipsec_set_strerror (const char *);
+ 
+ #define EIPSEC_NO_ERROR		0	/*success*/
+ #define EIPSEC_NOT_SUPPORTED	1	/*not supported*/
+diff --git a/src/libipsec/libpfkey.h b/src/libipsec/libpfkey.h
+index a213aac..5749911 100644
+--- a/src/libipsec/libpfkey.h
++++ b/src/libipsec/libpfkey.h
+@@ -44,6 +44,11 @@
+ #define PRIORITY_OFFSET_POSITIVE_MAX	0x3fffffff
+ #define PRIORITY_OFFSET_NEGATIVE_MAX	0x40000000
+ 
++#ifndef __P
++#define __P(args) args
++#endif
++
++
+ struct sadb_msg;
+ extern void pfkey_sadump __P((struct sadb_msg *));
+ extern void pfkey_sadump_withports __P((struct sadb_msg *));
+diff --git a/src/racoon/backupsa.c b/src/racoon/backupsa.c
+index 82d74ca..95307ca 100644
+--- a/src/racoon/backupsa.c
++++ b/src/racoon/backupsa.c
+@@ -276,9 +276,9 @@ do { 								\
+ 		GETNEXTNUM(sa_args.a_keylen, strtoul);
+ 		GETNEXTNUM(sa_args.flags, strtoul);
+ 		GETNEXTNUM(sa_args.l_alloc, strtoul);
+-		GETNEXTNUM(sa_args.l_bytes, strtouq);
+-		GETNEXTNUM(sa_args.l_addtime, strtouq);
+-		GETNEXTNUM(sa_args.l_usetime, strtouq);
++		GETNEXTNUM(sa_args.l_bytes, strtoull);
++		GETNEXTNUM(sa_args.l_addtime, strtoull);
++		GETNEXTNUM(sa_args.l_usetime, strtoull);
+ 		GETNEXTNUM(sa_args.seq, strtoul);
+ 
+ #undef GETNEXTNUM
+diff --git a/src/racoon/cftoken.c b/src/racoon/cftoken.c
+index 7b9bb14..04858ad 100644
+--- a/src/racoon/cftoken.c
++++ b/src/racoon/cftoken.c
+@@ -4745,6 +4745,7 @@ yycf_switch_buffer(path)
+ 	char *path;
+ {
+ 	char *filepath = NULL;
++	int globopts = 0;
+ 
+ 	/* got the include file name */
+ 	if (incstackp >= MAX_INCLUDE_DEPTH) {
+@@ -4753,7 +4754,10 @@ yycf_switch_buffer(path)
+ 		return -1;
+ 	}
+ 
+-	if (glob(path, GLOB_TILDE, NULL, &incstack[incstackp].matches) != 0 ||
++#ifdef GLOB_TILDE
++	globopts = GLOB_TILDE;
++#endif
++	if (glob(path, globopts, NULL, &incstack[incstackp].matches) != 0 ||
+ 	    incstack[incstackp].matches.gl_pathc == 0) {
+ 		plog(LLV_ERROR, LOCATION, NULL,
+ 			"glob found no matches for path \"%s\"\n", path);
+diff --git a/src/racoon/cftoken.l b/src/racoon/cftoken.l
+index 5a9cde5..a7b3f07 100644
+--- a/src/racoon/cftoken.l
++++ b/src/racoon/cftoken.l
+@@ -719,6 +719,7 @@ yycf_switch_buffer(path)
+ 	char *path;
+ {
+ 	char *filepath = NULL;
++	int globopts = 0;
+ 
+ 	/* got the include file name */
+ 	if (incstackp >= MAX_INCLUDE_DEPTH) {
+@@ -727,7 +728,10 @@ yycf_switch_buffer(path)
+ 		return -1;
+ 	}
+ 
+-	if (glob(path, GLOB_TILDE, NULL, &incstack[incstackp].matches) != 0 ||
++#ifdef GLOB_TILDE
++	globopts = GLOB_TILDE;
++#endif
++	if (glob(path, globopts, NULL, &incstack[incstackp].matches) != 0 ||
+ 	    incstack[incstackp].matches.gl_pathc == 0) {
+ 		plog(LLV_ERROR, LOCATION, NULL,
+ 			"glob found no matches for path \"%s\"\n", path);
+diff --git a/src/racoon/getcertsbyname.c b/src/racoon/getcertsbyname.c
+index 1ce7c62..ae46bae 100644
+--- a/src/racoon/getcertsbyname.c
++++ b/src/racoon/getcertsbyname.c
+@@ -63,8 +63,8 @@
+ /* XXX should it use ci_errno to hold errno instead of h_errno ? */
+ extern int h_errno;
+ 
+-static struct certinfo *getnewci __P((int, int, int, int, int, 
+-			unsigned char *));
++static struct certinfo *getnewci(int, int, int, int, int, 
++			unsigned char *);
+ 
+ static struct certinfo *
+ getnewci(qtype, keytag, algorithm, flags, certlen, cert)
+diff --git a/src/racoon/logger.h b/src/racoon/logger.h
+index 3fd3e94..66ea4c3 100644
+--- a/src/racoon/logger.h
++++ b/src/racoon/logger.h
+@@ -34,6 +34,10 @@
+ #ifndef _LOGGER_H
+ #define _LOGGER_H
+ 
++#ifndef __P
++#define __P(args) args
++#endif
++
+ struct log {
+ 	int head;
+ 	int siz;
+diff --git a/src/racoon/misc.h b/src/racoon/misc.h
+index 3e758d9..4985644 100644
+--- a/src/racoon/misc.h
++++ b/src/racoon/misc.h
+@@ -36,6 +36,10 @@
+ 
+ #define BIT2STR(b) bit2str(b, sizeof(b)<<3)
+ 
++#ifndef __P
++#define __P(args) args
++#endif
++
+ #ifdef HAVE_FUNC_MACRO
+ #define LOCATION        debug_location(__FILE__, __LINE__, __func__)
+ #else
+diff --git a/src/racoon/missing/crypto/sha2/sha2.h b/src/racoon/missing/crypto/sha2/sha2.h
+index 42bcc2a..18fa648 100644
+--- a/src/racoon/missing/crypto/sha2/sha2.h
++++ b/src/racoon/missing/crypto/sha2/sha2.h
+@@ -40,11 +40,14 @@
+ #ifndef __SHA2_H__
+ #define __SHA2_H__
+ 
++#ifndef __P
++#define __P(args) args
++#endif
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+ 
+-
+ /*** SHA-256/384/512 Various Length Definitions ***********************/
+ #define SHA256_BLOCK_LENGTH		64
+ #define SHA256_DIGEST_LENGTH		32
+diff --git a/src/racoon/netdb_dnssec.h b/src/racoon/netdb_dnssec.h
+index a11209d..d37c7d3 100644
+--- a/src/racoon/netdb_dnssec.h
++++ b/src/racoon/netdb_dnssec.h
+@@ -68,7 +68,7 @@ struct certinfo {
+ 	struct certinfo *ci_next;	/* next structure */
+ };
+ 
+-extern void freecertinfo __P((struct certinfo *));
+-extern int getcertsbyname __P((char *, struct certinfo **));
++extern void freecertinfo(struct certinfo *);
++extern int getcertsbyname(char *, struct certinfo **);
+ 
+ #endif /* _NETDB_DNSSEC_H */
+diff --git a/src/racoon/pfkey.c b/src/racoon/pfkey.c
+index d00b166..13d5ff1 100644
+--- a/src/racoon/pfkey.c
++++ b/src/racoon/pfkey.c
+@@ -59,7 +59,6 @@
+ #include <sys/param.h>
+ #include <sys/socket.h>
+ #include <sys/queue.h>
+-#include <sys/sysctl.h>
+ 
+ #include <net/route.h>
+ #include <net/pfkeyv2.h>
+diff --git a/src/racoon/plog.h b/src/racoon/plog.h
+index ed43c8b..ff26a09 100644
+--- a/src/racoon/plog.h
++++ b/src/racoon/plog.h
+@@ -41,6 +41,10 @@
+ #endif
+ #include <syslog.h>
+ 
++#ifndef __P
++#define __P(args) args
++#endif
++
+ /*
+  * INFO: begin negotiation, SA establishment/deletion/expiration.
+  * NOTIFY: just notifiable.
+diff --git a/src/racoon/str2val.h b/src/racoon/str2val.h
+index 4a7cec1..88ce99d 100644
+--- a/src/racoon/str2val.h
++++ b/src/racoon/str2val.h
+@@ -34,7 +34,7 @@
+ #ifndef _STR2VAL_H
+ #define _STR2VAL_H
+ 
+-extern caddr_t val2str __P((const char *, size_t));
+-extern char *str2val __P((const char *, int, size_t *));
++extern caddr_t val2str (const char *, size_t);
++extern char *str2val (const char *, int, size_t *);
+ 
+ #endif /* _STR2VAL_H */
+diff --git a/src/racoon/vmbuf.h b/src/racoon/vmbuf.h
+index 3f2f4ea..28f476e 100644
+--- a/src/racoon/vmbuf.h
++++ b/src/racoon/vmbuf.h
+@@ -34,6 +34,10 @@
+ #ifndef _VMBUF_H
+ #define _VMBUF_H
+ 
++#ifndef __P
++#define __P(args) args
++#endif
++
+ /*
+  *	bp      v
+  *	v       v
+diff --git a/src/setkey/extern.h b/src/setkey/extern.h
+index 6f439fa..32639f8 100644
+--- a/src/setkey/extern.h
++++ b/src/setkey/extern.h
+@@ -1,6 +1,8 @@
+ /*	$NetBSD: extern.h,v 1.5 2009/03/06 11:45:03 tteras Exp $	*/
+ 
+-
++#ifndef __P
++#define __P(args) args
++#endif
+ 
+ void parse_init __P((void));
+ int parse __P((FILE **));
+diff --git a/src/setkey/setkey.c b/src/setkey/setkey.c
+index c400faa..51f8b75 100644
+--- a/src/setkey/setkey.c
++++ b/src/setkey/setkey.c
+@@ -40,7 +40,6 @@
+ #include <sys/socket.h>
+ #include <sys/time.h>
+ #include <sys/stat.h>
+-#include <sys/sysctl.h>
+ #include <err.h>
+ #include <netinet/in.h>
+ #include <net/pfkeyv2.h>

@@ -1,0 +1,5 @@
+Package: xcmiscproto
+Priority: optional
+Section: x11
+Depends:
+Description: XCMisc extension headers

@@ -1,0 +1,11 @@
+--- a/Makefile.in	2010-12-20 19:22:34.520329719 -0800
++++ b/Makefile.in	2010-12-20 19:25:21.488224919 -0800
+@@ -145,6 +145,8 @@
+ 	ln -s $@ $(SHAREDLIBM)
+ 	-@rmdir objs
+ 
++$(SHAREDLIB): $(SHAREDLIBV)
++
+ example$(EXE): example.o $(STATICLIB)
+ 	$(CC) $(CFLAGS) -o $@ example.o $(TEST_LDFLAGS)
+ 

@@ -1,0 +1,12 @@
+diff -u ruby-1.8.4/gc.c ruby-1.8.4-new/gc.c
+--- ruby-1.8.4/gc.c	2006-07-27 22:21:10.000000000 -0700
++++ ruby-1.8.4-new/gc.c	2006-07-27 21:44:40.000000000 -0700
+@@ -80,7 +80,7 @@
+ #if defined(MSDOS) || defined(__human68k__)
+ #define GC_MALLOC_LIMIT 200000
+ #else
+-#define GC_MALLOC_LIMIT 8000000
++#define GC_MALLOC_LIMIT 500000
+ #endif
+ #endif
+

@@ -1,0 +1,16 @@
+--- a/src/redirect.cc	2013-05-20 04:48:55.000000000 -0700
++++ b/src/redirect.cc	2013-06-18 13:32:09.430822842 -0700
+@@ -241,10 +241,10 @@
+     if (requestExtrasFmt)
+         requestExtrasFmt->assemble(requestExtras, http->al, 0);
+
+-    sz = snprintf(buf, MAX_REDIRECTOR_REQUEST_STRLEN, "%s%s%s\n",
++    char myaddr[MAX_IPSTRLEN];
++    sz = snprintf(buf, MAX_REDIRECTOR_REQUEST_STRLEN, "url=%s myip=%s\n",
+                   r->orig_url.c_str(),
+-                  requestExtras.hasContent() ? " " : "",
+-                  requestExtras.hasContent() ? requestExtras.content() : "");
++                  http->request->client_addr.toStr(myaddr, MAX_IPSTRLEN));
+
+     if ((sz<=0) || (sz>=MAX_REDIRECTOR_REQUEST_STRLEN)) {
+         if (sz<=0) {

@@ -1,0 +1,76 @@
+--- ipsec-tools-0.8.0/configure	2011-12-11 22:12:26.004284689 -0800
++++ ipsec-tools-0.8.0.new/configure	2011-12-11 22:19:57.995314878 -0800
+@@ -13187,7 +13187,7 @@
+ if ac_fn_c_try_link "$LINENO"; then :
+   ac_cv_search_rad_create_request="none required"
+ else
+-  LIBS="-lradius $LIBS"
++  LIBS="-lradiusbsd $LIBS"
+ 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
+@@ -13207,7 +13207,7 @@
+ }
+ _ACEOF
+ if ac_fn_c_try_link "$LINENO"; then :
+-  ac_cv_search_rad_create_request="-lradius"
++  ac_cv_search_rad_create_request="-lradiusbsd"
+ fi
+ rm -f core conftest.err conftest.$ac_objext \
+     conftest$ac_exeext conftest.$ac_ext
+@@ -13257,7 +13257,7 @@
+ if ac_fn_c_try_link "$LINENO"; then :
+   ac_cv_search_rad_create_request="none required"
+ else
+-  LIBS="-lradius $LIBS"
++  LIBS="-lradiusbsd $LIBS"
+ 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
+@@ -13277,7 +13277,7 @@
+ }
+ _ACEOF
+ if ac_fn_c_try_link "$LINENO"; then :
+-  ac_cv_search_rad_create_request="-lradius"
++  ac_cv_search_rad_create_request="-lradiusbsd"
+ fi
+ rm -f core conftest.err conftest.$ac_objext \
+     conftest$ac_exeext conftest.$ac_ext
+@@ -13286,7 +13286,7 @@
+     conftest$ac_exeext conftest.$ac_ext
+ LIBS="$ac_func_search_save_LIBS"
+  test "$ac_cv_search_rad_create_request" = "no" && for i in "$libradius_dir/lib"; do
+-  LIBS="-L$i -lradius $ac_func_search_save_LIBS"
++  LIBS="-L$i -lradiusbsd $ac_func_search_save_LIBS"
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
+@@ -13306,7 +13306,7 @@
+ }
+ _ACEOF
+ if ac_fn_c_try_link "$LINENO"; then :
+-  ac_cv_search_rad_create_request="-L$i -lradius"
++  ac_cv_search_rad_create_request="-L$i -lradiusbsd"
+   break
+ fi
+ rm -f core conftest.err conftest.$ac_objext \
+@@ -13330,7 +13330,7 @@
+ 
+ $as_echo "#define HAVE_LIBRADIUS /**/" >>confdefs.h
+ 
+-	LIBS="$LIBS -L$libradius_dir/lib -R$libradius_dir/lib -lradius"
++	LIBS="$LIBS -L$libradius_dir/lib -R$libradius_dir/lib -lradiusbsd"
+ 	for ac_func in rad_create_request
+ do :
+   ac_fn_c_check_func "$LINENO" "rad_create_request" "ac_cv_func_rad_create_request"
+--- ipsec-tools-0.8.0/configure.ac	2011-12-11 22:12:25.994281652 -0800
++++ ipsec-tools-0.8.0.new/configure.ac	2011-12-11 22:20:06.631569375 -0800
+@@ -379,7 +379,7 @@
+ 	  	fi
+ 	fi
+ 	AC_DEFINE([HAVE_LIBRADIUS], [], [Hybrid authentication uses RADIUS])
+-	LIBS="$LIBS -L$libradius_dir/lib -R$libradius_dir/lib -lradius"
++	LIBS="$LIBS -L$libradius_dir/lib -R$libradius_dir/lib -lradiusbsd"
+ 	AC_CHECK_FUNCS(rad_create_request)
+ fi
+ 

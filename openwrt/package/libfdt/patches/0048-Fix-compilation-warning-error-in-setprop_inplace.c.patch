@@ -1,0 +1,65 @@
+From 942b3c065fb1c8788d2317977945c7283f1db7e2 Mon Sep 17 00:00:00 2001
+From: Stephen Warren <swarren@nvidia.com>
+Date: Tue, 12 Jun 2012 14:48:12 -0600
+Subject: [PATCH 48/98] Fix compilation warning/error in setprop_inplace.c
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When compiling the current code-base with gcc 4.6.1, the following warning
+is raised, which is interpreted as an error:
+
+cc1: warnings being treated as errors
+tests/setprop_inplace.c: In function ‘main’:
+tests/setprop_inplace.c:62: error: format ‘%016llx’ expects type ‘long long unsigned int’, but argument 2 has type ‘uint64_t’
+tests/setprop_inplace.c:68: error: format ‘%016llx’ expects type ‘long long unsigned int’, but argument 2 has type ‘uint64_t’
+
+Use printf format specifiers from <inttypes.h> to solve this.
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ tests/setprop_inplace.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/tests/setprop_inplace.c b/tests/setprop_inplace.c
+index 30a1cf3..82d8951 100644
+--- a/tests/setprop_inplace.c
++++ b/tests/setprop_inplace.c
+@@ -18,6 +18,7 @@
+  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+  */
+ 
++#include <inttypes.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
+@@ -48,7 +49,7 @@ int main(int argc, char *argv[])
+ 	verbose_printf("Old int value was 0x%08x\n", *intp);
+ 	err = fdt_setprop_inplace_cell(fdt, 0, "prop-int", ~TEST_VALUE_1);
+ 	if (err)
+-		FAIL("Failed to set \"prop-int\" to 0x08%x: %s",
++		FAIL("Failed to set \"prop-int\" to 0x%08x: %s",
+ 		     ~TEST_VALUE_1, fdt_strerror(err));
+ 	intp = check_getprop_cell(fdt, 0, "prop-int", ~TEST_VALUE_1);
+ 	verbose_printf("New int value is 0x%08x\n", *intp);
+@@ -59,13 +60,13 @@ int main(int argc, char *argv[])
+ 
+ 	int64p = check_getprop_64(fdt, 0, "prop-int64", TEST_VALUE64_1);
+ 
+-	verbose_printf("Old int64 value was 0x%016llx\n", *int64p);
++	verbose_printf("Old int64 value was 0x%016" PRIx64 "\n", *int64p);
+ 	err = fdt_setprop_inplace_u64(fdt, 0, "prop-int64", ~TEST_VALUE64_1);
+ 	if (err)
+-		FAIL("Failed to set \"prop-int64\" to 0x016%llx: %s",
++		FAIL("Failed to set \"prop-int64\" to 0x%016llx: %s",
+ 		     ~TEST_VALUE64_1, fdt_strerror(err));
+ 	int64p = check_getprop_64(fdt, 0, "prop-int64", ~TEST_VALUE64_1);
+-	verbose_printf("New int64 value is 0x%016llx\n", *int64p);
++	verbose_printf("New int64 value is 0x%016" PRIx64 "\n", *int64p);
+ 
+ 	strp = check_getprop(fdt, 0, "prop-str", strlen(TEST_STRING_1)+1,
+ 			     TEST_STRING_1);
+-- 
+1.8.1.2
+

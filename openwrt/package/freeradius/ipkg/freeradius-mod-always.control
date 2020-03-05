@@ -1,0 +1,5 @@
+Package: freeradius-mod-always
+Priority: optional
+Section: net
+Description: ALWAYS module for FreeRADIUS
+Depends: freeradius

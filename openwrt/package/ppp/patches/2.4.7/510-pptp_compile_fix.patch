@@ -1,0 +1,19 @@
+commit 86b62d23f68c82647ef5103c532f0ae8980871bd
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Thu Jun 2 15:11:29 2016 -0700
+
+    510-pptp_compile_fix.patch
+
+diff --git a/pppd/plugins/pptp/pptp.c b/pppd/plugins/pptp/pptp.c
+index 756650c..ecb9850 100644
+--- a/pppd/plugins/pptp/pptp.c
++++ b/pppd/plugins/pptp/pptp.c
+@@ -48,7 +48,7 @@
+ 
+ #include "pptp_callmgr.h"
+ #include <net/if.h>
+-#include <net/ethernet.h>
++#include <linux/if_ether.h>
+ #include <linux/if_pppox.h>
+ 
+ #include <stdio.h>

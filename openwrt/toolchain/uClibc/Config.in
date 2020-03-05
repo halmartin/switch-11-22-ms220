@@ -1,0 +1,40 @@
+# Choose uClibc options
+#
+
+if BR2_LIBC_UCLIBC
+comment "uClibc Options"
+
+choice
+	prompt "uClibc Version" if CONFIG_DEVEL
+	default BR2_UCLIBC_VERSION_0_9_29 if !BR2_i386
+	default BR2_UCLIBC_VERSION_0_9_31 if BR2_i386
+
+	help
+	  Select the version of uClibc you wish to use.
+
+	config BR2_UCLIBC_VERSION_0_9_29
+	       bool "uClibc 0.9.29"
+
+	config BR2_UCLIBC_VERSION_0_9_31
+	       bool "uClibc 0.9.31"
+
+	config BR2_UCLIBC_VERSION_0_9_33
+	       bool "uClibc 0.9.33"
+
+        config BR2_UCLIBC_VERSION_1_0_17
+               bool "uClibc-ng 1.0.17"
+
+	config BR2_UCLIBC_VERSION_SNAPSHOT
+	       bool "uClibc daily snapshot" if CONFIG_DEVEL
+
+endchoice
+
+config BR2_UCLIBC_VERSION
+       string
+       default "0.9.29" if BR2_UCLIBC_VERSION_0_9_29
+       default "0.9.31" if BR2_UCLIBC_VERSION_0_9_31
+       default "0.9.33.2" if BR2_UCLIBC_VERSION_0_9_33
+       default "1.0.17" if BR2_UCLIBC_VERSION_1_0_17
+       default "snapshot" if BR2_UCLIBC_VERSION_SNAPSHOT
+
+endif

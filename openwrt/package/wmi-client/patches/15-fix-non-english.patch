@@ -1,0 +1,11 @@
+--- a/Samba/source/wmi/wmilogons.c	2016-03-15 14:42:02.146857104 -0700
++++ b/Samba/source/wmi/wmilogons.c	2016-03-15 14:42:25.462857974 -0700
+@@ -319,7 +319,7 @@
+             "SELECT EventCode,InsertionStrings,RecordNumber"
+                 " FROM Win32_NTLogEvent"
+                 " WHERE Logfile = 'Security'"
+-                " AND Type LIKE '%Success%'"
++                " AND EventType=4"
+                 " AND (EventCode=540 OR EventCode=672 OR EventCode=4624 OR EventCode=4768)"
+                 );
+ 

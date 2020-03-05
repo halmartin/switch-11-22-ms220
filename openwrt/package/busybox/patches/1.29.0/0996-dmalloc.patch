@@ -1,0 +1,26 @@
+From b81f14ed48378622af99ead63a7fae19c791f7be Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Tue, 3 Jul 2018 09:02:27 -0700
+Subject: [PATCH 08/26] 0996
+
+---
+ Makefile.flags | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile.flags b/Makefile.flags
+index 6f6142c..33d3b32 100644
+--- a/Makefile.flags
++++ b/Makefile.flags
+@@ -165,7 +165,8 @@ LDLIBS += efence
+ endif
+ 
+ ifeq ($(CONFIG_DMALLOC),y)
+-LDLIBS += dmalloc
++LDLIBS += pthread
++EXTRA_LDFLAGS = -ldmalloc
+ endif
+ 
+ # If a flat binary should be built, CFLAGS_busybox="-elf2flt"
+-- 
+2.17.0
+

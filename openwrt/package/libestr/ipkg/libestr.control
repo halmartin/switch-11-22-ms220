@@ -1,0 +1,4 @@
+Package: libestr
+Priority: optional
+Section: libs
+Description: Libestr

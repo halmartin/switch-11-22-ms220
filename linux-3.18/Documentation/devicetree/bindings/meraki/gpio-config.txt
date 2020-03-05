@@ -1,0 +1,61 @@
+Bindings for iProc gpio config
+
+Required properties:
+- compatible : "iproc-gpio-cfg"
+
+Optional properties:
+- reg : Address and length of register sets for each device in
+  "reg-names"
+- reg-names : The names of the register addresses corresponding to the
+  registers filled in "reg"
+            cru-gpio-ctl: The base for CRU_GPIO_CONTROL registers. There should
+                be nine GPIO control registers so the size should be 0x24.
+            aux-sel: The GPIO Auxiliary logic select register. There is only one
+                of these registers so the size should be 0x4.
+- gpios-general : Specifies pins to be used as general gpio via
+  the cru-gpio-ctl register. cru-gpio-ctl register must be present.
+- gpios-aux : Specifies pins which have an aux function via the
+  aux-fun-sel register. aux-sel register must be present.
+- gpios-pullup : Specifies pins to be pulled up by an internal pull up
+  register attached to each pin.
+
+GPIO sub-node properties:
+- gpios : Should specify the GPIO, see "gpios property" in
+  Documentation/devicetree/bindings/gpio/gpio.txt. Active low GPIOs should
+  be indicated using the flags in the GPIO specifier.
+- direction : (optional) The direction of the pin. Valid values are "in"
+  and "out". The default value is "in" if this property is not present.
+- default-state : (optional) The initial state of the GPIO pin if it is
+  an output. Valid values are "on", "off", and "keep". If the GPIO is
+  already on or off and the default-state property is set to the same
+  value, then no glish should be produced where the GPIO momentarily
+  turns off (or on). The "keep" setting will keep the GPIO at whatever
+  its current state is, without producing a glitch. The default value is
+  keep if this property is not present.
+
+Examples:
+
+	gpio_chip5:gpio-controller@25 {
+		gpio-controller;
+		...
+	};
+
+	gpio-cfg {
+		compatible = "iproc-gpio-cfg";
+		reg-names = "cru-gpio-ctl", "aux-sel";
+		reg = <0x1803f1c0 0x24>, <0x18030028 0x4>;
+		gpios-general = <0 1 2 3 4 5 6 7 11 14 15 16 17 25 26 27 28 29 30 31>;
+		gpios-aux = <33 34 35>;
+		gpios-pullup = <14 15>;
+
+		fan1-O {
+			gpios = <&gpio_chip5 0 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+			direction = "out";
+		};
+		fan1-G {
+			gpios = <&gpio_chip5 1 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+			direction = "out";
+		};
+	};

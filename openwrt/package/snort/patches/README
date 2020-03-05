@@ -1,0 +1,30 @@
+Summary of patches for 2.9.11.1:
+  01-make-autoreconf-compatible.patch:
+    - replaces error functions in configure script with echos for cross compiling
+      messages. It's unfortunate that we can't run these tests when cross
+      compiling, but it works.
+  02-fix-unixsock.patch
+    - adds more information to the alert packet. See r88198.
+  03-warn-on-gid_sid-suppress.patch
+    - If a rule is whitelisted twice, we display a warning instead of creating an
+    error. This is nice if we make mistakes on our backend. See r90462.
+  04-fix-gzip-zlib-memleak.patch
+    - Fixes a memory leak introduced when processing gzipped files with zlib
+      1.2.11. See 294c65bf2ac5c0d54ce362f4e152b4cc7ef07a57. This should not be
+      needed if it is ever fixed upstream.
+
+Deprecated Patches from 2.9.8.3:
+  01-cross-compile.patch:
+    - This patch also helped us get around the cross compiling tests. However it
+      patched the configure script which is a hacky because configure.in generates
+      the configure script via autoconf. For 2.9.11.1 we have put these changes in
+      configure.in. In the future, any changes should be made to configure.in
+      which is the top most build script.
+  04-extra-libs.patch:
+    - This patch modifies `configure` rather than `configure.in`, which means
+      changes don't persist across builds. It was used to for potentially adding a
+      static compilation flag for the snort binary but was not used.
+  05-prefer-static-lib-yes.patch:
+    - Another attempt at making a static snort binary. It should have patched
+      configure.in rather than configure for easy recompilation. This is no longer
+      needed.

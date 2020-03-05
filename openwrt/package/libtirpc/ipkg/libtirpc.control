@@ -1,0 +1,4 @@
+Package: libtirpc
+Priority: optional
+Section: libs
+Description: A Sun RPC implementation

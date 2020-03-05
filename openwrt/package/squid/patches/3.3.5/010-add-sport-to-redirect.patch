@@ -1,0 +1,20 @@
+--- a/src/redirect.cc	2013-05-20 04:48:55.000000000 -0700
++++ b/src/redirect.cc	2013-06-18 13:32:09.430822842 -0700
+@@ -186,14 +186,15 @@
+     if ((fqdn = fqdncache_gethostbyaddr(r->client_addr, 0)) == NULL)
+         fqdn = dash_str;
+ 
+-    sz = snprintf(buf, MAX_REDIRECTOR_REQUEST_STRLEN, "%s %s/%s %s %s myip=%s myport=%d\n",
++    sz = snprintf(buf, MAX_REDIRECTOR_REQUEST_STRLEN, "%s %s/%s %s %s myip=%s myport=%d sport=%d\n",
+                   r->orig_url,
+                   r->client_addr.NtoA(claddr,MAX_IPSTRLEN),
+                   fqdn,
+                   r->client_ident[0] ? rfc1738_escape(r->client_ident) : dash_str,
+                   r->method_s,
+                   http->request->my_addr.NtoA(myaddr,MAX_IPSTRLEN),
+-                  http->request->my_addr.GetPort());
++                  http->request->my_addr.GetPort(),
++                  http->request->client_addr.GetPort());
+ 
+     if ((sz<=0) || (sz>=MAX_REDIRECTOR_REQUEST_STRLEN)) {
+         if (sz<=0) {

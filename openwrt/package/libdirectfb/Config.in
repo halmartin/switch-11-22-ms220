@@ -1,0 +1,8 @@
+config BR2_PACKAGE_LIBDIRECTFB
+        prompt "libdirectfb....................... Library for direct framebuffer access"
+	tristate
+	default n
+	help
+	  The libdirectfb API provides a mechanism for direct framebuffer
+	  access.
+

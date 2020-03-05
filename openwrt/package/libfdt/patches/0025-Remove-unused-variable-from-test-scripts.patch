@@ -1,0 +1,57 @@
+From 9a50d82c4e3a44ca004ada288f7c37004da0b0cc Mon Sep 17 00:00:00 2001
+From: David Gibson <david@gibson.dropbear.id.au>
+Date: Fri, 3 Feb 2012 16:12:03 +1100
+Subject: [PATCH 25/98] Remove unused variable from test scripts
+
+Several of the test scripts remove $TMPFILE, without ever having set
+the TMPFILE variable. This patch fixes it.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ tests/dtc-checkfails.sh | 2 +-
+ tests/fdtget-runtest.sh | 2 +-
+ tests/fdtput-runtest.sh | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/tests/dtc-checkfails.sh b/tests/dtc-checkfails.sh
+index c58694f..e7aa25e 100755
+--- a/tests/dtc-checkfails.sh
++++ b/tests/dtc-checkfails.sh
+@@ -12,7 +12,7 @@ done
+ 
+ LOG="tmp.log.$$"
+ 
+-rm -f $TMPFILE $LOG
++rm -f $LOG
+ 
+ verbose_run_log "$LOG" $VALGRIND "$DTC" -o /dev/null "$@"
+ ret="$?"
+diff --git a/tests/fdtget-runtest.sh b/tests/fdtget-runtest.sh
+index f38184f..c17c8f9 100755
+--- a/tests/fdtget-runtest.sh
++++ b/tests/fdtget-runtest.sh
+@@ -5,7 +5,7 @@
+ LOG="tmp.log.$$"
+ EXPECT="tmp.expect.$$"
+ 
+-rm -f $TMPFILE $LOG
++rm -f $LOG
+ 
+ expect="$1"
+ echo "$expect" >$EXPECT
+diff --git a/tests/fdtput-runtest.sh b/tests/fdtput-runtest.sh
+index ea51569..8e4cd95 100644
+--- a/tests/fdtput-runtest.sh
++++ b/tests/fdtput-runtest.sh
+@@ -11,7 +11,7 @@
+ LOG="tmp.log.$$"
+ EXPECT="tmp.expect.$$"
+ 
+-rm -f $TMPFILE $LOG
++rm -f $LOG
+ 
+ expect="$1"
+ echo "$expect" >$EXPECT
+-- 
+1.8.1.2
+

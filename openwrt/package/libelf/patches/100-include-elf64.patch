@@ -1,0 +1,42 @@
+--- a/lib/sys_elf.h.in	2012-04-05 16:14:05.000000000 -0700
++++ b/lib/sys_elf.h.in	2012-04-05 16:14:14.000000000 -0700
+@@ -90,39 +90,4 @@
+ #  define STN_UNDEF	0
+ # endif /* STN_UNDEF */
+ 
+-# if __LIBELF64
+-
+-#  ifndef ELF64_FSZ_ADDR
+-#   define ELF64_FSZ_ADDR	8
+-#   define ELF64_FSZ_HALF	2
+-#   define ELF64_FSZ_OFF	8
+-#   define ELF64_FSZ_SWORD	4
+-#   define ELF64_FSZ_WORD	4
+-#   define ELF64_FSZ_SXWORD	8
+-#   define ELF64_FSZ_XWORD	8
+-#  endif /* ELF64_FSZ_ADDR */
+-
+-#  ifndef ELF64_ST_BIND
+-#   define ELF64_ST_BIND(i)	((i)>>4)
+-#   define ELF64_ST_TYPE(i)	((i)&0xf)
+-#   define ELF64_ST_INFO(b,t)	(((b)<<4)+((t)&0xf))
+-#  endif /* ELF64_ST_BIND */
+-
+-#  ifndef ELF64_R_SYM
+-#   define ELF64_R_SYM(i)	((Elf64_Xword)(i)>>32)
+-#   define ELF64_R_TYPE(i)	((i)&0xffffffffL)
+-#   define ELF64_R_INFO(s,t)	(((Elf64_Xword)(s)<<32)+((t)&0xffffffffL))
+-#  endif /* ELF64_R_SYM */
+-
+-#  if __LIBELF64_LINUX
+-typedef __libelf_u64_t	Elf64_Addr;
+-typedef __libelf_u16_t	Elf64_Half;
+-typedef __libelf_u64_t	Elf64_Off;
+-typedef __libelf_i32_t	Elf64_Sword;
+-typedef __libelf_u32_t	Elf64_Word;
+-typedef __libelf_i64_t	Elf64_Sxword;
+-typedef __libelf_u64_t	Elf64_Xword;
+-#  endif /* __LIBELF64_LINUX */
+-
+-# endif /* __LIBELF64 */
+ #endif /* __LIBELF_HEADER_ELF_H */

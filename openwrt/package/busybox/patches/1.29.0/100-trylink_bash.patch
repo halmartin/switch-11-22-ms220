@@ -1,0 +1,22 @@
+From f7839a784f5d057a9f227fbfa5b4928a51b68a73 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Tue, 3 Jul 2018 09:34:10 -0700
+Subject: [PATCH 10/26] 100
+
+---
+ scripts/trylink | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/trylink b/scripts/trylink
+index ba2d265..e11eedf 100755
+--- a/scripts/trylink
++++ b/scripts/trylink
+@@ -1,4 +1,4 @@
+-#!/bin/sh
++#!/usr/bin/env bash
+ 
+ debug=false
+ 
+-- 
+2.17.0
+

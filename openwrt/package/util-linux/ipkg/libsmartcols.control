@@ -1,0 +1,5 @@
+Package: libsmartcols
+Priority: optional
+Section: admin
+Depends:
+Description: Column display library

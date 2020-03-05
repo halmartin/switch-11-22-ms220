@@ -1,0 +1,5 @@
+Package: libfdisk
+Priority: optional
+Section: admin
+Depends: libuuid, libblkid
+Description: Partition table manipulation library

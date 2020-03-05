@@ -1,0 +1,32 @@
+From 1c76ec3c090f230fa8a45a5ef84bda600fc4d064 Mon Sep 17 00:00:00 2001
+From: David Gibson <david@gibson.dropbear.id.au>
+Date: Wed, 29 May 2013 12:39:47 +1000
+Subject: [PATCH 93/98] Use shorten_echo for wrap_tests
+
+We have certain tests which generate extremely long command lines, which
+are shortened in the testsuite output with the 'shorten_echo' function.
+Currently that is used in run_fdtput_test and run_wrap_test, this patch
+uses it for run_wrap_test as well, allowing more general tests with long
+command lines.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ tests/run_tests.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/run_tests.sh b/tests/run_tests.sh
+index b013761..9c87369 100755
+--- a/tests/run_tests.sh
++++ b/tests/run_tests.sh
+@@ -80,7 +80,7 @@ wrap_test () {
+ }
+ 
+ run_wrap_test () {
+-    echo -n "$@:	"
++    shorten_echo "$@:	"
+     base_run_test wrap_test "$@"
+ }
+ 
+-- 
+1.8.1.2
+

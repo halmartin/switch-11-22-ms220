@@ -1,0 +1,183 @@
+diff -ur a/common/conflex.c b/common/conflex.c
+--- a/common/conflex.c	2014-07-03 11:42:56.414433796 -0700
++++ b/common/conflex.c	2014-07-08 13:05:43.171951921 -0700
+@@ -599,6 +599,8 @@
+ 			return BALANCE;
+ 		if (!strcasecmp (atom + 1, "ound"))
+ 			return BOUND;
++		if (!strcasecmp (atom + 1, "ind-address"))
++			return BIND_ADDRESS;
+ 		break;
+ 	      case 'c':
+ 		if (!strcasecmp (atom + 1, "ase"))
+diff -ur a/includes/dhctoken.h b/includes/dhctoken.h
+--- a/includes/dhctoken.h	2014-07-03 11:42:56.354436864 -0700
++++ b/includes/dhctoken.h	2014-07-03 11:57:40.801201414 -0700
+@@ -308,7 +308,8 @@
+ 	REFRESH = 612,
+ 	DOMAIN_NAME = 613,
+ 	DO_FORWARD_UPDATE = 614,
+-	KNOWN_CLIENTS = 615
++	KNOWN_CLIENTS = 615,
++	BIND_ADDRESS = 616
+ };
+ 
+ #define is_identifier(x)	((x) >= FIRST_TOKEN &&	\
+diff -ur a/includes/failover.h b/includes/failover.h
+--- a/includes/failover.h	2014-07-03 11:42:56.318438704 -0700
++++ b/includes/failover.h	2014-07-03 11:46:06.836699384 -0700
+@@ -250,6 +250,7 @@
+ #if defined (FAILOVER_PROTOCOL)
+ typedef struct _dhcp_failover_config {
+ 	struct option_cache *address;
++	struct option_cache *bind_address;
+ 	int port;
+ 	u_int32_t max_flying_updates;
+ 	enum failover_state state;
+diff -ur a/server/confpars.c b/server/confpars.c
+--- a/server/confpars.c	2014-07-03 11:42:56.370436046 -0700
++++ b/server/confpars.c	2014-07-03 11:45:52.353439761 -0700
+@@ -834,6 +834,19 @@
+ 			cp = &peer -> partner;
+ 			goto peer;
+ 
++		      case BIND_ADDRESS:
++			expr = (struct expression *)0;
++			if (!parse_ip_addr_or_hostname (&expr, cfile, 0)) {
++				skip_to_rbrace (cfile, 1);
++				dhcp_failover_state_dereference (&peer, MDL);
++				return;
++			}
++			option_cache (&cp -> bind_address,
++				      (struct data_string *)0, expr,
++				      (struct option *)0, MDL);
++			expression_dereference (&expr, MDL);
++			break;
++
+ 		      case ADDRESS:
+ 			expr = (struct expression *)0;
+ 			if (!parse_ip_addr_or_hostname (&expr, cfile, 0)) {
+diff -ur a/server/failover.c b/server/failover.c
+--- a/server/failover.c	2014-07-03 11:42:56.374435841 -0700
++++ b/server/failover.c	2014-07-08 14:57:00.938607613 -0700
+@@ -178,9 +178,10 @@
+ 	dhcp_failover_state_t *state;
+ 	omapi_object_t *o;
+ 	int i;
+-	struct data_string ds;
++	struct data_string ds, ds2;
+ 	omapi_addr_list_t *addrs = (omapi_addr_list_t *)0;
+ 	omapi_addr_t local_addr;
++	omapi_addr_t bind_addr;
+ 
+ 	/* Find the failover state in the object chain. */
+ 	for (o = h; o -> outer; o = o -> outer)
+@@ -228,6 +229,7 @@
+ 		addrs -> addresses [i].port = obj -> peer_port;
+ 	}
+ 	data_string_forget (&ds, MDL);
++	memset (&ds2, 0, sizeof ds2);
+ 
+ 	/* Now figure out the local address that we're supposed to use. */
+ 	if (!state -> me.address ||
+@@ -237,17 +239,30 @@
+ 				    (struct option_state *)0,
+ 				    (struct option_state *)0,
+ 				    &global_scope, state -> me.address,
++				    MDL) ||
++	    !state -> me.bind_address ||
++	    !evaluate_option_cache (&ds2, (struct packet *)0,
++				    (struct lease *)0,
++				    (struct client_state *)0,
++				    (struct option_state *)0,
++				    (struct option_state *)0,
++				    &global_scope, state -> me.bind_address,
+ 				    MDL)) {
+ 		memset (&local_addr, 0, sizeof local_addr);
+ 		local_addr.addrtype = AF_INET;
+ 		local_addr.addrlen = sizeof (struct in_addr);
++		memset (&bind_addr, 0, sizeof bind_addr);
++		bind_addr.addrtype = AF_INET;
++		bind_addr.addrlen = sizeof (struct in_addr);
+ 		if (!state -> server_identifier.len) {
+ 			log_fatal ("failover peer %s: no local address.",
+ 				   state -> name);
+ 		}
+ 	} else {
+-		if (ds.len != sizeof (struct in_addr)) {
++		if (ds.len != sizeof (struct in_addr) ||
++		    ds2.len != sizeof (struct in_addr)) {
+ 			data_string_forget (&ds, MDL);
++			data_string_forget (&ds2, MDL);
+ 			dhcp_failover_link_dereference (&obj, MDL);
+ 			omapi_addr_list_dereference (&addrs, MDL);
+ 			return ISC_R_INVALIDARG;
+@@ -255,15 +270,21 @@
+ 		local_addr.addrtype = AF_INET;
+ 		local_addr.addrlen = ds.len;
+ 		memcpy (local_addr.address, ds.data, ds.len);
++		bind_addr.addrtype = AF_INET;
++		bind_addr.addrlen = ds2.len;
++		memcpy (bind_addr.address, ds2.data, ds2.len);
++
+ 		if (!state -> server_identifier.len)
+ 			data_string_copy (&state -> server_identifier,
+ 					  &ds, MDL);
++
+ 		data_string_forget (&ds, MDL);
+ 		local_addr.port = 0;  /* Let the O.S. choose. */
++		bind_addr.port = 0;  /* Let the O.S. choose. */
+ 	}
+ 
+ 	status = omapi_connect_list ((omapi_object_t *)obj,
+-				     addrs, &local_addr);
++				     addrs, &bind_addr);
+ 	omapi_addr_list_dereference (&addrs, MDL);
+ 
+ 	dhcp_failover_link_dereference (&obj, MDL);
+@@ -932,7 +953,7 @@
+ 	local_addr.port = port;
+ 
+ 	status = omapi_get_value_str (h, (omapi_object_t *)0,
+-				      "local-address", &value);
++				      "bind-address", &value);
+ 	if (status != ISC_R_SUCCESS)
+ 		return status;
+ 	if (!value -> value) {
+@@ -2587,6 +2608,8 @@
+ 		return ISC_R_SUCCESS;
+ 	} else if (!omapi_ds_strcmp (name, "local-address")) {
+ 		return ISC_R_SUCCESS;
++	} else if (!omapi_ds_strcmp (name, "bind-address")) {
++		return ISC_R_SUCCESS;
+ 	} else if (!omapi_ds_strcmp (name, "partner-port")) {
+ 		return ISC_R_SUCCESS;
+ 	} else if (!omapi_ds_strcmp (name, "local-port")) {
+@@ -2758,6 +2781,9 @@
+ 	} else if (!omapi_ds_strcmp (name, "local-address")) {
+ 		oc = s -> me.address;
+ 		goto getaddr;
++	} else if (!omapi_ds_strcmp (name, "bind-address")) {
++		oc = s -> me.bind_address;
++		goto getaddr;
+ 	} else if (!omapi_ds_strcmp (name, "partner-port")) {
+ 		return omapi_make_int_value (value, name,
+ 					     s -> partner.port, MDL);
+@@ -2916,6 +2942,17 @@
+ 	if (status != ISC_R_SUCCESS)
+ 		return status;
+ 	
++	status = omapi_connection_put_name (c, "bind-address");
++	if (status != ISC_R_SUCCESS)
++		return status;
++	status = omapi_connection_put_uint32 (c, sizeof s -> me.bind_address);
++	if (status != ISC_R_SUCCESS)
++		return status;
++	status = omapi_connection_copyin (c, (u_int8_t *)&s -> me.bind_address,
++					  sizeof s -> me.bind_address);
++	if (status != ISC_R_SUCCESS)
++		return status;
++	
+ 	status = omapi_connection_put_name (c, "local-port");
+ 	if (status != ISC_R_SUCCESS)
+ 		return status;

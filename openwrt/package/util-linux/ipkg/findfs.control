@@ -1,0 +1,5 @@
+Package: findfs
+Priority: optional
+Section: admin
+Depends: libuuid, libblkid
+Description: Filesystem find utility

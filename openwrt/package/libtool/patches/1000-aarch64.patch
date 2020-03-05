@@ -1,0 +1,46 @@
+commit b3db33aa905ea2e49fa5405dd39e0c764f3c4c7d
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Tue Jan 31 13:50:33 2017 -0800
+
+    Support aarch64
+
+diff --git a/config.sub b/config.sub
+index d8fd2f8..89281ab 100755
+--- a/config.sub
++++ b/config.sub
+@@ -227,6 +227,7 @@ case $basic_machine in
+ 	# Some are omitted here because they have special meanings below.
+ 	1750a | 580 \
+ 	| a29k \
++	| aarch64 | aarch64_be \
+ 	| alpha | alphaev[4-8] | alphaev56 | alphaev6[78] | alphapca5[67] \
+ 	| alpha64 | alpha64ev[4-8] | alpha64ev56 | alpha64ev6[78] | alpha64pca5[67] \
+ 	| am33_2.0 \
+@@ -293,6 +294,7 @@ case $basic_machine in
+ 	# Recognize the basic CPU types with company name.
+ 	580-* \
+ 	| a29k-* \
++	| aarch64-* | aarch64_be-* \
+ 	| alpha-* | alphaev[4-8]-* | alphaev56-* | alphaev6[78]-* \
+ 	| alpha64-* | alpha64ev[4-8]-* | alpha64ev56-* | alpha64ev6[78]-* \
+ 	| alphapca5[67]-* | alpha64pca5[67]-* | arc-* \
+diff --git a/libltdl/config.sub b/libltdl/config.sub
+index 0f84ac2..ddd948e 100755
+--- a/libltdl/config.sub
++++ b/libltdl/config.sub
+@@ -227,6 +227,7 @@ case $basic_machine in
+ 	# Some are omitted here because they have special meanings below.
+ 	1750a | 580 \
+ 	| a29k \
++	| aarch64 | aarch64_be \
+ 	| alpha | alphaev[4-8] | alphaev56 | alphaev6[78] | alphapca5[67] \
+ 	| alpha64 | alpha64ev[4-8] | alpha64ev56 | alpha64ev6[78] | alpha64pca5[67] \
+ 	| am33_2.0 \
+@@ -293,6 +294,7 @@ case $basic_machine in
+ 	# Recognize the basic CPU types with company name.
+ 	580-* \
+ 	| a29k-* \
++	| aarch64-* | aarch64_be-* \
+ 	| alpha-* | alphaev[4-8]-* | alphaev56-* | alphaev6[78]-* \
+ 	| alpha64-* | alpha64ev[4-8]-* | alpha64ev56-* | alpha64ev6[78]-* \
+ 	| alphapca5[67]-* | alpha64pca5[67]-* | arc-* \

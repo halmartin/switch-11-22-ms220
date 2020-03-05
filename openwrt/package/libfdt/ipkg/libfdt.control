@@ -1,0 +1,4 @@
+Package: libfdt
+Priority: optional
+Section: lib
+Description: The flattened device tree library

@@ -1,0 +1,4 @@
+Package: spectralfft
+Priority: optional
+Section: net
+Description: A small utility to take the fft of spectral data

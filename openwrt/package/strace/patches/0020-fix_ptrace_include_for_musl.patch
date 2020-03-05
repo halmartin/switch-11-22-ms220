@@ -1,0 +1,26 @@
+commit c96451a82592085f1403ad4292c1e2159ae3f7f1
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Wed Dec 21 18:07:40 2016 -0800
+
+    Fix ptrace include for musl
+    
+    Adapted from https://patchwork.openembedded.org/patch/122297/
+
+diff --git a/ptrace.h b/ptrace.h
+index 2e7d5e3..c3f7ce4 100644
+--- a/ptrace.h
++++ b/ptrace.h
+@@ -52,7 +52,13 @@ extern long ptrace(int, int, char *, long);
+ # define ptrace_peeksiginfo_args XXX_ptrace_peeksiginfo_args
+ #endif
+ 
++#if defined(POWERPC) && !defined(__GLIBC__)
++#define pt_regs uapi_pt_regs
++#endif
+ #include <linux/ptrace.h>
++#if defined(POWERPC) && !defined(__GLIBC__)
++#undef pt_regs
++#endif
+ 
+ #ifdef HAVE_STRUCT_IA64_FPREG
+ # undef ia64_fpreg

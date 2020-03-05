@@ -1,0 +1,11 @@
+--- a/Samba/source/build/m4/check_ld.m4	2008-07-30 12:44:55.000000000 -0700
++++ b/Samba/source/build/m4/check_ld.m4	2011-07-25 15:30:49.835678828 -0700
+@@ -45,7 +45,7 @@
+ 		BLDSHARED="true"
+ 		SHLD_FLAGS="-shared -Wl,-Bsymbolic"
+ 		SHLD_UNDEF_FLAGS="-Wl,--allow-shlib-undefined"
+-		LDFLAGS="-Wl,--export-dynamic"
++		#LDFLAGS="-Wl,--export-dynamic"
+ 		PICFLAG="-fPIC"
+ 		SONAMEFLAG="-Wl,-soname="
+ 		;;

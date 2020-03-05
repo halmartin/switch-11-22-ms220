@@ -1,0 +1,5 @@
+Package: strongswan
+Priority: optional
+Section: net
+Depends: libopenssl
+Description: the OpenSource IPsec-based VPN Solution

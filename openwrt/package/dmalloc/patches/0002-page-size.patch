@@ -1,0 +1,13 @@
+diff --git a/configure b/configure
+index b16e55f..6fd14af 100755
+--- a/configure
++++ b/configure
+@@ -5306,7 +5306,7 @@ done
+ 
+ echo "$as_me:$LINENO: checking basic-block size" >&5
+ echo $ECHO_N "checking basic-block size... $ECHO_C" >&6
+-ac_cv_page_size=0
++ac_cv_page_size=12
+ if test $ac_cv_page_size = 0; then
+    if test "$cross_compiling" = yes; then
+   { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling

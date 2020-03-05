@@ -1,0 +1,26 @@
+Bindings for i2c ACT2 driver
+
+Required properties:
+- compatible : "act2"
+- reg : Address of the device on the i2c bus.
+- reset : GPIO pin to reset act2 device
+- type : The TAM chip family. Valid options are:
+         - TAM_FAMILY_ACT2
+         - TAM_FAMILY_FPGA
+
+Optional properties:
+- write_buf_size : 16-bit value. Device has a minumum 48 byte write buffer
+  requirement.  Maximum supported write buffer size is 259 bytes. If no buffer
+  size is specified, defaults to minimum size. This buffer size is a requirement
+  from the TAM library which needs to send commands to the device in one single
+  bulk write.
+
+Examples:
+
+	act2@70 {
+		compatible = "cisco,act2";
+		reg = <0x70>;
+		write_buf_size = /bits/ 16 <63>;
+		reset = <&gpio_chip0 10 GPIO_ACTIVE_LOW>;
+		type = <&gpio_chip0 10 GPIO_ACTIVE_LOW>;
+	};

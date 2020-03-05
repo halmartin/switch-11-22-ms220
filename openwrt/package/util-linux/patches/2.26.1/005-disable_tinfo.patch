@@ -1,0 +1,28 @@
+commit 3b495b2752b45579d78c67d294cba63f62530e6f
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Tue Mar 31 17:13:40 2015 -0700
+
+    Turn off tinfo
+
+diff --git a/configure.ac b/configure.ac
+index 32a7e0c..ce02dfb 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -769,16 +769,7 @@ AS_IF([test "x$have_slang" = xyes -o "x$have_ncurses" = xyes], [
+ ])
+ 
+ 
+-dnl Try pkg-config for libtinfo
+-PKG_CHECK_MODULES(TINFO, [tinfo], [have_tinfo=yes], [
+-    dnl If that failed, fall back to classic searching.
+-    AC_CHECK_LIB([tinfo], [tgetent], [
+-       have_tinfo=yes
+-       TINFO_LIBS="-ltinfo"
+-       TINFO_CFLAGS=""])
+-])
+-AC_SUBST([TINFO_LIBS])
+-AC_SUBST([TINFO_CFLAGS])
++have_tinfo=no
+ AM_CONDITIONAL([HAVE_TINFO], [test "x$have_tinfo" = xyes])
+ 
+ 

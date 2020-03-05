@@ -1,0 +1,11 @@
+config BR2_PACKAGE_DAQ
+	prompt "daq............................... Low-level network library"
+	tristate
+	default m if CONFIG_DEVEL
+	depends BR2_PACKAGE_LIBDNET && BR2_PACKAGE_LIBPCAP && BR2_PACKAGE_LIBPCRE
+	help
+	  data acquisition library for packet i/o
+	  from snort
+	  
+	  http://www.snort.org/snort-downloads
+

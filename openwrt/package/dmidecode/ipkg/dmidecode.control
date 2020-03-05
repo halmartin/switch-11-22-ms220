@@ -1,0 +1,4 @@
+Package: dmidecode
+Priority: optional
+Section: sys
+Description: A set of tools for reading the bios

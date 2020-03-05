@@ -1,0 +1,57 @@
+From 4ad49c3a9cdaccac02cd448c2704ea52ad85d1dc Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Mon, 15 Apr 2013 22:13:16 -0400
+Subject: [PATCH 91/98] util: add common ARRAY_SIZE define
+
+I want to use this in more places, so put it in util.h rather than
+copying & pasting it into another file.
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ convert-dtsv0-lexer.l | 2 --
+ dtc.h                 | 1 -
+ util.h                | 2 ++
+ 3 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/convert-dtsv0-lexer.l b/convert-dtsv0-lexer.l
+index 8902648..548e719 100644
+--- a/convert-dtsv0-lexer.l
++++ b/convert-dtsv0-lexer.l
+@@ -50,8 +50,6 @@ static int saw_hyphen; /* = 0 */
+ static unsigned long long last_val;
+ static char *last_name; /* = NULL */
+ 
+-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+-
+ const struct {
+ 	const char *pattern;
+ 	int obase, width;
+diff --git a/dtc.h b/dtc.h
+index 3e42a07..264a20c 100644
+--- a/dtc.h
++++ b/dtc.h
+@@ -66,7 +66,6 @@ typedef uint32_t cell_t;
+ #define strneq(a, b, n)	(strncmp((a), (b), (n)) == 0)
+ 
+ #define ALIGN(x, a)	(((x) + (a) - 1) & ~((a) - 1))
+-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+ 
+ /* Data blobs */
+ enum markertype {
+diff --git a/util.h b/util.h
+index 7b9a840..8f40b44 100644
+--- a/util.h
++++ b/util.h
+@@ -24,6 +24,8 @@
+  *                                                                   USA
+  */
+ 
++#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
++
+ static inline void __attribute__((noreturn)) die(const char *str, ...)
+ {
+ 	va_list ap;
+-- 
+1.8.1.2
+

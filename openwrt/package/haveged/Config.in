@@ -1,0 +1,6 @@
+config BR2_PACKAGE_HAVEGED
+  prompt "haveged......................... A simple entropy daemon"
+  tristate
+  default n if CONFIG_DEVEL
+  help
+    A simple entropy daemon

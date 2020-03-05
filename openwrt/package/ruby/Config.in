@@ -1,0 +1,7 @@
+config BR2_PACKAGE_RUBY
+	prompt "ruby......................... Ruby"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  Ruby.. hopefully you know what it is
+

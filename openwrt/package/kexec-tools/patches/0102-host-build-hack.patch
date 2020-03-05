@@ -1,0 +1,12 @@
+diff -ur kexec-tools-2.0.2-orig/util/Makefile kexec-tools-2.0.2/util/Makefile
+--- kexec-tools-2.0.2-orig/util/Makefile	2010-12-09 18:50:54.583372184 -0800
++++ kexec-tools-2.0.2/util/Makefile	2010-12-09 18:55:55.226750919 -0800
+@@ -2,7 +2,7 @@
+ 
+ $(BIN_TO_HEX): $(srcdir)/util/bin-to-hex.c
+ 	@$(MKDIR) -p $(@D)
+-	$(LINK.o) $(CFLAGS) -o $@ $^
++	gcc $(CFLAGS) -o $@ $^
+ 
+ $(BIN_TO_HEX): CC=$(BUILD_CC)
+ $(BIN_TO_HEX): CFLAGS=$(BUILD_CFLAGS)

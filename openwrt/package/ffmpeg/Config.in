@@ -1,0 +1,6 @@
+config BR2_PACKAGE_FFMPEG
+	prompt "ffmpeg............................ Record, convert, and stream video"
+	tristate
+	default n
+	help
+	  Cross-platform solution to record, convert and stream video.

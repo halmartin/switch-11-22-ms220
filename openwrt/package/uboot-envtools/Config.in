@@ -1,0 +1,7 @@
+config BR2_PACKAGE_UBOOT_ENVTOOLS
+	prompt "uboot-envtools.................... tools for modifying uboot environment variables"
+	tristate
+	default n
+	help
+          Tools for modifying uboot environmental variables from userland
+

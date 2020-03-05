@@ -1,0 +1,10 @@
+config BR2_PACKAGE_IMAGEMAGICK
+	prompt "ImageMagick........................... An image manipulation library"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  ImageMagick is an image manipulation package which provides
+	  software libraries for a wide variety of image manipulation
+	  tasks
+
+	  http://www.imagemagick.org/

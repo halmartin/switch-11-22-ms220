@@ -1,0 +1,50 @@
+--- a/src/ssl/PeerConnector.cc	2014-05-20 04:48:55.000000000 -0700
++++ b/src/ssl/PeerConnector.cc  2014-06-18 13:32:09.430822842 -0700
+@@ -29,6 +29,7 @@
+ #include "ssl/PeerConnector.h"
+ #include "ssl/ServerBump.h"
+ #include "ssl/support.h"
++#include "tools.h"
+
+ CBDATA_NAMESPACED_CLASS_INIT(Ssl, PeerConnector);
+
+@@ -119,6 +120,38 @@
+         sslContext = ::Config.ssl_client.sslContext;
+     }
+
++    char *mapper = ::Config.click_mapper_insert;
++    if (strcmp(mapper, "none") != 0) {
++        enter_suid();
++        int click_fd = open(mapper, O_TRUNC | O_WRONLY, 0644);
++        leave_suid();
++
++        struct sockaddr_in addr_inet;
++        int len_inet = sizeof(addr_inet);
++
++        if (click_fd < 0) {
++            debugs(50, DBG_IMPORTANT, "Failed to open SquidFlowMapper insert");
++        } else if (!getsockname(serverConn->fd, (struct sockaddr *) &addr_inet, (socklen_t *) &len_inet)) {
++            char buf[MAX_IPSTRLEN];
++            std::stringstream ss;
++            ss << "SADDR " << inet_ntoa(addr_inet.sin_addr) << ", SPORT " << (unsigned) ntohs(addr_inet.sin_port) << ", ";
++
++            serverConn->remote.toHostStr(buf, MAX_IPSTRLEN);
++            ss << "DADDR " <<  buf << ", DPORT " << serverConn->remote.port() << ", ";
++
++            clientConn->remote.toHostStr(buf, MAX_IPSTRLEN);
++            ss << "MSADDR " << buf << ", MSPORT " << clientConn->remote.port() << ", ";
++
++            clientConn->local.toHostStr(buf, MAX_IPSTRLEN);
++            ss << "MDADDR " << buf << ", MDPORT " << clientConn->local.port() << std::endl;
++
++            std::string s = ss.str();
++
++            write(click_fd, s.c_str(), s.size());
++            close(click_fd);
++        }
++    }
++
+     assert(sslContext);
+
+     SSL *ssl = Ssl::CreateClient(sslContext, fd, "server https start");
+

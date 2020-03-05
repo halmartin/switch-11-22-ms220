@@ -1,0 +1,5 @@
+Package: unshare
+Priority: optional
+Section: admin
+Depends:
+Description: Unshare namespace utility

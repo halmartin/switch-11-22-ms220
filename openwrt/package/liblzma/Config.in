@@ -1,0 +1,13 @@
+config BR2_PACKAGE_LIBLZMA
+	prompt "liblzma........................... Library for XZ and LZMA compressed files"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  liblzma is a general purpose data compression library with
+	  an API similar to that of zlib. liblzma supports multiple
+	  algorithms, of which LZMA2 is currently the primary algorithm.
+	  The native file format is .xz, but also the legacy .lzma
+	  format and raw streams (no headers at all) are supported.
+
+	  http://tukaani.org/xz/
+

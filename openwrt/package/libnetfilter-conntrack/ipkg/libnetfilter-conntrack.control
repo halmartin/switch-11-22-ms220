@@ -1,0 +1,5 @@
+Package: libnetfilter-conntrack
+Priority: optional
+Section: libs
+Depends: libnfnetlink
+Description: libnetfilter_conntrack description

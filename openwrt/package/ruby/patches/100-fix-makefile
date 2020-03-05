@@ -1,0 +1,39 @@
+--- ruby-1.8.4/Makefile.in.orig	2007-06-29 14:12:52.000000000 -0700
++++ ruby-1.8.4/Makefile.in	2007-06-29 14:14:40.000000000 -0700
+@@ -114,21 +114,21 @@
+ 				$(LIBRUBY_ALIASES) || true
+ 
+ fake.rb:	Makefile
+-		@echo ' \
+-		class Object; \
+-		  CROSS_COMPILING = RUBY_PLATFORM; \
+-		  remove_const :RUBY_PLATFORM; \
+-		  remove_const :RUBY_VERSION; \
+-		  RUBY_PLATFORM = "@arch@"; \
+-		  RUBY_VERSION = "@MAJOR@.@MINOR@.@TEENY@"; \
+-		end; \
+-		if RUBY_PLATFORM =~ /mswin|bccwin|mingw/; \
+-		  class File; \
+-		    remove_const :ALT_SEPARATOR; \
+-		    ALT_SEPARATOR = "\\"; \
+-		  end; \
+-		end; \
+-		' > $@
++		@{ \
++		    echo 'class Object;'; \
++		    echo '  CROSS_COMPILING = RUBY_PLATFORM;'; \
++		    echo '  remove_const :RUBY_PLATFORM;'; \
++		    echo '  remove_const :RUBY_VERSION;'; \
++		    echo '  RUBY_PLATFORM = "mips-linux";'; \
++		    echo '  RUBY_VERSION = "1.8.4";'; \
++		    echo 'end;'; \
++		    echo 'if RUBY_PLATFORM =~ /mswin|bccwin|mingw/;'; \
++		    echo '  class File;'; \
++		    echo '    remove_const :ALT_SEPARATOR;'; \
++		    echo '    ALT_SEPARATOR = "\\\\";'; \
++		    echo '  end;'; \
++		    echo 'end;'; \
++		} > $@
+ 
+ Makefile:	$(srcdir)/Makefile.in
+ 

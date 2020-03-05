@@ -1,0 +1,5 @@
+Package: tinyproxy
+Version: 1.8.4
+Section: net
+Description: Tinyproxy is a lightweight HTTP and HTTPS proxy.
+Priority: optional

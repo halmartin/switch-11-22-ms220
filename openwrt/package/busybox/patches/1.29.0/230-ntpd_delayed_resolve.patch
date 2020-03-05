@@ -1,0 +1,50 @@
+From d97d5e78e194162a39206a87ff87387a7e87b546 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Mon, 9 Jul 2018 08:46:52 -0700
+Subject: [PATCH 21/26] 230
+
+---
+ networking/ntpd.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/networking/ntpd.c b/networking/ntpd.c
+index a1b8ac5..c6f3b04 100644
+--- a/networking/ntpd.c
++++ b/networking/ntpd.c
+@@ -299,6 +299,7 @@ typedef struct {
+ typedef struct {
+ 	len_and_sockaddr *p_lsa;
+ 	char             *p_dotted;
++	char             *p_hostname;
+ 	int              p_fd;
+ 	int              datapoint_idx;
+ 	uint32_t         lastpkt_refid;
+@@ -891,6 +892,25 @@ send_query_to_peer(peer_t *p)
+ 	 *
+ 	 * Uncomment this and use strace to see it in action:
+ 	 */
++
++	/* See if the peer hostname already resolved yet, if not, retry to resolv and return on failure */
++	if (!p->p_lsa)
++	{
++		p->p_lsa = host2sockaddr(p->p_hostname, 123);
++
++		if (p->p_lsa)
++		{
++			p->p_dotted = xmalloc_sockaddr2dotted_noport(&p->p_lsa->u.sa);
++			VERB1 bb_error_msg("resolved peer %s to %s", p->p_hostname, p->p_dotted);
++		}
++		else
++		{
++			set_next(p, RETRY_INTERVAL);
++			VERB1 bb_error_msg("could not resolve peer %s, skipping", p->p_hostname);
++			return;
++		}
++	}
++
+ #define PROBE_LOCAL_ADDR /* { len_and_sockaddr lsa; lsa.len = LSA_SIZEOF_SA; getsockname(p->query.fd, &lsa.u.sa, &lsa.len); } */
+ 
+ 	if (p->p_fd == -1) {
+-- 
+2.17.0
+

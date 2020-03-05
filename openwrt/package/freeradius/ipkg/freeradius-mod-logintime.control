@@ -1,0 +1,5 @@
+Package: freeradius-mod-logintime
+Priority: optional
+Section: net
+Description: LOGINTIME module for FreeRADIUS
+Depends: freeradius

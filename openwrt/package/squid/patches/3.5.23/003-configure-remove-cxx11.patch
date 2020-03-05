@@ -1,0 +1,11 @@
+--- a/configure
++++ b/configure
+@@ -6911,7 +6911,7 @@ if test "x$user_cxx" = "x"; then
+ #
+ # Similar POSIX issues on MinGW 32-bit and Cygwin
+ #
+-  if ! test "x$squid_host_os" = "xmingw" -o "x$squid_host_os" = "xcygwin" -o "x$squid_cv_compiler" = "xclang"; then
++  if false; then
+         ax_cxx_compile_cxx11_required=false
+   ac_ext=cpp
+ ac_cpp='$CXXCPP $CPPFLAGS'

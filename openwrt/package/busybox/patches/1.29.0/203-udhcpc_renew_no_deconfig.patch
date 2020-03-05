@@ -1,0 +1,24 @@
+From 4f317012d70f6ef24768b26a4366b32ed2026084 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Mon, 9 Jul 2018 08:05:02 -0700
+Subject: [PATCH 18/26] 203
+
+---
+ networking/udhcp/dhcpc.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/networking/udhcp/dhcpc.c b/networking/udhcp/dhcpc.c
+index 6be4e25..5a4f8dd 100644
+--- a/networking/udhcp/dhcpc.c
++++ b/networking/udhcp/dhcpc.c
+@@ -1118,7 +1118,6 @@ static void perform_renew(void)
+ 		state = RENEW_REQUESTED;
+ 		break;
+ 	case RENEW_REQUESTED: /* impatient are we? fine, square 1 */
+-		udhcp_run_script(NULL, "deconfig");
+ 	case REQUESTING:
+ 	case RELEASED:
+ 		change_listen_mode(LISTEN_RAW);
+-- 
+2.17.0
+

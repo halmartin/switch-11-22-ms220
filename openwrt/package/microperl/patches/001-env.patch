@@ -1,0 +1,72 @@
+diff -u perl-5.8.6/perl.c perl-5.8.6_patched/perl.c
+--- perl-5.8.6/perl.c	2006-03-07 19:57:30.000000000 -0700
++++ perl-5.8.6_patched/perl.c	2006-03-07 19:56:31.000000000 -0700
+@@ -372,11 +372,11 @@
+ 	("__environ", (unsigned long *) &environ_pointer, NULL);
+ #endif /* environ */
+ 
+-#ifndef PERL_MICRO
++//#ifndef PERL_MICRO  //jcw
+ #   ifdef  USE_ENVIRON_ARRAY
+     PL_origenviron = environ;
+ #   endif
+-#endif
++//#endif //jcw
+ 
+     /* Use sysconf(_SC_CLK_TCK) if available, if not
+      * available or if the sysconf() fails, use the HZ. */
+@@ -597,7 +597,7 @@
+     /* if PERL_USE_SAFE_PUTENV is defined environ will not have been copied
+      * so we certainly shouldn't free it here
+      */
+-#ifndef PERL_MICRO
++//#ifndef PERL_MICRO  //jcw
+ #if defined(USE_ENVIRON_ARRAY) && !defined(PERL_USE_SAFE_PUTENV)
+     if (environ != PL_origenviron && !PL_use_safe_putenv
+ #ifdef USE_ITHREADS
+@@ -617,7 +617,7 @@
+ 	environ = PL_origenviron;
+     }
+ #endif
+-#endif /* !PERL_MICRO */
++//#endif /* !PERL_MICRO */  //jcw
+ 
+     /* reset so print() ends up where we expect */
+     setdefout(Nullgv);
+@@ -4228,7 +4228,7 @@
+ 	GvMULTI_on(PL_envgv);
+ 	hv = GvHVn(PL_envgv);
+ 	hv_magic(hv, Nullgv, PERL_MAGIC_env);
+-#ifndef PERL_MICRO
++//#ifndef PERL_MICRO  //jcw
+ #ifdef USE_ENVIRON_ARRAY
+ 	/* Note that if the supplied env parameter is actually a copy
+ 	   of the global environ then it may now point to free'd memory
+@@ -4267,7 +4267,7 @@
+ 	  }
+       }
+ #endif /* USE_ENVIRON_ARRAY */
+-#endif /* !PERL_MICRO */
++//#endif /* !PERL_MICRO */  //jcw
+     }
+     TAINT_NOT;
+     if ((tmpgv = gv_fetchpv("$",TRUE, SVt_PV))) {
+diff -u perl-5.8.6/perl.h perl-5.8.6_patched/perl.h
+--- perl-5.8.6/perl.h	2006-03-07 19:57:30.000000000 -0700
++++ perl-5.8.6_patched/perl.h	2006-03-07 19:56:31.000000000 -0700
+@@ -3025,11 +3025,12 @@
+ #else
+    /* VMS and some other platforms don't use the environ array */
+ #  ifdef USE_ENVIRON_ARRAY
++extern char **  environ;        /* environment variables supplied via exec */ //jcw
+ #    if !defined(DONT_DECLARE_STD) || \
+         (defined(__svr4__) && defined(__GNUC__) && defined(sun)) || \
+         defined(__sgi) || \
+         defined(__DGUX)
+-extern char **	environ;	/* environment variables supplied via exec */
++//extern char **  environ;        /* environment variables supplied via exec */ //jcw
+ #    endif
+ #  endif
+ #endif
+
+

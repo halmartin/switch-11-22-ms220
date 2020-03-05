@@ -1,0 +1,11 @@
+config BR2_PACKAGE_HPING3
+	prompt "hping3.............................. HPING3"
+	tristate
+	default m if CONFIG_DEVEL
+	select BR2_PACKAGE_LIBPCAP
+	select BR2_PACKAGE_LIBPTHREAD
+	help
+          bleh
+	  
+
+

@@ -1,0 +1,219 @@
+diff --git a/include/curl/curl.h b/include/curl/curl.h
+index 3fd4ca8..1a8982c 100644
+--- a/include/curl/curl.h
++++ b/include/curl/curl.h
+@@ -1847,6 +1847,12 @@ typedef enum {
+   /* shuffle addresses before use when DNS returns multiple */
+   CINIT(DNS_SHUFFLE_ADDRESSES, LONG, 275),
+ 
++  /* The hostname used to check the server certificate */
++  CINIT(AUTH_HOSTNAME, STRINGPOINT, 270),
++
++  /* The proxy hostname used to check the server certificate */
++  CINIT(PROXY_AUTH_HOSTNAME, STRINGPOINT, 271),
++
+   CURLOPT_LASTENTRY /* the last unused */
+ } CURLoption;
+ 
+diff --git a/lib/setopt.c b/lib/setopt.c
+index af53ee3..691e701 100644
+--- a/lib/setopt.c
++++ b/lib/setopt.c
+@@ -1877,6 +1877,22 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option,
+     result = Curl_setstropt(&data->set.str[STRING_SSL_ISSUERCERT_ORIG],
+                             va_arg(param, char *));
+     break;
++  case CURLOPT_AUTH_HOSTNAME:
++    /*
++     * Set the hostname used to authorize the certificate's hostname from the
++     * SSL connection.
++     */
++    result = Curl_setstropt(&data->set.str[STRING_SSL_CAUTH_HOSTNAME_ORIG],
++                       va_arg(param, char *));
++    break;
++  case CURLOPT_PROXY_AUTH_HOSTNAME:
++    /*
++     * Set the proxy hostname used to authorize the certificate's hostname from
++     * the SSL connection.
++     */
++    result = Curl_setstropt(&data->set.str[STRING_SSL_CAUTH_HOSTNAME_PROXY],
++                       va_arg(param, char *));
++    break;
+   case CURLOPT_TELNETOPTIONS:
+     /*
+      * Set a linked list of telnet options
+diff --git a/lib/url.c b/lib/url.c
+index 701f83a..542af6d 100644
+--- a/lib/url.c
++++ b/lib/url.c
+@@ -4343,6 +4343,8 @@ static CURLcode create_conn(struct Curl_easy *data,
+     data->set.str[STRING_SSL_CIPHER_LIST_ORIG];
+   data->set.proxy_ssl.primary.cipher_list =
+     data->set.str[STRING_SSL_CIPHER_LIST_PROXY];
++  data->set.ssl.primary.Cauth_hostname = data->set.str[STRING_SSL_CAUTH_HOSTNAME_ORIG];
++  data->set.proxy_ssl.primary.Cauth_hostname = data->set.str[STRING_SSL_CAUTH_HOSTNAME_PROXY];
+ 
+   data->set.ssl.CRLfile = data->set.str[STRING_SSL_CRLFILE_ORIG];
+   data->set.proxy_ssl.CRLfile = data->set.str[STRING_SSL_CRLFILE_PROXY];
+diff --git a/lib/urldata.h b/lib/urldata.h
+index 7fae00f..4923c05 100644
+--- a/lib/urldata.h
++++ b/lib/urldata.h
+@@ -222,6 +222,7 @@ struct ssl_primary_config {
+   bool sessionid;        /* cache session IDs or not */
+   char *CApath;          /* certificate dir (doesn't work on windows) */
+   char *CAfile;          /* certificate to verify peer against */
++  char *Cauth_hostname; /* hostname to verify certificate against */
+   char *clientcert;
+   char *random_file;     /* path to file containing "random" data */
+   char *egdsocket;       /* path to file containing the EGD daemon socket */
+@@ -1407,6 +1408,8 @@ enum dupstring {
+   STRING_SSL_CRLFILE_PROXY, /* crl file to check certificate */
+   STRING_SSL_ISSUERCERT_ORIG, /* issuer cert file to check certificate */
+   STRING_SSL_ISSUERCERT_PROXY, /* issuer cert file to check certificate */
++  STRING_SSL_CAUTH_HOSTNAME_ORIG, /* hostname to verify certificate against */
++  STRING_SSL_CAUTH_HOSTNAME_PROXY, /* proxy hostname to verify certificate against */
+   STRING_USERNAME,        /* <username>, if used */
+   STRING_PASSWORD,        /* <password>, if used */
+   STRING_OPTIONS,         /* <options>, if used */
+diff --git a/lib/vtls/openssl.c b/lib/vtls/openssl.c
+index f6a4bd3..9672046 100644
+--- a/lib/vtls/openssl.c
++++ b/lib/vtls/openssl.c
+@@ -1419,6 +1419,8 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
+     conn->host.name;
+   const char * const dispname = SSL_IS_PROXY() ?
+     conn->http_proxy.host.dispname : conn->host.dispname;
++  const char * const Cauth_hostname = SSL_IS_PROXY() ? conn->proxy_ssl_config.Cauth_hostname :
++    conn->ssl_config.Cauth_hostname;
+ 
+ #ifdef ENABLE_IPV6
+   if(conn->bits.ipv6_ip &&
+@@ -1582,9 +1584,11 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
+             "SSL: unable to obtain common name from peer certificate");
+       result = CURLE_PEER_FAILED_VERIFICATION;
+     }
+-    else if(!Curl_cert_hostcheck((const char *)peer_CN, hostname)) {
++    else if(!Curl_cert_hostcheck((const char *)peer_CN, hostname) &&
++            (Cauth_hostname == NULL || !Curl_cert_hostcheck((const char *)peer_CN, Cauth_hostname))) {
+       failf(data, "SSL: certificate subject name '%s' does not match "
+-            "target host name '%s'", peer_CN, dispname);
++            "target host name '%s' (force : '%s')", peer_CN, dispname,
++            (Cauth_hostname ? Cauth_hostname : ""));
+       result = CURLE_PEER_FAILED_VERIFICATION;
+     }
+     else {
+diff --git a/lib/vtls/vtls.c b/lib/vtls/vtls.c
+index ee5bc7a..80aefa5 100644
+--- a/lib/vtls/vtls.c
++++ b/lib/vtls/vtls.c
+@@ -115,6 +115,7 @@ Curl_clone_primary_ssl_config(struct ssl_primary_config *source,
+ 
+   CLONE_STRING(CApath);
+   CLONE_STRING(CAfile);
++  CLONE_STRING(Cauth_hostname);
+   CLONE_STRING(clientcert);
+   CLONE_STRING(random_file);
+   CLONE_STRING(egdsocket);
+@@ -127,6 +128,7 @@ void Curl_free_primary_ssl_config(struct ssl_primary_config* sslc)
+ {
+   Curl_safefree(sslc->CApath);
+   Curl_safefree(sslc->CAfile);
++  Curl_safefree(sslc->Cauth_hostname);
+   Curl_safefree(sslc->clientcert);
+   Curl_safefree(sslc->random_file);
+   Curl_safefree(sslc->egdsocket);
+diff --git a/src/tool_cfgable.c b/src/tool_cfgable.c
+index 81e16c1..140687c 100644
+--- a/src/tool_cfgable.c
++++ b/src/tool_cfgable.c
+@@ -112,6 +112,8 @@ static void free_config_fields(struct OperationConfig *config)
+   Curl_safefree(config->proxy_cacert);
+   Curl_safefree(config->capath);
+   Curl_safefree(config->proxy_capath);
++  Curl_safefree(config->cert_auth_hostname);
++  Curl_safefree(config->proxy_cert_auth_hostname);
+   Curl_safefree(config->crlfile);
+   Curl_safefree(config->pinnedpubkey);
+   Curl_safefree(config->proxy_pinnedpubkey);
+diff --git a/src/tool_cfgable.h b/src/tool_cfgable.h
+index 9abaa9d..8dd7d05 100644
+--- a/src/tool_cfgable.h
++++ b/src/tool_cfgable.h
+@@ -125,6 +125,8 @@ struct OperationConfig {
+   char *proxy_cacert;
+   char *capath;
+   char *proxy_capath;
++  char *cert_auth_hostname;
++  char *proxy_cert_auth_hostname;
+   char *crlfile;
+   char *proxy_crlfile;
+   char *pinnedpubkey;
+diff --git a/src/tool_getparam.c b/src/tool_getparam.c
+index 19454c8..baa4a7c 100644
+--- a/src/tool_getparam.c
++++ b/src/tool_getparam.c
+@@ -258,6 +258,8 @@ static const struct LongShort aliases[]= {
+   {"E9", "proxy-tlsv1",              ARG_NONE},
+   {"EA", "socks5-basic",             ARG_BOOL},
+   {"EB", "socks5-gssapi",            ARG_BOOL},
++  {"EY", "proxy-use-auth-hostname",  ARG_STRING},
++  {"EZ", "use-auth-hostname",        ARG_STRING},
+   {"f",  "fail",                     ARG_BOOL},
+   {"fa", "fail-early",               ARG_BOOL},
+   {"F",  "form",                     ARG_STRING},
+@@ -1634,6 +1636,16 @@ ParameterError getparameter(const char *flag, /* f or -long-flag */
+           config->socks5_auth &= ~CURLAUTH_GSSAPI;
+         break;
+ 
++      case 'Y':
++        /* --proxy-use-auth-hostname */
++        GetStr(&config->proxy_cert_auth_hostname, nextarg);
++        break;
++
++      case 'Z':
++        /* --use-auth-hostname */
++        GetStr(&config->cert_auth_hostname, nextarg);
++        break;
++
+       default: /* unknown flag */
+         return PARAM_OPTION_UNKNOWN;
+       }
+diff --git a/src/tool_help.c b/src/tool_help.c
+index 6f5ad08..24a05ae 100644
+--- a/src/tool_help.c
++++ b/src/tool_help.c
+@@ -332,6 +332,8 @@ static const struct helptxt helptext[] = {
+    "TLS username for HTTPS proxy"},
+   {"    --proxy-tlsv1",
+    "Use TLSv1 for HTTPS proxy"},
++  {"    --proxy-use-auth-hostname <hostname>",
++   "Force the proxy URL host to be interpreted as this host name"},
+   {"-U, --proxy-user <user:password>",
+    "Proxy user and password"},
+   {"    --proxy1.0 <host[:port]>",
+@@ -462,6 +464,8 @@ static const struct helptxt helptext[] = {
+    "URL to work with"},
+   {"-B, --use-ascii",
+    "Use ASCII/text transfer"},
++  {"    --use-auth-hostname <hostname>",
++   "Force URL hosts without a hostname (e.g. IPs) to be interpreted as this hostname"},
+   {"-u, --user <user:password>",
+    "Server user and password"},
+   {"-A, --user-agent <name>",
+diff --git a/src/tool_operate.c b/src/tool_operate.c
+index 626c308..d5ac1c4 100644
+--- a/src/tool_operate.c
++++ b/src/tool_operate.c
+@@ -1076,6 +1076,11 @@ static CURLcode operate_do(struct GlobalConfig *global,
+         else if(config->crlfile) /* CURLOPT_PROXY_CRLFILE default is crlfile */
+           my_setopt_str(curl, CURLOPT_PROXY_CRLFILE, config->crlfile);
+ 
++        if(config->cert_auth_hostname)
++            my_setopt_str(curl, CURLOPT_AUTH_HOSTNAME, config->cert_auth_hostname);
++        if(config->proxy_cert_auth_hostname)
++            my_setopt_str(curl, CURLOPT_PROXY_AUTH_HOSTNAME, config->proxy_cert_auth_hostname);
++
+         if(config->pinnedpubkey)
+           my_setopt_str(curl, CURLOPT_PINNEDPUBLICKEY, config->pinnedpubkey);
+ 

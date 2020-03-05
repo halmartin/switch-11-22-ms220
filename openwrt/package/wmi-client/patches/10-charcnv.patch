@@ -1,0 +1,11 @@
+--- a/Samba/source/lib/charset/charcnv.c	2008-07-30 12:44:55.000000000 -0700
++++ b/Samba/source/lib/charset/charcnv.c	2011-07-26 17:38:36.287707911 -0700
+@@ -113,7 +113,7 @@
+ 	if (conv_handles[from][to] == (smb_iconv_t)-1) {
+ 		if ((from == CH_DOS || to == CH_DOS) &&
+ 		    strcasecmp(charset_name(CH_DOS), "ASCII") != 0) {
+-			DEBUG(0,("dos charset '%s' unavailable - using ASCII\n",
++			DEBUG(2,("dos charset '%s' unavailable - using ASCII\n",
+ 				 charset_name(CH_DOS)));
+ 			lp_set_cmdline("dos charset", "ASCII");
+ 

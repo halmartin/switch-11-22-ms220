@@ -1,0 +1,5 @@
+Package: libxcb
+Priority: optional
+Section: x11
+Depends:
+Description: X C bindings

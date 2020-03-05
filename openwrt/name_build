@@ -1,0 +1,6 @@
+#!/bin/sh
+BUILD=`cat package/meraki/files/MERAKI_BUILD`
+
+cp bin/openwrt-brcm-2.6-jffs2-8MB.trx bin/meraki.${BUILD}.trx
+md5sum bin/meraki.${BUILD}.trx > bin/meraki.${BUILD}.trx.md5sum
+

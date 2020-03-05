@@ -1,0 +1,50 @@
+menu "busybox........................... The Swiss Army Knife of embedded Linux"
+
+config BR2_PACKAGE_BUSYBOX
+	prompt "busybox........................... The Swiss Army Knife of embedded Linux"
+	bool
+	default y
+	help
+	  The Swiss Army Knife of embedded Linux.  It slices, it dices, it
+	  makes Julian Fries.
+	  
+	  http://busybox.net/
+	  
+	  Most people will answer Y.
+
+config BR2_PACKAGE_BUSYBOX_STATIC_IN_STAGING
+	prompt "busybox........................... create busybox-static in staging"
+	bool
+	depends BR2_PACKAGE_BUSYBOX
+	default n
+	help
+	  put busybox-static in staging /bin for initrd
+
+choice
+	prompt "Busybox Version" if BR2_PACKAGE_BUSYBOX
+	default BR2_BUSYBOX_VERSION_1_29
+	depends BR2_PACKAGE_BUSYBOX
+	help
+	  Select the version of Busybox you wish to use.
+
+	config BR2_PACKAGE_BUSYBOX_VERSION_1_1
+	       bool "Busybox 1.1"
+
+	config BR2_PACKAGE_BUSYBOX_VERSION_1_20
+	       bool "Busybox 1.20"
+
+	config BR2_PACKAGE_BUSYBOX_VERSION_1_23
+               bool "Busybox 1.23"
+
+	config BR2_PACKAGE_BUSYBOX_VERSION_1_24
+               bool "Busybox 1.24.1"
+
+	config BR2_PACKAGE_BUSYBOX_VERSION_1_25
+		bool "Busybox 1.25.1"
+
+	config BR2_PACKAGE_BUSYBOX_VERSION_1_29
+		bool "Busybox 1.29.0"
+
+endchoice
+
+endmenu

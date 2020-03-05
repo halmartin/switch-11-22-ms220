@@ -1,0 +1,29 @@
+From cc11e522a3f50ad3ad289d1313cd0bf0ba491e24 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fran=C3=A7ois=20Revol?= <revol@free.fr>
+Date: Sun, 3 Feb 2013 00:52:21 +0100
+Subject: [PATCH 78/98] Fix typo
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: François Revol <revol@free.fr>
+---
+ libfdt/libfdt.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libfdt/libfdt.h b/libfdt/libfdt.h
+index c0075e7..130789a 100644
+--- a/libfdt/libfdt.h
++++ b/libfdt/libfdt.h
+@@ -582,7 +582,7 @@ const char *fdt_get_alias_namelen(const void *fdt,
+  * value of the property named 'name' in the node /aliases.
+  *
+  * returns:
+- *	a pointer to the expansion of the alias named 'name', of it exists
++ *	a pointer to the expansion of the alias named 'name', if it exists
+  *	NULL, if the given alias or the /aliases node does not exist
+  */
+ const char *fdt_get_alias(const void *fdt, const char *name);
+-- 
+1.8.1.2
+

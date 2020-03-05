@@ -1,0 +1,5 @@
+Package: freeradius-mod-attr-filter
+Priority: optional
+Section: net
+Description: ATTR filter module for FreeRADIUS
+Depends: freeradius

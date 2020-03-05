@@ -1,0 +1,7 @@
+config BR2_PACKAGE_LIBPCIACCESS
+        prompt "libpciaccess........................X PCI access"
+	tristate
+	default n
+	help
+	  X PCI access. You probably only need this if you want to install
+	  an X server.

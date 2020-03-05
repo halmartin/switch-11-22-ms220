@@ -1,0 +1,31 @@
+diff --git a/src/racoon/pfkey.c b/src/racoon/pfkey.c
+index 13d5ff1..c19515c 100644
+--- a/src/racoon/pfkey.c
++++ b/src/racoon/pfkey.c
+@@ -1111,7 +1111,7 @@ pk_sendupdate(iph2)
+ 	else
+ 		sa_args.l_addtime = iph2->approval->lifetime;
+ 	sa_args.seq = iph2->seq;
+-	sa_args.wsize = 4;
++	sa_args.wsize = 32;
+
+ 	if (iph2->sa_src && iph2->sa_dst) {
+ 		/* MIPv6: Use SA addresses, not IKE ones */
+@@ -1222,7 +1222,7 @@ pk_sendupdate(iph2)
+ 		 */
+
+ 		/* change some things before backing up */
+-		sa_args.wsize = 4;
++		sa_args.wsize = 32;
+ 		sa_args.l_bytes = iph2->approval->lifebyte * 1024;
+
+ 		if (backupsa_to_file(&sa_args) < 0) {
+@@ -1394,7 +1394,7 @@ pk_sendadd(iph2)
+ 	else
+ 		sa_args.l_addtime = iph2->approval->lifetime;
+ 	sa_args.seq = iph2->seq;
+-	sa_args.wsize = 4;
++	sa_args.wsize = 32;
+
+ 	if (iph2->sa_src && iph2->sa_dst) {
+ 		/* MIPv6: Use SA addresses, not IKE ones */

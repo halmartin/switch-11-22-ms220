@@ -1,0 +1,6 @@
+Package: xkbcomp
+Priority: optional
+Section: x11
+Depends:
+Description: x keyboard description compiler
+

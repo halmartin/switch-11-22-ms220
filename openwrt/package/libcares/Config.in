@@ -1,0 +1,10 @@
+config BR2_PACKAGE_LIBCARES
+    prompt "libcares......................... C library for asynchronous DNS requests"
+    tristate
+    default n
+    help
+        C-Ares is a C library for asynchronous DNS requests (including
+        name resolves)
+
+        https://c-ares.haxx.se/
+

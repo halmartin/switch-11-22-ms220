@@ -1,0 +1,5 @@
+Package: glib-networking
+Priority: optional
+Section: libs
+Description: GLib networking module
+Depends: glib2 gnutls intltool

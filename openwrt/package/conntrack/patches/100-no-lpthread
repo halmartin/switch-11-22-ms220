@@ -1,0 +1,12 @@
+diff -ru conntrack-tools-0.9.5-bak/Makefile.in conntrack-tools-0.9.5/Makefile.in
+--- conntrack-tools-0.9.5-bak/Makefile.in	2007-07-28 06:37:25.000000000 -0700
++++ conntrack-tools-0.9.5/Makefile.in	2008-01-16 11:48:28.000000000 -0800
+@@ -163,7 +163,7 @@
+ 
+ SUBDIRS = extensions src
+ DIST_SUBDIRS = include src extensions
+-LINKOPTS = -lnfnetlink -lnetfilter_conntrack -lpthread
++LINKOPTS = -lnfnetlink -lnetfilter_conntrack
+ AM_CFLAGS = -g
+ subdir = .
+ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4

@@ -1,0 +1,4 @@
+Package: gettext
+Priority: optional
+Section: libs
+Description: Framework to help other GNU packages produce multi-lingual messages.

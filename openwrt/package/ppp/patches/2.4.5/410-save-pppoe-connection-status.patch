@@ -1,0 +1,63 @@
+diff -Naur --exclude '*~' origpppd/pppd/plugins/rp-pppoe/plugin.c newpppd/pppd/plugins/rp-pppoe/plugin.c
+--- origpppd/pppd/plugins/rp-pppoe/plugin.c	2012-02-16 15:00:39.000000000 -0800
++++ newpppd/pppd/plugins/rp-pppoe/plugin.c	2012-02-16 15:11:27.000000000 -0800
+@@ -66,6 +66,7 @@
+ static int printACNames = 0;
+ static char *pppoe_reqd_mac = NULL;
+ unsigned char pppoe_reqd_mac_addr[6];
++static char *statusFilePath = NULL;
+ 
+ static int PPPoEDevnameHook(char *cmd, char **argv, int doit);
+ static option_t Options[] = {
+@@ -83,6 +84,8 @@
+       "Be verbose about discovered access concentrators"},
+     { "pppoe-mac", o_string, &pppoe_reqd_mac,
+       "Only connect to specified MAC address" },
++    { "rp_pppoe_status_file", o_string, &statusFilePath,
++      "Save connection status in the specified file" },
+     { NULL }
+ };
+ int (*OldDevnameHook)(char *cmd, char **argv, int doit) = NULL;
+@@ -104,6 +107,9 @@
+     if (!conn) {
+ 	novm("PPPoE session data");
+     }
++    if (statusFilePath) {
++        unlink(statusFilePath);
++    }
+     memset(conn, 0, sizeof(PPPoEConnection));
+     conn->acName = acName;
+     conn->serviceName = pppd_pppoe_service;
+@@ -193,6 +199,21 @@
+ 	goto errout;
+     }
+ 
++    if (statusFilePath) {
++        FILE *file = fopen(statusFilePath, "w");
++        if (file) {
++            fprintf(file, "PEER-ETH-ADDRESS=%02X:%02X:%02X:%02X:%02X:%02X\n",
++                    (unsigned) conn->peerEth[0],
++                    (unsigned) conn->peerEth[1],
++                    (unsigned) conn->peerEth[2],
++                    (unsigned) conn->peerEth[3],
++                    (unsigned) conn->peerEth[4],
++                    (unsigned) conn->peerEth[5]);
++            fprintf(file, "SESSION=%u\n", ntohs(conn->session));
++            fclose(file);
++        }
++    }
++
+     return conn->sessionSocket;
+ 
+  errout:
+@@ -242,6 +263,10 @@
+     /* don't send PADT?? */
+     if (conn->discoverySocket >= 0)
+ 	close(conn->discoverySocket);
++
++    if (statusFilePath) {
++        unlink(statusFilePath);
++    }
+ }
+ 
+ static void

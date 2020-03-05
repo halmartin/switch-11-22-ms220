@@ -1,0 +1,88 @@
+From 3553dfac224435233f2c0d33169194098e979c88 Mon Sep 17 00:00:00 2001
+From: Simon Glass <sjg@chromium.org>
+Date: Tue, 10 Jul 2012 05:56:47 -0700
+Subject: [PATCH 55/98] fdtput: Adjust report_error() to use name, namelen
+ params
+
+As with many fdt functions, report_error() should permit a namelen to
+be specified, thus obviating the need for nul termination in strings
+passed to it.
+
+Signed-off-by: Simon Glass <sjg@chromium.org>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ fdtput.c | 25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
+
+diff --git a/fdtput.c b/fdtput.c
+index a414fe9..1f048a8 100644
+--- a/fdtput.c
++++ b/fdtput.c
+@@ -41,9 +41,20 @@ struct display_info {
+ 	int verbose;		/* verbose output */
+ };
+ 
+-static void report_error(const char *where, int err)
++
++/**
++ * Report an error with a particular node.
++ *
++ * @param name		Node name to report error on
++ * @param namelen	Length of node name, or -1 to use entire string
++ * @param err		Error number to report (-FDT_ERR_...)
++ */
++static void report_error(const char *name, int namelen, int err)
+ {
+-	fprintf(stderr, "Error at '%s': %s\n", where, fdt_strerror(err));
++	if (namelen == -1)
++		namelen = strlen(name);
++	fprintf(stderr, "Error at '%1.*s': %s\n", namelen, name,
++		fdt_strerror(err));
+ }
+ 
+ /**
+@@ -127,13 +138,13 @@ static int store_key_value(void *blob, const char *node_name,
+ 
+ 	node = fdt_path_offset(blob, node_name);
+ 	if (node < 0) {
+-		report_error(node_name, node);
++		report_error(node_name, -1, node);
+ 		return -1;
+ 	}
+ 
+ 	err = fdt_setprop(blob, node, property, buf, len);
+ 	if (err) {
+-		report_error(property, err);
++		report_error(property, -1, err);
+ 		return -1;
+ 	}
+ 	return 0;
+@@ -157,7 +168,7 @@ static int create_node(void *blob, const char *node_name)
+ 
+ 	p = strrchr(node_name, '/');
+ 	if (!p) {
+-		report_error(node_name, -FDT_ERR_BADPATH);
++		report_error(node_name, -1, -FDT_ERR_BADPATH);
+ 		return -1;
+ 	}
+ 	*p = '\0';
+@@ -165,14 +176,14 @@ static int create_node(void *blob, const char *node_name)
+ 	if (p > node_name) {
+ 		node = fdt_path_offset(blob, node_name);
+ 		if (node < 0) {
+-			report_error(node_name, node);
++			report_error(node_name, -1, node);
+ 			return -1;
+ 		}
+ 	}
+ 
+ 	node = fdt_add_subnode(blob, node, p + 1);
+ 	if (node < 0) {
+-		report_error(p + 1, node);
++		report_error(p + 1, -1, node);
+ 		return -1;
+ 	}
+ 
+-- 
+1.8.1.2
+

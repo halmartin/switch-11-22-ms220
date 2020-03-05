@@ -1,0 +1,6 @@
+config BR2_PACKAGE_INTLTOOL
+	prompt "intltool............................. Internationalization tool for extracting translatable strings"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  The Intltool is an internationalization tool used for extracting translatable strings from source files, collecting the extracted strings with messages from traditional source files (<source directory>/<package>/po) and merging the translations into .xml, .desktop and .oaf files.

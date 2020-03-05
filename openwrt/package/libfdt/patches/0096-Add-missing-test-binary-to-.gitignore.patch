@@ -1,0 +1,27 @@
+From 2e3fc7e9b3a4722a5500afaa9faf7874c61b2e6a Mon Sep 17 00:00:00 2001
+From: David Gibson <david@gibson.dropbear.id.au>
+Date: Wed, 29 May 2013 12:46:35 +1000
+Subject: [PATCH 96/98] Add missing test binary to .gitignore
+
+The subnode_iterate test binary was missing from .gitignore, this fixes it.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ tests/.gitignore | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tests/.gitignore b/tests/.gitignore
+index e2aa24a..bb5e33a 100644
+--- a/tests/.gitignore
++++ b/tests/.gitignore
+@@ -48,6 +48,7 @@ tmp.*
+ /setprop_inplace
+ /sized_cells
+ /string_escapes
++/subnode_iterate
+ /subnode_offset
+ /supernode_atdepth_offset
+ /sw_tree1
+-- 
+1.8.1.2
+

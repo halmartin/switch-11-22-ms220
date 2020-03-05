@@ -1,0 +1,26 @@
+commit 1049fd10428e06fbf1b8df7dd3137db073ecada9
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Tue Jan 31 14:03:59 2017 -0800
+
+    support aarch64
+
+diff --git a/build/config.sub b/build/config.sub
+index f98a3cc..9a5def3 100755
+--- a/build/config.sub
++++ b/build/config.sub
+@@ -243,6 +243,7 @@ case $basic_machine in
+ 	# Some are omitted here because they have special meanings below.
+ 	1750a | 580 \
+ 	| a29k \
++	| aarch64 | aarch64_be \
+ 	| alpha | alphaev[4-8] | alphaev56 | alphaev6[78] | alphapca5[67] \
+ 	| alpha64 | alpha64ev[4-8] | alpha64ev56 | alpha64ev6[78] | alpha64pca5[67] \
+ 	| arc | arm | arm[bl]e | arme[lb] | armv[2345] | armv[345][lb] | avr \
+@@ -305,6 +306,7 @@ case $basic_machine in
+ 	# Recognize the basic CPU types with company name.
+ 	580-* \
+ 	| a29k-* \
++	| aarch64-* | aarch64_be-* \
+ 	| alpha-* | alphaev[4-8]-* | alphaev56-* | alphaev6[78]-* \
+ 	| alpha64-* | alpha64ev[4-8]-* | alpha64ev56-* | alpha64ev6[78]-* \
+ 	| alphapca5[67]-* | alpha64pca5[67]-* | arc-* \

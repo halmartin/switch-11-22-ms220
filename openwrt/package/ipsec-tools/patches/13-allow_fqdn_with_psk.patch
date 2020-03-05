@@ -1,0 +1,14 @@
+--- origrac/src/racoon/ipsec_doi.c	2012-02-08 12:35:28.000000000 -0800
++++ newrac/src/racoon/ipsec_doi.c	2012-03-08 17:53:06.000000000 -0800
+@@ -3582,10 +3582,9 @@
+ 	    iph1->approval->authmethod == OAKLEY_ATTR_AUTH_METHOD_PSKEY) {
+ 		 if (id_b->type != IPSECDOI_ID_IPV4_ADDR
+ 		  && id_b->type != IPSECDOI_ID_IPV6_ADDR) {
+-			plog(LLV_ERROR, LOCATION, NULL,
++			plog(LLV_WARNING, LOCATION, NULL,
+ 				"Expecting IP address type in main mode, "
+ 				"but %s.\n", s_ipsecdoi_ident(id_b->type));
+-			return ISAKMP_NTYPE_INVALID_ID_INFORMATION;
+ 		}
+ 	}
+ 

@@ -1,0 +1,4 @@
+Package: usb-modeswitch
+Priority: optional
+Section: util
+Description: Allows switching on multi mode USB devices

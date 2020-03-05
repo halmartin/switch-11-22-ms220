@@ -1,0 +1,9 @@
+config COMMON_CLK_XGS_IPROC
+	bool "BRCM XGS iProc clock support"
+	depends on COMMON_CLK
+	depends on ARCH_BCM_SWITCH_ARM
+	help
+		Enable common clock framework support for Broadcom SoCs based on the
+		iProc architecture.
+
+source arch/arm/mach-bcm/xldk/hr3/Kconfig

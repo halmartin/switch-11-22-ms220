@@ -1,0 +1,33 @@
+--- a/Samba/source/wmi/wbemdata.c	2011-08-24 11:37:47.668590377 -0700
++++ a/Samba/source/wmi/wbemdata.c	2011-08-24 14:02:21.864589098 -0700
+@@ -52,6 +52,7 @@
+ 					} \
+ 				    } while(0)
+ 
++#define NDR_CHECK_MEM(val, exp, len) NDR_CHECK_EXPR(0 == memcmp((val), (exp), (len)))
+ #define NDR_CHECK_CONST(val, exp) NDR_CHECK_EXPR((val) == (exp))
+ #define NDR_CHECK_RSTRING(rstring) NDR_CHECK_EXPR((rstring) >= 0)
+ 
+@@ -516,6 +517,9 @@
+ 	NTSTATUS status;
+ 	struct GUID guid;
+ 	struct IEnumWbemClassObject_data *ecod;
++	const char WBEMDATA[] = { 0x57, 0x42, 0x45, 0x4D,   /* = "WBEM" */
++	                          0x44, 0x41, 0x54, 0x41 }; /* = "DATA" */
++	char buffer[sizeof WBEMDATA] = { 0 };
+ 
+ 	if (!uCount) return NT_STATUS_NOT_IMPLEMENTED;
+ 
+@@ -531,10 +535,8 @@
+ 	NDR_CHECK_set_shift(0x18);
+ 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &u));
+ 	NDR_CHECK_CONST(u, 0x0);
+-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &u));
+-	NDR_CHECK_CONST(u, *(const uint32_t *)"WBEM");
+-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &u));
+-	NDR_CHECK_CONST(u, *(const uint32_t *)"DATA");
++	NDR_CHECK(ndr_pull_bytes(ndr, buffer, sizeof buffer));
++	NDR_CHECK_MEM(buffer, WBEMDATA, sizeof WBEMDATA);
+ 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &u));
+ 	NDR_CHECK_CONST(u, 0x1A); /* Length of header */
+ 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &u));

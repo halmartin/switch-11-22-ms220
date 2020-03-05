@@ -1,0 +1,29 @@
+diff --git a/ias.h b/ias.h
+index 470d908..5291411 100644
+--- a/ias.h
++++ b/ias.h
+@@ -8,9 +8,9 @@
+ /* Macros */
+ 
+ #define i2d_pkcs7_issuer_and_subject_bio(bp, ias) \
+-	ASN1_i2d_bio(i2d_pkcs7_issuer_and_subject, bp, (unsigned char *)ias)
++	ASN1_i2d_bio((void *)i2d_pkcs7_issuer_and_subject, bp, (unsigned char *)ias)
+ #define i2d_PKCS7_ISSUER_AND_SERIAL_bio(bp, ias)  \
+-	ASN1_i2d_bio(i2d_PKCS7_ISSUER_AND_SERIAL, bp, (unsigned char *)ias)
++	ASN1_i2d_bio((void *)i2d_PKCS7_ISSUER_AND_SERIAL, bp, (unsigned char *)ias)
+ 
+ /* Routines */
+ int i2d_pkcs7_issuer_and_subject(pkcs7_issuer_and_subject *, unsigned char **);
+diff --git a/sceputils.c b/sceputils.c
+index a810229..d9a54d6 100644
+--- a/sceputils.c
++++ b/sceputils.c
+@@ -99,7 +99,7 @@ int new_selfsigned(struct scep *s) {
+ 	}
+ 	/* Get serial no from transaction id */
+ 	ptr = (unsigned char *)s->transaction_id;
+-	if (!(serial = c2i_ASN1_INTEGER(NULL, &ptr, 32))) {
++	if (!(serial = c2i_ASN1_INTEGER(NULL, (const unsigned char **)&ptr, 32))) {
+ 		fprintf(stderr, "%s: error converting serial\n", pname);
+ 		ERR_print_errors_fp(stderr);
+ 		exit (SCEP_PKISTATUS_SS);

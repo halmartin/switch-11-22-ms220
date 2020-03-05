@@ -1,0 +1,19 @@
+commit b8ac4f7e9bf028702cbe068a6c6608629a8915b8
+Author: Stephen Segal <ssegal@meraki.com>
+Date:   Tue Aug 1 18:15:12 2017 -0700
+
+    Fix perl script for perl 5.24
+
+diff --git a/vers_string b/vers_string
+index 52e333b..aa84aca 100755
+--- a/vers_string
++++ b/vers_string
+@@ -4,7 +4,7 @@
+ #
+ # Implementation of SGS vers_string which uses CVSVersionInfo.txt.
+ 
+-require "cvslib.pl";
++require "./cvslib.pl";
+ 
+ $OUTFILE = (-f "version.h") ? "version.h" : "vers.c";
+ $AUTHOR = `whoami`;

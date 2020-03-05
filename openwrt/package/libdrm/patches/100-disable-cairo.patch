@@ -1,0 +1,33 @@
+diff -u -r a/configure.ac b/configure.ac
+--- a/configure.ac	2012-05-30 18:46:41.160899871 -0700
++++ b/configure.ac	2012-05-30 18:55:10.576912915 -0700
+@@ -191,12 +191,9 @@
+ 	AC_DEFINE(HAVE_OMAP, 1, [Have OMAP support])
+ fi
+ 
+-PKG_CHECK_MODULES(CAIRO, cairo, [HAVE_CAIRO=yes], [HAVE_CAIRO=no])
+-if test "x$HAVE_CAIRO" = xyes; then
+-	AC_DEFINE(HAVE_CAIRO, 1, [Have cairo support])
+-fi
+-AM_CONDITIONAL(HAVE_CAIRO, [test "x$HAVE_CAIRO" = xyes])
++AC_DEFINE(HAVE_CAIRO, 0, [Have cairo support])
+ 
++AM_CONDITIONAL(HAVE_CAIRO, [test "x$HAVE_CAIRO" = xyes])
+ # For enumerating devices in test case
+ PKG_CHECK_MODULES(LIBUDEV, libudev, [HAVE_LIBUDEV=yes], [HAVE_LIBUDEV=no])
+ if test "x$HAVE_LIBUDEV" = xyes; then
+diff -u -r a/tests/Makefile.am b/tests/Makefile.am
+--- a/tests/Makefile.am	2012-05-30 18:59:56.680920241 -0700
++++ b/tests/Makefile.am	2012-05-30 19:00:47.408921540 -0700
+@@ -13,7 +13,10 @@
+ SUBDIRS = modeprint
+ 
+ if HAVE_LIBKMS
+-SUBDIRS += kmstest modetest
++SUBDIRS += kmstest
++if HAVE_CAIRO
++SUBDIRS += modetest
++endif
+ endif
+ 
+ if HAVE_RADEON

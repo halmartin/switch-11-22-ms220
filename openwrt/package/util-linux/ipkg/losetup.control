@@ -1,0 +1,5 @@
+Package: losetup
+Priority: optional
+Section: admin
+Depends: kmod-loop, libsmartcols
+Description: Loop devices setup and control utility

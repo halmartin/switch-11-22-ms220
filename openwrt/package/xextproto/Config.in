@@ -1,0 +1,7 @@
+config BR2_PACKAGE_XEXTPROTO
+        prompt "xextproto...........................X extension protocol headers"
+	tristate
+	default n
+	help
+	  X extension protocol headers. You probably only need this if
+	  you want to install an X server.

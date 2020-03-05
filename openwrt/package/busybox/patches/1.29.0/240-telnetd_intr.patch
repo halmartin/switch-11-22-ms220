@@ -1,0 +1,24 @@
+From ccc71d815cbf08a9b1269929de0c1530a3dcd3f4 Mon Sep 17 00:00:00 2001
+From: pbuonado <pbuonado@meraki.com>
+Date: Mon, 9 Jul 2018 08:47:20 -0700
+Subject: [PATCH 22/26] 240
+
+---
+ networking/telnetd.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/networking/telnetd.c b/networking/telnetd.c
+index a6bafa2..115efb9 100644
+--- a/networking/telnetd.c
++++ b/networking/telnetd.c
+@@ -497,6 +497,7 @@ make_new_session(
+ 
+ 	/* Restore default signal handling ASAP */
+ 	bb_signals((1 << SIGCHLD) + (1 << SIGPIPE), SIG_DFL);
++	signal(SIGINT, SIG_DFL);
+ 
+ 	pid = getpid();
+ 
+-- 
+2.17.0
+

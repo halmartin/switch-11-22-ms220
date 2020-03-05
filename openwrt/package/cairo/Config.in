@@ -1,0 +1,6 @@
+config BR2_PACKAGE_CAIRO
+        prompt "cairo............................. Library for 2D graphics"
+	tristate
+	default n
+	help
+	  The cairo API provides a mechanism for 2D graphics.

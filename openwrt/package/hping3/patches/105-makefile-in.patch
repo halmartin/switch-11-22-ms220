@@ -1,0 +1,10 @@
+--- hping3-20051105/Makefile.in	2010-10-18 02:34:37.596902689 -0700
++++ hping3-20051105.new/Makefile.in	2004-04-09 16:38:56.000000000 -0700
+@@ -52,7 +52,6 @@
+ hping3: byteorder.h $(OBJ)
+ 	$(CC) -o hping3 $(CCOPT) $(DEBUG) $(OBJ) -L/usr/local/lib $(PCAP) @SOLARISLIB@ @TCL_LIB@
+ 	@echo
+-	./hping3 -v
+ 	@echo "use \`make strip' to strip hping3 binary"
+ 	@echo "use \`make install' to install hping3"
+ 

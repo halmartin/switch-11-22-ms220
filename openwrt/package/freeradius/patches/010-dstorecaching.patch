@@ -1,0 +1,520 @@
+commit 3502261f9f717242c2b07e8929a9b6db099dcb99
+Author: Jignesh <jignesh@ubuntu>
+Date:   Fri Aug 15 14:28:56 2014 -0700
+
+    010-dstorecaching.patch
+
+    Adding code to also write/read cache entries to/from dstore.
+    On write, after writing to local cache, also write to dstore.
+    On read, if local cache empty or not found in local cache,
+    try reading from dstore.
+
+diff --git a/src/modules/rlm_cache/rlm_cache.c b/src/modules/rlm_cache/rlm_cache.c
+index cd8a8ad..739ffa8 100644
+--- a/src/modules/rlm_cache/rlm_cache.c
++++ b/src/modules/rlm_cache/rlm_cache.c
+@@ -28,6 +28,71 @@ RCSID("$Id$")
+ #include <freeradius-devel/heap.h>
+ #include <freeradius-devel/rad_assert.h>
+
++
++#include <fcntl.h>
++#include <linux/ioctl.h>
++
++
++/* Following macros copied from click/include/click/llrpc.h */
++
++#define _CLICK_NET_IOC_OUT	0x40000000
++#define _CLICK_NET_IOC_IN	0x80000000
++#if HAVE_PORTABLE_LLRPC || !defined(__linux__)
++# define _CLICK_IOC_OUT		_CLICK_NET_IOC_OUT
++# define _CLICK_IOC_IN		_CLICK_NET_IOC_IN
++#else
++# define _CLICK_IOC_OUT		(_IOC_READ << _IOC_DIRSHIFT)
++# define _CLICK_IOC_IN		(_IOC_WRITE << _IOC_DIRSHIFT)
++#endif
++
++#define _CLICK_IOC_FLAT		0x00004000
++
++#define _CLICK_IOX(d, n, sz)	((d) | ((sz) << 16) | (n))
++#define _CLICK_IOWRF(n, sz)	_CLICK_IOX(_CLICK_IOC_IN|_CLICK_IOC_OUT|_CLICK_IOC_FLAT, (n), (sz))
++
++#define CLICK_LLRPC_DSTORECLIENT_READ_START_SZ  1164
++#define CLICK_LLRPC_DSTORECLIENT_READ_START     _CLICK_IOWRF(32, CLICK_LLRPC_DSTORECLIENT_READ_START_SZ)
++#define CLICK_LLRPC_DSTORECLIENT_READ_RESLT_SZ  1164
++#define CLICK_LLRPC_DSTORECLIENT_READ_RESLT     _CLICK_IOWRF(33, CLICK_LLRPC_DSTORECLIENT_READ_RESLT_SZ)
++#define CLICK_LLRPC_DSTORECLIENT_WRITE_SZ       1164
++#define CLICK_LLRPC_DSTORECLIENT_WRITE          _CLICK_IOWRF(34, CLICK_LLRPC_DSTORECLIENT_WRITE_SZ)
++
++
++#define DSTORECLIENT_LLRPC_FILE "/click/dstoreclient/name"
++#define DSTOREKEY_PREFIX "lrc:"
++#define DSTOREKEY_PREFIX_LEN 4
++#define FREERADIUS_PROCESS_NAME "localradius"
++#define FREERADIUS_PROCESS_NAME_LEN 11
++
++struct dstoreclient_entry {
++    uint8_t key[64];
++    uint8_t token[64];
++    uint8_t value[1024];
++    uint16_t key_len;
++    uint16_t token_len;
++    uint16_t value_len;
++    uint16_t value_found;
++    uint32_t expiry;
++} __attribute__((__packed__));
++
++struct dstore_entry_header {
++	uint8_t		hlen;
++	uint8_t		version;
++	uint16_t	padding1;
++	uint32_t	created;
++	uint32_t	expires;
++	uint8_t		ctrl_attr_count;
++	uint8_t		req_attr_count;
++	uint8_t		resp_attr_count;
++	uint8_t		padding2;
++} __attribute__((__packed__));
++
++#define DSTORE_CURR_HEADER_VERSION 1
++#define DSTORE_MAX_ATTR_COUNT 255
++#define DSTORE_ATTR_SEPARATOR 255
++#define DSTORE_MAX_CACHE_ENTRY_SIZE 1024
++
++
+ /*
+  *	Define a structure for our module configuration.
+  *
+@@ -147,6 +212,366 @@ static void cache_merge(rlm_cache_t *inst, REQUEST *request,
+ 	}
+ }
+
++/*
++ *	Parse one valuepair from cache entry.
++ *	Value pair encoded as follows:
++ * 	Bytes: |  1   |    1    |   AttrLen    |   1    |   ValLen    |   1  |
++ *	       ---------------------------------------------------------------
++ *	       | 0xFF | AttrLen | ... Attr ... | ValLen | ... Val ... | Oper |
++ *	       ---------------------------------------------------------------
++ *
++ *	Returns buffer pointer after reading one valuepair from buf. Returns input buf on error.
++ */
++static uint8_t *dstore_entry_read_valuepair(uint8_t *buf, const uint8_t *buf_end, char *attr, char *value, FR_TOKEN *oper)
++{
++	int len;
++	uint8_t *p = buf;
++	char tmpattr[MAX_STRING_LEN];
++	char tmpvalue[MAX_STRING_LEN];
++	FR_TOKEN tmpoper;
++
++	if (!buf || buf >= (buf_end - 1) || !(*buf))
++		return buf;
++
++	if (*(p++) != DSTORE_ATTR_SEPARATOR)
++		return buf;
++
++	len = *(p++);
++	rad_assert(len < MAX_STRING_LEN && len >= 0);
++	if ((p + len) >= buf_end)
++		return buf;
++	strncpy(tmpattr, p, len);
++	tmpattr[len] = 0;
++	p += len;
++
++	len = *(p++);
++	rad_assert(len < MAX_STRING_LEN && len >= 0);
++	if ((p + len) >= buf_end)
++		return buf;
++	strncpy(tmpvalue, p, len);
++	tmpvalue[len] = 0;
++	p += len;
++
++	tmpoper = (FR_TOKEN) *(p++);
++	rad_assert(tmpoper < T_TOKEN_LAST);
++
++	strcpy(attr, tmpattr);
++	strcpy(value, tmpvalue);
++	*oper = tmpoper;
++
++	return p;
++}
++
++/*
++ *	Write one valuepair to given buffer
++ *
++ *	Returns buffer pointer after writing one valuepair to buf. Returns input buf on error.
++ */
++static uint8_t *dstore_entry_write_valuepair(uint8_t *buf, const uint8_t *buf_end, const char *attr, const char *value, FR_TOKEN oper)
++{
++	int len;
++	uint8_t *p = buf;
++
++	if (!buf || buf >= (buf_end - 1))
++		return buf;
++
++	*(p++) = DSTORE_ATTR_SEPARATOR;
++
++	len = strlen(attr);
++	rad_assert(len < MAX_STRING_LEN);
++	*(p++) = len;
++	if ((p + len) >= buf_end)
++		return buf;
++	strcpy(p, attr);
++	p += len;
++
++	len = strlen(value);
++	rad_assert(len < MAX_STRING_LEN);
++	*(p++) = len;
++	if ((p + len) >= buf_end)
++		return buf;
++	strcpy(p, value);
++	p += len;
++
++	rad_assert(oper < T_TOKEN_LAST);
++	if ((p + 1) >= buf_end)
++		return buf;
++	*(p++) = (uint8_t) oper;
++
++	return p;
++}
++
++/*
++ *	Parse list of valuepairs from cache entry and add them to given valuepair list.
++ *
++ *	Returns buffer pointer after reading given count of valuepairs from buf. Returns NULL on error.
++ */
++static uint8_t *dstore_entry_read_valuepair_list(uint8_t *buf, const uint8_t *buf_end, uint8_t count, VALUE_PAIR **vps)
++{
++	uint8_t *p;
++	VALUE_PAIR *vp;
++	char attr[MAX_STRING_LEN], value[MAX_STRING_LEN];
++	FR_TOKEN oper;
++
++	for (; count > 0; --count) {
++		if ((p = dstore_entry_read_valuepair(buf, buf_end, attr, value, &oper)) == buf) {
++			DEBUG("Dstore: Error parsing attribute list from cached entry");
++			return NULL;
++		}
++		buf = p;
++
++		vp = pairmake(attr, value, oper);
++		pairadd(vps, vp);
++	}
++
++	return buf;
++}
++
++/*
++ *	Write given list of valuepairs to the given buffer.
++ *
++ *	Returns buffer pointer after writing given count of valuepairs to buf. Returns NULL on error.
++ */
++static uint8_t *dstore_entry_write_valuepair_list(uint8_t *buf, const uint8_t *buf_end, uint8_t *count, VALUE_PAIR *vps)
++{
++	uint8_t *p;
++	VALUE_PAIR *vp;
++	char attr[MAX_STRING_LEN], value[MAX_STRING_LEN];
++	FR_TOKEN oper;
++
++	*count = 0;
++	vp = vps;
++	while (vp) {
++		strlcpy(attr, vp->name, MAX_STRING_LEN);
++		strlcpy(value, vp->vp_strvalue, sizeof(vp->vp_strvalue));
++		oper = vp->operator;
++		if ((p = dstore_entry_write_valuepair(buf, buf_end, attr, value, oper)) == buf)
++			return NULL;
++		buf = p;
++		vp = vp->next;
++		(*count)++;
++	}
++
++	return buf;
++}
++
++/*
++ *	Read cache entry from dstore for given key.
++ *
++ *	value set to empty if no entry in dstore found.
++ */
++static int dstore_read_entry(const char *key, char *value, int *value_len)
++{
++	struct dstoreclient_entry e;
++	int fd = 0;
++	int dstore_read_tout_ms = 500;
++	static int request_id = 0;
++
++	fd = open(DSTORECLIENT_LLRPC_FILE, O_RDONLY);
++	if (fd < 0) {
++		printf("\nerror opening fd %s\n\n", __func__);
++		return -1;
++	}
++	memset(&e, 0, sizeof(struct dstoreclient_entry));
++	strncpy(e.key, DSTOREKEY_PREFIX, DSTOREKEY_PREFIX_LEN);
++	memcpy(e.key + DSTOREKEY_PREFIX_LEN, key, strlen(key));
++	e.key_len = DSTOREKEY_PREFIX_LEN + strlen(key);
++	strncpy(e.token, FREERADIUS_PROCESS_NAME, FREERADIUS_PROCESS_NAME_LEN); // token is used for request id
++	*((int *) (e.token + FREERADIUS_PROCESS_NAME_LEN)) = request_id;
++	e.token_len = FREERADIUS_PROCESS_NAME_LEN + sizeof(int);
++	e.expiry = dstore_read_tout_ms;
++
++	if (ioctl(fd, CLICK_LLRPC_DSTORECLIENT_READ_START, &e) < 0) {
++		printf("%s llrpc: %s\n", __func__, strerror(errno));
++		DEBUG("LLRPC TO CLICK read start failed");
++		close(fd);
++		return -1;
++	} else
++		DEBUG("LLRPC TO CLICK read start success");
++	close(fd);
++
++	usleep(dstore_read_tout_ms * 1000);
++
++	fd = open(DSTORECLIENT_LLRPC_FILE, O_RDONLY);
++	if (fd < 0) {
++		printf("\nerror opening fd %s\n\n", __func__);
++		return -1;
++	}
++	memset(&e, 0, sizeof(struct dstoreclient_entry));
++
++	strncpy(e.key, DSTOREKEY_PREFIX, DSTOREKEY_PREFIX_LEN);
++	memcpy(e.key + DSTOREKEY_PREFIX_LEN, key, strlen(key));
++	e.key_len = DSTOREKEY_PREFIX_LEN + strlen(key);
++	strncpy(e.token, FREERADIUS_PROCESS_NAME, FREERADIUS_PROCESS_NAME_LEN); // token is used for request id
++	*((int *) (e.token + FREERADIUS_PROCESS_NAME_LEN)) = request_id;
++	e.token_len = FREERADIUS_PROCESS_NAME_LEN + sizeof(int);
++
++	if (ioctl(fd, CLICK_LLRPC_DSTORECLIENT_READ_RESLT, &e) < 0) {
++		printf("%s llrpc: %s\n", __func__, strerror(errno));
++		DEBUG("LLRPC TO CLICK read result failed");
++		close(fd);
++		return -1;
++	} else {
++		DEBUG("LLRPC TO CLICK read result success");
++		if (e.value_len > 0) {
++			memcpy(value, e.value, e.value_len);
++			value[e.value_len] = 0;
++			*value_len = e.value_len;
++		}
++	}
++	close(fd);
++
++	++request_id;
++	rad_assert(*value_len < DSTORE_MAX_CACHE_ENTRY_SIZE);
++
++	return 0;
++}
++
++/*
++ *	Write cache entry to dstore for given key.
++ */
++static void dstore_write_entry(const char *key, const char *value, int value_len, int ttl)
++{
++	struct dstoreclient_entry e;
++	int fd = 0;
++
++	rad_assert(value_len < DSTORE_MAX_CACHE_ENTRY_SIZE);
++
++	fd = open(DSTORECLIENT_LLRPC_FILE, O_RDONLY);
++	if (fd < 0) {
++		printf("\nerror opening fd %s\n\n", __func__);
++		return;
++	}
++	memset(&e, 0, sizeof(struct dstoreclient_entry));
++	strncpy(e.key, DSTOREKEY_PREFIX, DSTOREKEY_PREFIX_LEN);
++	memcpy(e.key + DSTOREKEY_PREFIX_LEN, key, strlen(key));
++	e.key_len = DSTOREKEY_PREFIX_LEN + strlen(key);
++	memcpy(e.value, value, value_len);
++	e.value_len = value_len;
++	strncpy(e.token, FREERADIUS_PROCESS_NAME, FREERADIUS_PROCESS_NAME_LEN); // token is used for writer
++	e.token_len = FREERADIUS_PROCESS_NAME_LEN;
++	e.expiry = ttl;
++
++	if (ioctl(fd, CLICK_LLRPC_DSTORECLIENT_WRITE, &e) < 0) {
++		printf("%s llrpc: %s\n", __func__, strerror(errno));
++		DEBUG("LLRPC TO CLICK write failed");
++	} else
++		DEBUG("LLRPC TO CLICK write success");
++	close(fd);
++}
++
++/*
++ *	Find cached entry in dstore.
++ *	Dstore entry value format:
++ *	  --------------------------------------------------------------------------------------------------------------------
++ *	  | ... dstore_entry_header ... | ... control valuepairs ... | ... request valuepairs ... | ... reply valuepairs ... |
++ *	  --------------------------------------------------------------------------------------------------------------------
++ *
++ *	If found, creates a rlm_cache_entry_t object, adds to local cache and returns it.
++ */
++static rlm_cache_entry_t *dstore_find(rlm_cache_t *inst, const char *key)
++{
++	const struct dstore_entry_header *deh;
++	rlm_cache_entry_t *c;
++	char buf[DSTORE_MAX_CACHE_ENTRY_SIZE];
++	uint8_t *buf_p;
++	const uint8_t *buf_end;
++	int len;
++
++	//// find entry in dstore
++	if (dstore_read_entry(key, buf, &len))
++		return NULL;
++
++	deh = (const struct dstore_entry_header *) buf;
++	if (len <= 0 || len < deh->hlen) {
++		DEBUG("Dstore: cached entry length too small: %d", len);
++		return NULL;
++	}
++	rad_assert(deh->hlen == sizeof(struct dstore_entry_header));
++
++	if (deh->version != DSTORE_CURR_HEADER_VERSION) {
++		DEBUG("Dstore: cached entry header version mismatch. Curr=%d, got=%d", DSTORE_CURR_HEADER_VERSION, deh->version);
++		return NULL;
++	}
++
++	c = rad_malloc(sizeof(*c));
++	if (!c) {
++		DEBUG("Dstore: Cannot allocate rlm_cache_entry_t");
++		return NULL;
++	}
++	memset(c, 0, sizeof(*c));
++
++	c->key = strdup(key);
++	c->created = ntohl(deh->created);
++	c->expires = ntohl(deh->expires);
++
++	buf_p = (uint8_t *) (deh + 1);
++	buf_end = (uint8_t *) (buf + len);
++
++	if ((buf_p = dstore_entry_read_valuepair_list(buf_p, buf_end, deh->ctrl_attr_count, &c->control)) == NULL) {
++		cache_entry_free(c);
++		return NULL;
++	}
++	if ((buf_p = dstore_entry_read_valuepair_list(buf_p, buf_end, deh->req_attr_count, &c->request)) == NULL) {
++		cache_entry_free(c);
++		return NULL;
++	}
++	if ((buf_p = dstore_entry_read_valuepair_list(buf_p, buf_end, deh->resp_attr_count, &c->reply)) == NULL) {
++		cache_entry_free(c);
++		return NULL;
++	}
++
++	//// add to local cache
++	if (!rbtree_insert(inst->cache, c)) {
++		DEBUG("rlm_cache: FAILED adding entry for key %s", key);
++		cache_entry_free(c);
++		return NULL;
++	}
++	if (!fr_heap_insert(inst->heap, c)) {
++		DEBUG("rlm_cache: FAILED adding entry for key %s", key);
++		rbtree_deletebydata(inst->cache, c);
++		return NULL;
++	}
++
++	DEBUG("Dstore: Found cached entry from dstore and added to local cache for \"%s\"", key);
++	return c;
++}
++
++/*
++ *	Adds cache entry to dstore.
++ */
++static int dstore_add(rlm_cache_entry_t *c, const char *key, int ttl)
++{
++	struct dstore_entry_header *deh;
++	char buf[DSTORE_MAX_CACHE_ENTRY_SIZE];
++	uint8_t *buf_p;
++	const uint8_t *buf_end;
++	int len;
++
++	deh = (struct dstore_entry_header *) buf;
++	memset(deh, 0, sizeof(struct dstore_entry_header));
++	deh->hlen = sizeof(struct dstore_entry_header);
++	deh->version = DSTORE_CURR_HEADER_VERSION;
++	rad_assert(!strcmp(c->key, key));
++	deh->created = htonl(c->created);
++	deh->expires = htonl(c->expires);
++
++	buf_p = (uint8_t *) (deh + 1);
++	buf_end = (uint8_t *) (buf + DSTORE_MAX_CACHE_ENTRY_SIZE);
++
++	if ((buf_p = dstore_entry_write_valuepair_list(buf_p, buf_end, &(deh->ctrl_attr_count), c->control)) == NULL)
++		return -1;
++	if ((buf_p = dstore_entry_write_valuepair_list(buf_p, buf_end, &(deh->req_attr_count), c->request)) == NULL)
++		return -1;
++	if ((buf_p = dstore_entry_write_valuepair_list(buf_p, buf_end, &(deh->resp_attr_count), c->reply)) == NULL)
++		return -1;
++
++	//// write entry in dstore
++	dstore_write_entry(key, buf, (char *) buf_p - buf, ttl);
++
++	DEBUG("Dstore: Added cache entry to dstore for \"%s\"", key);
++	return 0;
++}
+
+ /*
+  *	Find a cached entry.
+@@ -164,23 +589,28 @@ static rlm_cache_entry_t *cache_find(rlm_cache_t *inst, REQUEST *request,
+ 	c = fr_heap_peek(inst->heap);
+ 	if (!c) {
+ 		rad_assert(rbtree_num_elements(inst->cache) == 0);
+-		return NULL;
+-	}
++		c = dstore_find(inst, key);
++		if (!c) return NULL;
++	} else {
+
+-	/*
+-	 *	If it's time to expire an old entry, do so now.
+-	 */
+-	if (c->expires < request->timestamp) {
+-		fr_heap_extract(inst->heap, c);
+-		rbtree_deletebydata(inst->cache, c);
+-	}
++		/*
++		 *	If it's time to expire an old entry, do so now.
++		 */
++		if (c->expires < request->timestamp) {
++			fr_heap_extract(inst->heap, c);
++			rbtree_deletebydata(inst->cache, c);
++		}
+
+-	/*
+-	 *	Is there an entry for this key?
+-	 */
+-	my_c.key = key;
+-	c = rbtree_finddata(inst->cache, &my_c);
+-	if (!c) return NULL;
++		/*
++		 *	Is there an entry for this key?
++		 */
++		my_c.key = key;
++		c = rbtree_finddata(inst->cache, &my_c);
++		if (!c) {
++			c = dstore_find(inst, key);
++			if (!c) return NULL;
++		}
++	}
+
+ 	/*
+ 	 *	Yes, but it expired, OR the "forget all" epoch has
+@@ -295,8 +725,10 @@ static rlm_cache_entry_t *cache_add(rlm_cache_t *inst, REQUEST *request,
+ 		radius_xlat(buffer, sizeof(buffer), cf_pair_value(cp),
+ 			    request, NULL);
+
+-		vp = pairmake(p, buffer, cf_pair_operator(cp));
+-		pairadd(vps, vp);
++		if (strlen(buffer)) { // only cache attributes present in the request
++			vp = pairmake(p, buffer, cf_pair_operator(cp));
++			pairadd(vps, vp);
++		}
+ 	}
+
+ 	if (!rbtree_insert(inst->cache, c)) {
+@@ -311,6 +743,8 @@ static rlm_cache_entry_t *cache_add(rlm_cache_t *inst, REQUEST *request,
+ 		return NULL;
+ 	}
+
++	dstore_add(c, key, ttl);
++
+ 	DEBUG("rlm_cache: Adding entry for \"%s\", with TTL of %d",
+ 	      key, ttl);
+

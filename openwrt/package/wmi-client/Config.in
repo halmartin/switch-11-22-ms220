@@ -1,0 +1,13 @@
+config BR2_COMPILE_WMI_CLIENT
+	tristate
+	default n
+	depends BR2_PACKAGE_LIBSASL2 && BR2_PACKAGE_LIBICONV
+
+config BR2_PACKAGE_WMI_CLIENT
+	prompt "wmi-client.................... A Windows Management Interface client"
+	tristate
+	default m if CONFIG_DEVEL
+	select BR2_COMPILE_WMI_CLIENT
+	help
+	 A WMI client extracted from Samba4, packaged by OpenVAS
+	 http://www.openvas.org/download/wmi/

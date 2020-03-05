@@ -1,0 +1,5 @@
+Package: libxau
+Priority: optional
+Section: x11
+Depends:
+Description: X authorization library

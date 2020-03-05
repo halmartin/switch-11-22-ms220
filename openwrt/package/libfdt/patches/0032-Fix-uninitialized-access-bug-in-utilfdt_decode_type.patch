@@ -1,0 +1,41 @@
+From e280442e08fcbe8431dc85d836ff3ecc489932fb Mon Sep 17 00:00:00 2001
+From: David Gibson <david@gibson.dropbear.id.au>
+Date: Fri, 3 Feb 2012 17:06:12 +1100
+Subject: [PATCH 32/98] Fix uninitialized access bug in utilfdt_decode_type
+
+I just found this little bug with valgrind.  strchr() will return true
+if the given character is '\0'.  This meant that utilfdt_decode_type()
+could take a path which accesses uninitialized data when given the
+(invalid) format string "L".
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ util.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/util.c b/util.c
+index d82d41f..2422c34 100644
+--- a/util.c
++++ b/util.c
+@@ -296,6 +296,9 @@ int utilfdt_decode_type(const char *fmt, int *type, int *size)
+ {
+ 	int qualifier = 0;
+ 
++	if (!*fmt)
++		return -1;
++
+ 	/* get the conversion qualifier */
+ 	*size = -1;
+ 	if (strchr("hlLb", *fmt)) {
+@@ -311,7 +314,7 @@ int utilfdt_decode_type(const char *fmt, int *type, int *size)
+ 	}
+ 
+ 	/* we should now have a type */
+-	if (!strchr("iuxs", *fmt))
++	if ((*fmt == '\0') || !strchr("iuxs", *fmt))
+ 		return -1;
+ 
+ 	/* convert qualifier (bhL) to byte size */
+-- 
+1.8.1.2
+

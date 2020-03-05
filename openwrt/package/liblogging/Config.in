@@ -1,0 +1,6 @@
+config BR2_PACKAGE_LIBLOGGING
+	prompt "liblogging........................ an easy to use and lightweight signal-safe logging library"
+	tristate
+	default m if CONFIG_DEVEL
+	help
+	  Liblogging is an easy to use library for logging. It offers an enhanced replacement for the syslog() call, but retains its ease of use.
