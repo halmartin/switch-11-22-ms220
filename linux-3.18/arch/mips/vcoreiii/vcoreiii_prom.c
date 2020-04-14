@@ -32,6 +32,8 @@
 #include <linux/vmalloc.h>
 #include <linux/delay.h>
 
+#include <asm/addrspace.h>
+#include <asm/bootinfo.h>
 #include <asm/io.h>
 #include <asm/mipsregs.h>
 #include <asm/pgtable.h>
@@ -67,8 +69,32 @@ static struct vm_struct console_early_vm;
 
 #endif /* CONFIG_EARLY_PRINTK */
 
+void prom_free_prom_memory(void)                             
+{                                   
+}
+
+static void __init prom_init_cmdline(void)                           
+{                                                                    
+        int argc = fw_arg0;                                          
+        char **argv = (char **) KSEG0ADDR(fw_arg1);                  
+        int i;                                                       
+                                                                     
+        arcs_cmdline[0] = '\0';                                      
+                                                                     
+        for (i = 0; i < argc; i++) {                                 
+                char *p = (char *) KSEG0ADDR(argv[i]);               
+                                                                     
+                if (CPHYSADDR(p) && *p) {                            
+                        strlcat(arcs_cmdline, p, sizeof(arcs_cmdline));
+                        strlcat(arcs_cmdline, " ", sizeof(arcs_cmdline));
+                }                                                        
+        }                                                                
+}
+
 void __init prom_init(void)
 {
+	/* always init the command line */
+	prom_init_cmdline();
 #ifdef CONFIG_EARLY_PRINTK
 
 	write_c0_wired(0);
@@ -90,11 +116,6 @@ void __init prom_init(void)
 	udelay(1);			 /* Let BRG settle */
 
 #endif /* CONFIG_EARLY_PRINTK */
-}
-
-unsigned long prom_free_prom_memory(void)
-{
-        return 0; /* "Freeing unused memory: %ldk freed\n" */
 }
 
 #ifdef CONFIG_EARLY_PRINTK
