@@ -367,6 +367,7 @@ config MERAKI_MSXX
 	select SYS_SUPPORTS_LITTLE_ENDIAN
 	select ARCH_REQUIRE_GPIOLIB
 	select SYS_HAS_EARLY_PRINTK
+	select SYS_SUPPORTS_ZBOOT
 	help
 	  This option enables support for Meraki MS22/MS42 switches.
 
