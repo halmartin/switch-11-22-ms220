@@ -69,6 +69,8 @@ static struct vm_struct console_early_vm;
 
 #endif /* CONFIG_EARLY_PRINTK */
 
+unsigned long wired_status;
+
 void prom_free_prom_memory(void)                             
 {                                   
 }
@@ -93,11 +95,15 @@ static void __init prom_init_cmdline(void)
 
 void __init prom_init(void)
 {
-	/* always init the command line */
+#if !defined(CONFIG_CMDLINE_OVERRIDE)
+	/* init the command line */
 	prom_init_cmdline();
-#ifdef CONFIG_EARLY_PRINTK
-
+#endif
+	wired_status = read_c0_wired();
+	/* always clear the TLB on init */
 	write_c0_wired(0);
+	/* log the status of the register before we reset it */
+#ifdef CONFIG_EARLY_PRINTK
 	console_early_vm.flags = VM_ALLOC;
 	console_early_vm.size = 1 << PAGE_SHIFT;
 	vm_area_register_early(&console_early_vm, PAGE_SIZE);
@@ -115,6 +121,8 @@ void __init prom_init(void)
 	uart_ptr->lcr = UART_LCR_WLEN8;	/* 8 bits, no parity, 1 stop bit */
 	udelay(1);			 /* Let BRG settle */
 
+	printk(KERN_INFO "Cleared TLB\n");
+	printk(KERN_INFO "c0_wired=%08lx\n", wired_status);
 #endif /* CONFIG_EARLY_PRINTK */
 }
 
