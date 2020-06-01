@@ -790,7 +790,7 @@ CONFIG_ARCH_MIGHT_HAVE_PC_SERIO=y
 CONFIG_TTY=y
 # CONFIG_VT is not set
 CONFIG_UNIX98_PTYS=y
-# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
+CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
 # CONFIG_LEGACY_PTYS is not set
 # CONFIG_SERIAL_NONSTANDARD is not set
 # CONFIG_N_GSM is not set
@@ -824,7 +824,7 @@ CONFIG_SERIAL_CORE_CONSOLE=y
 # CONFIG_SERIAL_IFX6X60 is not set
 # CONFIG_SERIAL_ARC is not set
 # CONFIG_SERIAL_FSL_LPUART is not set
-# CONFIG_TTY_PRINTK is not set
+CONFIG_TTY_PRINTK=y
 # CONFIG_IPMI_HANDLER is not set
 # CONFIG_HW_RANDOM is not set
 # CONFIG_R3964 is not set
@@ -1636,8 +1636,8 @@ CONFIG_HAVE_ARCH_KGDB=y
 # CONFIG_KGDB is not set
 CONFIG_EARLY_PRINTK=y
 CONFIG_CMDLINE_BOOL=y
-CONFIG_CMDLINE="console=ttyS0,115200 mtdparts=m25p80:0x40000(loader1),0x4c0000(boot1),0x800000(bootubi),0x300000(jffs2) root=/dev/mtdblock3 rootfstype=squashfs ubi.mtd=gen_nand.0 mem=0x7FF0000 ramoops.mem_address=0x7FF0000 ramoops.mem_size=0x10000 ramoops.block_size=0x10000"
-# CONFIG_CMDLINE_OVERRIDE is not set
+CONFIG_CMDLINE="console=ttyS0,115200 mtdparts=m25p80:0x40000(redboot),0x2c0000(kernel),0x800000(squashfs),0x500000(config) root=/dev/mtdblock3 mem=134152192"
+CONFIG_CMDLINE_OVERRIDE=y
 # CONFIG_RUNTIME_DEBUG is not set
 # CONFIG_DEBUG_ZBOOT is not set
 # CONFIG_SPINLOCK_TEST is not set
