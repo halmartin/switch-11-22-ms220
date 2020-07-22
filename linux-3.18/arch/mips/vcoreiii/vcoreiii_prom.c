@@ -75,6 +75,7 @@ void prom_free_prom_memory(void)
 {                                   
 }
 
+#if !defined(CONFIG_CMDLINE_OVERRIDE)
 static void __init prom_init_cmdline(void)                           
 {                                                                    
         int argc = fw_arg0;                                          
@@ -92,6 +93,7 @@ static void __init prom_init_cmdline(void)
                 }                                                        
         }                                                                
 }
+#endif
 
 void __init prom_init(void)
 {
