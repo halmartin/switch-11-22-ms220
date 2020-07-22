@@ -1636,7 +1636,7 @@ CONFIG_HAVE_ARCH_KGDB=y
 # CONFIG_KGDB is not set
 CONFIG_EARLY_PRINTK=y
 CONFIG_CMDLINE_BOOL=y
-CONFIG_CMDLINE="console=ttyS0,115200 mtdparts=m25p80:0x40000(redboot),0x2c0000(kernel),0x800000(squashfs),0x500000(config) root=/dev/mtdblock3 mem=134152192"
+CONFIG_CMDLINE="console=ttyS0,115200 mtdparts=m25p80:0x40000(redboot),0x2c0000(kernel),0x800000(squashfs),0x500000(config) root=/dev/mtdblock3 ubi.mtd=gen_nand.0 mem=134152192"
 CONFIG_CMDLINE_OVERRIDE=y
 # CONFIG_RUNTIME_DEBUG is not set
 # CONFIG_DEBUG_ZBOOT is not set
